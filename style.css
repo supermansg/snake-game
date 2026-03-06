@@ -23,6 +23,7 @@ body {
   color: var(--text);
   display: grid;
   place-items: center;
+<<<<<<< HEAD
   padding:
     max(12px, env(safe-area-inset-top))
     14px
@@ -33,6 +34,13 @@ body {
 
 .wrap {
   width: min(96vw, 460px);
+=======
+  padding: 16px;
+}
+
+.wrap {
+  width: min(92vw, 460px);
+>>>>>>> 520d96e (Initial snake game)
   display: grid;
   gap: 12px;
 }
@@ -75,15 +83,21 @@ canvas {
   border: 1px solid #33425f;
   background: linear-gradient(180deg, #141a26, #0f131d);
   box-shadow: 0 14px 36px rgba(4, 8, 16, 0.45);
+<<<<<<< HEAD
   touch-action: none;
   user-select: none;
+=======
+>>>>>>> 520d96e (Initial snake game)
 }
 
 .controls {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
+<<<<<<< HEAD
   user-select: none;
+=======
+>>>>>>> 520d96e (Initial snake game)
 }
 
 button {
@@ -95,8 +109,11 @@ button {
   background: var(--accent);
   font-weight: 600;
   cursor: pointer;
+<<<<<<< HEAD
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+=======
+>>>>>>> 520d96e (Initial snake game)
 }
 
 button:hover {
@@ -118,14 +135,22 @@ button:active {
 .touch-controls {
   display: grid;
   gap: 8px;
+<<<<<<< HEAD
   user-select: none;
 }
 
 .touch-btn {
+=======
+}
+
+.touch-controls > button,
+.touch-row > button {
+>>>>>>> 520d96e (Initial snake game)
   background: #5a8cff;
   color: #fff;
 }
 
+<<<<<<< HEAD
 .touch-pad {
   display: grid;
   grid-template-columns: repeat(3, minmax(58px, 1fr));
@@ -155,6 +180,12 @@ button:active {
   margin: 0;
   font-size: 0.86rem;
   color: #a4b1cc;
+=======
+.touch-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+>>>>>>> 520d96e (Initial snake game)
 }
 
 @media (min-width: 780px) {
@@ -162,6 +193,7 @@ button:active {
     display: none;
   }
 }
+<<<<<<< HEAD
 
 @media (max-width: 779px) {
   .wrap {
@@ -196,3 +228,5 @@ button:active {
     border-radius: 14px;
   }
 }
+=======
+>>>>>>> 520d96e (Initial snake game)

@@ -11,7 +11,6 @@ const startBtn = document.getElementById("startBtn");
 const pauseBtn = document.getElementById("pauseBtn");
 const restartBtn = document.getElementById("restartBtn");
 const touchButtons = document.querySelectorAll("[data-dir]");
-const isTouchDevice = window.matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
 
 const GRID_SIZE = 21;
 const CELL = canvas.width / GRID_SIZE;
@@ -20,7 +19,6 @@ const MIN_SPEED_MS = 64;
 const SCORE_PER_LEVEL = 4;
 const BASE_OBSTACLES = 2;
 const MAX_ENEMIES = 5;
-const SWIPE_MIN_DISTANCE = 24;
 const CARDINALS = [
   { x: 1, y: 0 },
   { x: -1, y: 0 },
@@ -45,7 +43,6 @@ let started = false;
 let gameOverAt = 0;
 let statusTimeout = null;
 let foodBurst = null;
-let swipeStart = null;
 
 bestEl.textContent = String(bestScore);
 
@@ -74,9 +71,7 @@ function initGame() {
   scoreEl.textContent = "0";
   levelEl.textContent = String(level);
   hazardsEl.textContent = String(obstacles.length + enemies.length);
-  statusEl.textContent = isTouchDevice
-    ? "Tap Start, swipe board, or use the pad"
-    : "Press Start or Arrow Keys";
+  statusEl.textContent = "Press Start or Arrow Keys";
   pauseBtn.textContent = "Pause";
   stopLoop();
   startRenderLoop();
@@ -656,46 +651,6 @@ function onKeyDown(event) {
   }
 }
 
-function onCanvasPointerDown(event) {
-  if (event.pointerType === "mouse") return;
-  swipeStart = {
-    x: event.clientX,
-    y: event.clientY
-  };
-  canvas.setPointerCapture(event.pointerId);
-  event.preventDefault();
-}
-
-function onCanvasPointerUp(event) {
-  if (!swipeStart) return;
-
-  const dx = event.clientX - swipeStart.x;
-  const dy = event.clientY - swipeStart.y;
-  const absX = Math.abs(dx);
-  const absY = Math.abs(dy);
-  swipeStart = null;
-
-  if (Math.max(absX, absY) < SWIPE_MIN_DISTANCE) {
-    if (!started || (!running && gameOverAt === 0)) {
-      startGame();
-    }
-    event.preventDefault();
-    return;
-  }
-
-  if (absX > absY) {
-    setDirection(dx > 0 ? "right" : "left");
-  } else {
-    setDirection(dy > 0 ? "down" : "up");
-  }
-
-  event.preventDefault();
-}
-
-function onCanvasPointerCancel() {
-  swipeStart = null;
-}
-
 function setPlayingStatus() {
   statusEl.textContent = `Playing - Level ${level}`;
 }
@@ -747,13 +702,7 @@ startBtn.addEventListener("click", startGame);
 pauseBtn.addEventListener("click", togglePause);
 restartBtn.addEventListener("click", initGame);
 touchButtons.forEach((btn) => {
-  btn.addEventListener("pointerdown", (event) => {
-    event.preventDefault();
-    setDirection(btn.dataset.dir);
-  });
+  btn.addEventListener("click", () => setDirection(btn.dataset.dir));
 });
-canvas.addEventListener("pointerdown", onCanvasPointerDown);
-canvas.addEventListener("pointerup", onCanvasPointerUp);
-canvas.addEventListener("pointercancel", onCanvasPointerCancel);
 
 initGame();
