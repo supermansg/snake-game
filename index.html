@@ -2,13 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Snake</title>
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
   <main class="wrap">
-    <h1>Snake</h1>
+    <header class="topbar">
+      <h1>Snake Arena</h1>
+      <section class="difficulty" aria-label="Difficulty selector">
+        <p class="difficulty-label">Difficulty</p>
+        <div class="difficulty-buttons" role="group" aria-label="Choose difficulty">
+          <button id="difficultyEasy" class="difficulty-btn" data-difficulty="easy" type="button">Easy</button>
+          <button id="difficultyMedium" class="difficulty-btn" data-difficulty="medium" type="button">Medium</button>
+          <button id="difficultyHard" class="difficulty-btn" data-difficulty="hard" type="button">Hard</button>
+        </div>
+      </section>
+    </header>
 
     <section class="hud" aria-label="Game status">
       <p>Score: <strong id="score">0</strong></p>
@@ -18,7 +28,9 @@
       <p id="status">Press Start or Arrow Keys</p>
     </section>
 
-    <canvas id="game" width="420" height="420" aria-label="Snake game canvas"></canvas>
+    <section class="board-shell" aria-label="Game board frame">
+      <canvas id="game" width="420" height="420" aria-label="Snake game canvas"></canvas>
+    </section>
 
     <section class="controls" aria-label="Game controls">
       <button id="startBtn" type="button">Start</button>
@@ -26,7 +38,7 @@
       <button id="restartBtn" type="button">Restart</button>
     </section>
 
-    <section class="touch-controls" aria-label="Touch controls">
+    <section id="touchControls" class="touch-controls" aria-label="Touch controls">
       <div class="touch-pad">
         <button class="touch-btn up" data-dir="up" type="button">Up</button>
         <button class="touch-btn left" data-dir="left" type="button">Left</button>

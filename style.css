@@ -1,25 +1,37 @@
 :root {
-  --bg: #101218;
-  --panel: #1a1f2b;
-  --text: #e7ecf5;
-  --muted: #a3aec2;
-  --accent: #42d392;
-  --danger: #ff6b6b;
-  --grid: #293349;
+  --bg-0: #080c15;
+  --bg-1: #12192a;
+  --panel: rgba(17, 24, 39, 0.74);
+  --panel-border: rgba(120, 148, 200, 0.28);
+  --text: #e8eefc;
+  --muted: #a9b8d8;
+  --accent: #34d399;
+  --warn: #f8c55f;
+  --danger: #ff7272;
+  --primary: #5e8dff;
+  --shadow: rgba(6, 10, 22, 0.58);
+  --touch-btn-size: 66px;
+  --touch-gap: 12px;
+  --touch-radius: 16px;
 }
 
 * {
   box-sizing: border-box;
 }
 
+html,
 body {
   margin: 0;
+  overscroll-behavior: none;
+}
+
+body {
   min-height: 100vh;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   background:
-    radial-gradient(circle at 20% 15%, #27324a 0%, transparent 35%),
-    radial-gradient(circle at 80% 20%, #1f2c45 0%, transparent 30%),
-    radial-gradient(circle at top, #1d2434, var(--bg) 58%);
+    radial-gradient(circle at 14% 10%, rgba(70, 94, 148, 0.33) 0%, transparent 34%),
+    radial-gradient(circle at 84% 18%, rgba(49, 82, 160, 0.22) 0%, transparent 30%),
+    linear-gradient(165deg, var(--bg-1), var(--bg-0));
   color: var(--text);
   display: grid;
   place-items: center;
@@ -30,41 +42,58 @@ body {
   padding:
     max(12px, env(safe-area-inset-top))
     14px
-    max(14px, env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-bottom))
     14px;
   overscroll-behavior: none;
-<<<<<<< HEAD
 }
 
 .wrap {
   width: min(96vw, 460px);
-=======
-  padding: 16px;
-}
-
-.wrap {
-  width: min(92vw, 460px);
->>>>>>> 520d96e (Initial snake game)
-=======
-}
-
-.wrap {
-  width: min(96vw, 460px);
->>>>>>> cc53276 (Improve snake game visuals, mobile responsiveness, and difficulty settings)
   display: grid;
   gap: 12px;
+  background: linear-gradient(180deg, rgba(18, 27, 45, 0.55), rgba(10, 15, 24, 0.45));
+  border: 1px solid rgba(106, 131, 185, 0.24);
+  border-radius: 18px;
+  box-shadow:
+    0 18px 42px var(--shadow),
+    inset 0 1px 0 rgba(180, 206, 255, 0.1);
+  backdrop-filter: blur(6px);
+  padding: 14px;
+}
+
+.topbar {
+  display: grid;
+  gap: 10px;
 }
 
 h1 {
   margin: 0;
   font-size: 1.8rem;
   letter-spacing: 0.04em;
+  text-shadow: 0 2px 14px rgba(53, 143, 242, 0.26);
+}
+
+.difficulty {
+  display: grid;
+  gap: 8px;
+}
+
+.difficulty-label {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.difficulty-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .hud {
   background: var(--panel);
-  border: 1px solid #2a344b;
-  border-radius: 12px;
+  border: 1px solid var(--panel-border);
+  border-radius: 13px;
   padding: 10px 12px;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -84,22 +113,28 @@ h1 {
 #status {
   grid-column: 1 / -1;
   text-align: left;
+  letter-spacing: 0.01em;
+}
+
+.board-shell {
+  border-radius: 15px;
+  padding: 8px;
+  background:
+    linear-gradient(140deg, rgba(101, 131, 200, 0.36), rgba(57, 87, 153, 0.18));
+  border: 1px solid rgba(124, 151, 214, 0.35);
+  box-shadow:
+    inset 0 1px 0 rgba(212, 225, 255, 0.2),
+    0 12px 30px rgba(7, 11, 24, 0.48);
 }
 
 canvas {
   width: 100%;
   height: auto;
-  border-radius: 12px;
-  border: 1px solid #33425f;
+  display: block;
+  border-radius: 11px;
+  border: 1px solid rgba(72, 96, 144, 0.75);
   background: linear-gradient(180deg, #141a26, #0f131d);
   box-shadow: 0 14px 36px rgba(4, 8, 16, 0.45);
-<<<<<<< HEAD
-<<<<<<< HEAD
-  touch-action: none;
-  user-select: none;
-=======
->>>>>>> 520d96e (Initial snake game)
-=======
   touch-action: none;
   user-select: none;
 >>>>>>> cc53276 (Improve snake game visuals, mobile responsiveness, and difficulty settings)
@@ -121,12 +156,12 @@ canvas {
 
 button {
   border: 0;
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 0.95rem;
-  color: #08120d;
+  border-radius: 11px;
+  padding: 11px 12px;
+  font-size: 0.96rem;
+  color: #0a1511;
   background: var(--accent);
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -141,7 +176,7 @@ button {
 }
 
 button:hover {
-  filter: brightness(1.03);
+  filter: brightness(1.05);
 }
 
 button:active {
@@ -149,11 +184,30 @@ button:active {
 }
 
 #pauseBtn {
-  background: #f6c453;
+  background: var(--warn);
+  color: #221c06;
 }
 
 #restartBtn {
   background: var(--danger);
+  color: #25090b;
+}
+
+.difficulty-btn {
+  border: 1px solid rgba(119, 145, 198, 0.32);
+  background: rgba(24, 34, 58, 0.82);
+  color: #ccdaf7;
+  min-height: 40px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  transition: background-color 140ms ease, transform 120ms ease, box-shadow 140ms ease;
+}
+
+.difficulty-btn.active {
+  background: linear-gradient(180deg, rgba(75, 125, 255, 0.95), rgba(57, 101, 226, 0.95));
+  color: #ffffff;
+  border-color: rgba(152, 184, 255, 0.56);
+  box-shadow: 0 4px 14px rgba(68, 122, 255, 0.45);
 }
 
 .touch-controls {
@@ -176,7 +230,6 @@ button:active {
 }
 
 .touch-btn {
->>>>>>> cc53276 (Improve snake game visuals, mobile responsiveness, and difficulty settings)
   background: #5a8cff;
   color: #fff;
 }
@@ -221,11 +274,23 @@ button:active {
 =======
 .touch-pad {
   display: grid;
-  grid-template-columns: repeat(3, minmax(58px, 1fr));
+  justify-content: center;
+  grid-template-columns: repeat(3, minmax(var(--touch-btn-size), 1fr));
   grid-template-areas:
     ". up ."
     "left down right";
-  gap: 10px;
+  gap: var(--touch-gap);
+}
+
+.touch-btn {
+  min-height: var(--touch-btn-size);
+  border-radius: var(--touch-radius);
+  background: linear-gradient(180deg, #5f8fff, #4f7df0);
+  color: #ffffff;
+  border: 1px solid rgba(169, 197, 255, 0.38);
+  box-shadow:
+    inset 0 1px 0 rgba(220, 234, 255, 0.22),
+    0 8px 20px rgba(25, 53, 119, 0.34);
 }
 
 .touch-btn.up {
@@ -248,7 +313,6 @@ button:active {
   margin: 0;
   font-size: 0.86rem;
   color: #a4b1cc;
->>>>>>> cc53276 (Improve snake game visuals, mobile responsiveness, and difficulty settings)
 }
 
 @media (min-width: 780px) {
@@ -263,11 +327,17 @@ button:active {
 
 @media (max-width: 779px) {
   .wrap {
+    width: min(98vw, 520px);
     gap: 10px;
+    padding: 12px;
   }
 
   h1 {
     font-size: 1.55rem;
+  }
+
+  .difficulty-btn {
+    min-height: 42px;
   }
 
   .hud {
@@ -280,18 +350,44 @@ button:active {
   }
 
   .controls {
-    gap: 10px;
+    gap: 9px;
   }
 
   .controls button {
-    min-height: 48px;
+    min-height: 50px;
     font-size: 1rem;
   }
 
-  .touch-btn {
-    min-height: 62px;
-    font-size: 1.02rem;
+  .touch-controls {
+    position: sticky;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, rgba(10, 16, 28, 0.24), rgba(10, 16, 28, 0.56));
+    border: 1px solid rgba(115, 139, 191, 0.2);
     border-radius: 14px;
+    padding: 10px;
+    backdrop-filter: blur(3px);
+  }
+
+  .touch-controls[data-layout="classic"] {
+    --touch-btn-size: 70px;
+  }
+
+  .touch-controls[data-layout="compact"] {
+    --touch-btn-size: 62px;
+  }
+
+  .touch-controls[data-layout="wide"] {
+    --touch-btn-size: 78px;
+  }
+}
+
+@media (max-width: 420px) {
+  .hud {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #status {
+    grid-column: 1 / -1;
   }
 }
 <<<<<<< HEAD

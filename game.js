@@ -10,17 +10,131 @@ const statusEl = document.getElementById("status");
 const startBtn = document.getElementById("startBtn");
 const pauseBtn = document.getElementById("pauseBtn");
 const restartBtn = document.getElementById("restartBtn");
+const difficultyButtons = document.querySelectorAll("[data-difficulty]");
+const touchControlsEl = document.getElementById("touchControls");
 const touchButtons = document.querySelectorAll("[data-dir]");
 const isTouchDevice = window.matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
 
 const GRID_SIZE = 21;
 const CELL = canvas.width / GRID_SIZE;
-const BASE_SPEED_MS = 148;
-const MIN_SPEED_MS = 64;
-const SCORE_PER_LEVEL = 4;
-const BASE_OBSTACLES = 2;
-const MAX_ENEMIES = 5;
 const SWIPE_MIN_DISTANCE = 24;
+const DOUBLE_TAP_GUARD_MS = 280;
+
+const STORAGE_KEYS = {
+  bestScore: "snake_best",
+  difficulty: "snake_difficulty",
+  theme: "snake_theme",
+  snakeSkin: "snake_skin",
+  controlLayout: "snake_control_layout"
+};
+
+const DIFFICULTY_PRESETS = {
+  easy: {
+    label: "Easy",
+    baseSpeedMs: 172,
+    minSpeedMs: 84,
+    speedScoreFactor: 3,
+    speedLevelFactor: 2,
+    scorePerLevel: 5,
+    initialObstacles: 1,
+    obstaclePerLevel: 1,
+    extraObstacleEvery: 5,
+    enemySpawnEvery: 4,
+    maxEnemies: 3,
+    extraEnemyChance: 0,
+    enemyMoveBaseInterval: 5,
+    enemyMoveMinInterval: 2
+  },
+  medium: {
+    label: "Medium",
+    baseSpeedMs: 148,
+    minSpeedMs: 64,
+    speedScoreFactor: 4,
+    speedLevelFactor: 3,
+    scorePerLevel: 4,
+    initialObstacles: 2,
+    obstaclePerLevel: 1,
+    extraObstacleEvery: 3,
+    enemySpawnEvery: 2,
+    maxEnemies: 5,
+    extraEnemyChance: 0.05,
+    enemyMoveBaseInterval: 4,
+    enemyMoveMinInterval: 1
+  },
+  hard: {
+    label: "Hard",
+    baseSpeedMs: 126,
+    minSpeedMs: 52,
+    speedScoreFactor: 5,
+    speedLevelFactor: 4,
+    scorePerLevel: 3,
+    initialObstacles: 3,
+    obstaclePerLevel: 2,
+    extraObstacleEvery: 2,
+    enemySpawnEvery: 1,
+    maxEnemies: 7,
+    extraEnemyChance: 0.24,
+    enemyMoveBaseInterval: 3,
+    enemyMoveMinInterval: 1
+  }
+};
+
+const BACKGROUND_THEMES = {
+  neon: {
+    boardTop: "#151f35",
+    boardMid: "#0f1628",
+    boardBottom: "#0a101d",
+    gridRGB: "92, 120, 188",
+    foodAura: "rgba(247, 126, 115, 0.25)",
+    foodCore: "#ff7e72",
+    obstacleFillRGB: "94, 120, 170",
+    obstacleStroke: "#84a0d7",
+    enemyAura: "rgba(255, 126, 85, 0.35)",
+    enemyCore: "#ff8b61",
+    burstRGB: "255, 198, 112",
+    overlayRGB: "8, 12, 22"
+  },
+  aurora: {
+    boardTop: "#132735",
+    boardMid: "#122233",
+    boardBottom: "#0a1622",
+    gridRGB: "92, 164, 178",
+    foodAura: "rgba(245, 177, 79, 0.2)",
+    foodCore: "#f9b85a",
+    obstacleFillRGB: "85, 133, 137",
+    obstacleStroke: "#9bd6ca",
+    enemyAura: "rgba(241, 108, 108, 0.34)",
+    enemyCore: "#ff7268",
+    burstRGB: "136, 244, 208",
+    overlayRGB: "6, 20, 22"
+  }
+};
+
+const SNAKE_SKINS = {
+  classic: {
+    head: "#54e3a5",
+    body: "#2fc487",
+    eye: "#082a1e"
+  },
+  cobalt: {
+    head: "#77b2ff",
+    body: "#4c8fff",
+    eye: "#0b1d3b"
+  }
+};
+
+const CONTROL_LAYOUT_PRESETS = {
+  classic: {
+    layout: "classic"
+  },
+  compact: {
+    layout: "compact"
+  },
+  wide: {
+    layout: "wide"
+  }
+};
+
 const CARDINALS = [
   { x: 1, y: 0 },
   { x: -1, y: 0 },
@@ -36,8 +150,18 @@ let direction;
 let nextDirection;
 let score;
 let level;
-let bestScore = Number(localStorage.getItem("snake_best") || 0);
-let currentSpeedMs = BASE_SPEED_MS;
+
+let difficulty = normalizeKey(localStorage.getItem(STORAGE_KEYS.difficulty), DIFFICULTY_PRESETS, "medium");
+let activeTheme = normalizeKey(localStorage.getItem(STORAGE_KEYS.theme), BACKGROUND_THEMES, "neon");
+let activeSkin = normalizeKey(localStorage.getItem(STORAGE_KEYS.snakeSkin), SNAKE_SKINS, "classic");
+let preferredControlLayout = normalizeKey(
+  localStorage.getItem(STORAGE_KEYS.controlLayout),
+  CONTROL_LAYOUT_PRESETS,
+  "classic"
+);
+
+let bestScore = Number(localStorage.getItem(STORAGE_KEYS.bestScore) || 0);
+let currentSpeedMs = DIFFICULTY_PRESETS[difficulty].baseSpeedMs;
 let gameTimer = null;
 let rafId = null;
 let running = false;
@@ -46,20 +170,26 @@ let gameOverAt = 0;
 let statusTimeout = null;
 let foodBurst = null;
 let swipeStart = null;
+let lastTouchEndAt = 0;
 
 bestEl.textContent = String(bestScore);
 
 function initGame() {
+  const config = getDifficultyConfig();
+
   snake = [
     { x: 10, y: 10 },
     { x: 9, y: 10 },
     { x: 8, y: 10 }
   ];
+
   obstacles = [];
   enemies = [];
-  for (let i = 0; i < BASE_OBSTACLES; i += 1) {
+
+  for (let i = 0; i < config.initialObstacles; i += 1) {
     spawnObstacle();
   }
+
   food = createFood();
   direction = { x: 1, y: 0 };
   nextDirection = { x: 1, y: 0 };
@@ -70,13 +200,16 @@ function initGame() {
   started = false;
   gameOverAt = 0;
   foodBurst = null;
+
   clearStatusTimer();
+  updateDifficultyButtons();
+  applyControlLayout();
+
   scoreEl.textContent = "0";
   levelEl.textContent = String(level);
-  hazardsEl.textContent = String(obstacles.length + enemies.length);
-  statusEl.textContent = isTouchDevice
-    ? "Tap Start, swipe board, or use the pad"
-    : "Press Start or Arrow Keys";
+  updateHazardsLabel();
+  statusEl.textContent = getIdleStatus();
+
   pauseBtn.textContent = "Pause";
   stopLoop();
   startRenderLoop();
@@ -85,10 +218,13 @@ function initGame() {
 
 function startGame() {
   if (running) return;
+
   if (gameOverAt > 0) {
     initGame();
   }
+
   if (!started) started = true;
+
   gameOverAt = 0;
   running = true;
   setPlayingStatus();
@@ -98,6 +234,7 @@ function startGame() {
 
 function pauseGame() {
   if (!running) return;
+
   running = false;
   stopLoop();
   clearStatusTimer();
@@ -107,10 +244,12 @@ function pauseGame() {
 
 function togglePause() {
   if (gameOverAt > 0) return;
+
   if (!started) {
     startGame();
     return;
   }
+
   if (running) pauseGame();
   else startGame();
 }
@@ -122,15 +261,16 @@ function runLoop() {
 }
 
 function stopLoop() {
-  if (gameTimer) {
-    clearInterval(gameTimer);
-    gameTimer = null;
-  }
+  if (!gameTimer) return;
+  clearInterval(gameTimer);
+  gameTimer = null;
 }
 
 function tick() {
   if (!running) return;
+
   direction = nextDirection;
+
   const head = snake[0];
   const newHead = {
     x: head.x + direction.x,
@@ -142,14 +282,17 @@ function tick() {
     gameOver("Wall collision");
     return;
   }
+
   if (isSelfCollision(newHead, willEat)) {
     gameOver("You hit yourself");
     return;
   }
+
   if (isObstacleCollision(newHead)) {
     gameOver("Obstacle collision");
     return;
   }
+
   if (isEnemyCollision(newHead)) {
     gameOver("Enemy collision");
     return;
@@ -160,22 +303,26 @@ function tick() {
   if (willEat) {
     score += 1;
     scoreEl.textContent = String(score);
+
     if (score > bestScore) {
       bestScore = score;
       bestEl.textContent = String(bestScore);
-      localStorage.setItem("snake_best", String(bestScore));
+      localStorage.setItem(STORAGE_KEYS.bestScore, String(bestScore));
     }
+
     foodBurst = {
       x: newHead.x,
       y: newHead.y,
       start: performance.now()
     };
+
     food = createFood();
   } else {
     snake.pop();
   }
 
   moveEnemies();
+
   if (isEnemyTouchingSnake()) {
     gameOver("Enemy caught you");
     return;
@@ -227,6 +374,7 @@ function createFood() {
       x: randomInt(0, GRID_SIZE - 1),
       y: randomInt(0, GRID_SIZE - 1)
     };
+
     if (!isBlockedCell(candidate)) return candidate;
   }
 
@@ -250,6 +398,7 @@ function isBlockedCell(pos) {
 
 function spawnObstacle() {
   const head = snake[0];
+
   for (let attempts = 0; attempts < 500; attempts += 1) {
     const candidate = {
       x: randomInt(0, GRID_SIZE - 1),
@@ -257,19 +406,20 @@ function spawnObstacle() {
       phase: Math.random() * Math.PI * 2
     };
 
-    const nearHead =
-      Math.abs(candidate.x - head.x) + Math.abs(candidate.y - head.y) < 4;
+    const nearHead = Math.abs(candidate.x - head.x) + Math.abs(candidate.y - head.y) < 4;
 
     if (!nearHead && !isBlockedCell(candidate) && !isFoodCell(candidate)) {
       obstacles.push(candidate);
       return true;
     }
   }
+
   return false;
 }
 
 function spawnEnemy() {
   const head = snake[0];
+
   for (let attempts = 0; attempts < 500; attempts += 1) {
     const candidate = {
       x: randomInt(0, GRID_SIZE - 1),
@@ -278,14 +428,14 @@ function spawnEnemy() {
       phase: Math.random() * Math.PI * 2
     };
 
-    const nearHead =
-      Math.abs(candidate.x - head.x) + Math.abs(candidate.y - head.y) < 7;
+    const nearHead = Math.abs(candidate.x - head.x) + Math.abs(candidate.y - head.y) < 7;
 
     if (!nearHead && !isBlockedCell(candidate) && !isFoodCell(candidate)) {
       enemies.push(candidate);
       return true;
     }
   }
+
   return false;
 }
 
@@ -296,8 +446,12 @@ function isFoodCell(pos) {
 function moveEnemies() {
   if (enemies.length === 0) return;
 
+  const config = getDifficultyConfig();
   const head = snake[0];
-  const moveInterval = Math.max(1, 4 - Math.floor(level / 2));
+  const moveInterval = Math.max(
+    config.enemyMoveMinInterval,
+    config.enemyMoveBaseInterval - Math.floor(level / 3)
+  );
 
   for (let i = 0; i < enemies.length; i += 1) {
     const enemy = enemies[i];
@@ -335,7 +489,6 @@ function getEnemyMoveOptions(enemy, head) {
   shuffleInPlace(preferred);
   const fallback = shuffleCopy(CARDINALS);
 
-  // Occasional jitter makes enemy movement less predictable.
   if (Math.random() < 0.28) {
     return [...fallback, ...preferred];
   }
@@ -350,7 +503,8 @@ function isEnemyCollisionExcept(pos, enemyIndex) {
 }
 
 function updateLevel() {
-  const nextLevel = 1 + Math.floor(score / SCORE_PER_LEVEL);
+  const config = getDifficultyConfig();
+  const nextLevel = 1 + Math.floor(score / config.scorePerLevel);
   if (nextLevel <= level) return;
 
   while (level < nextLevel) {
@@ -363,12 +517,22 @@ function updateLevel() {
 }
 
 function applyLevelDifficulty(currentLevel) {
-  const obstacleCount = currentLevel % 3 === 0 ? 2 : 1;
+  const config = getDifficultyConfig();
+  let obstacleCount = config.obstaclePerLevel;
+
+  if (currentLevel % config.extraObstacleEvery === 0) {
+    obstacleCount += 1;
+  }
+
   for (let i = 0; i < obstacleCount; i += 1) {
     spawnObstacle();
   }
 
-  if (currentLevel % 2 === 0 && enemies.length < MAX_ENEMIES) {
+  if (currentLevel % config.enemySpawnEvery === 0 && enemies.length < config.maxEnemies) {
+    spawnEnemy();
+  }
+
+  if (config.extraEnemyChance > 0 && Math.random() < config.extraEnemyChance && enemies.length < config.maxEnemies) {
     spawnEnemy();
   }
 
@@ -389,13 +553,10 @@ function updateSpeedIfNeeded() {
 }
 
 function getCurrentSpeedMs() {
-  const scoreBoost = Math.floor(score / 2) * 4;
-  const levelBoost = (level - 1) * 3;
-  return Math.max(MIN_SPEED_MS, BASE_SPEED_MS - scoreBoost - levelBoost);
-}
-
-function randomInt(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+  const config = getDifficultyConfig();
+  const scoreBoost = Math.floor(score / 2) * config.speedScoreFactor;
+  const levelBoost = (level - 1) * config.speedLevelFactor;
+  return Math.max(config.minSpeedMs, config.baseSpeedMs - scoreBoost - levelBoost);
 }
 
 function draw(nowMs) {
@@ -415,20 +576,25 @@ function draw(nowMs) {
 }
 
 function drawBackground(t) {
-  const wobble = Math.sin(t * 1.3) * 18;
+  const theme = getThemeConfig();
+  const wobble = Math.sin(t * 1.35) * 18;
   const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height + wobble);
-  grad.addColorStop(0, "#151d2b");
-  grad.addColorStop(0.5, "#111826");
-  grad.addColorStop(1, "#0d121c");
+  grad.addColorStop(0, theme.boardTop);
+  grad.addColorStop(0.55, theme.boardMid);
+  grad.addColorStop(1, theme.boardBottom);
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
 
 function drawGrid(t) {
-  ctx.strokeStyle = `rgba(54, 80, 120, ${0.24 + Math.sin(t * 2.2) * 0.05})`;
+  const theme = getThemeConfig();
+  const alpha = 0.22 + Math.sin(t * 2.2) * 0.06;
+  ctx.strokeStyle = `rgba(${theme.gridRGB}, ${alpha})`;
   ctx.lineWidth = 1;
+
   for (let i = 0; i <= GRID_SIZE; i += 1) {
     const p = i * CELL;
+
     ctx.beginPath();
     ctx.moveTo(p, 0);
     ctx.lineTo(p, canvas.height);
@@ -442,33 +608,30 @@ function drawGrid(t) {
 }
 
 function drawFood(t) {
+  const theme = getThemeConfig();
   const pulse = 1 + Math.sin(t * 9) * 0.14;
   const cx = (food.x + 0.5) * CELL;
   const cy = (food.y + 0.5) * CELL;
 
   ctx.beginPath();
-  ctx.fillStyle = "rgba(242, 95, 92, 0.22)";
+  ctx.fillStyle = theme.foodAura;
   ctx.arc(cx, cy, CELL * 0.46 * pulse, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = "#ff736f";
-  roundRect(
-    food.x * CELL + 3,
-    food.y * CELL + 3,
-    CELL - 6,
-    CELL - 6,
-    6
-  );
+  ctx.fillStyle = theme.foodCore;
+  roundRect(food.x * CELL + 3, food.y * CELL + 3, CELL - 6, CELL - 6, 6);
   ctx.fill();
 }
 
 function drawSnake(t) {
+  const skin = getSkinConfig();
+
   for (let i = 0; i < snake.length; i += 1) {
     const part = snake[i];
     const isHead = i === 0;
     const wave = Math.sin(t * 12 - i * 0.5) * 0.65;
 
-    ctx.fillStyle = isHead ? "#53e0a3" : "#2fc486";
+    ctx.fillStyle = isHead ? skin.head : skin.body;
     roundRect(
       part.x * CELL + 1.9 + wave * 0.28,
       part.y * CELL + 1.9 + wave * 0.28,
@@ -483,6 +646,7 @@ function drawSnake(t) {
 }
 
 function drawSnakeEyes() {
+  const skin = getSkinConfig();
   const head = snake[0];
   const centerX = (head.x + 0.5) * CELL;
   const centerY = (head.y + 0.5) * CELL;
@@ -492,7 +656,7 @@ function drawSnakeEyes() {
   const eyeSpread = 2.4;
   const eyeRadius = 1.3;
 
-  ctx.fillStyle = "#082a1e";
+  ctx.fillStyle = skin.eye;
   ctx.beginPath();
   ctx.arc(
     centerX + direction.x * eyeForward + perpendicular.x * eyeSpread,
@@ -512,22 +676,26 @@ function drawSnakeEyes() {
 }
 
 function drawObstacles(t) {
+  const theme = getThemeConfig();
+
   for (let i = 0; i < obstacles.length; i += 1) {
     const obstacle = obstacles[i];
-    const glow = 0.25 + (Math.sin(t * 3.7 + obstacle.phase) + 1) * 0.12;
+    const glow = 0.24 + (Math.sin(t * 3.7 + obstacle.phase) + 1) * 0.13;
     const x = obstacle.x * CELL + 2;
     const y = obstacle.y * CELL + 2;
     const size = CELL - 4;
 
-    ctx.fillStyle = `rgba(88, 110, 152, ${glow})`;
+    ctx.fillStyle = `rgba(${theme.obstacleFillRGB}, ${glow})`;
     ctx.fillRect(x, y, size, size);
-    ctx.strokeStyle = "#6d84b2";
+    ctx.strokeStyle = theme.obstacleStroke;
     ctx.lineWidth = 1.25;
     ctx.strokeRect(x + 0.7, y + 0.7, size - 1.4, size - 1.4);
   }
 }
 
 function drawEnemies(t) {
+  const theme = getThemeConfig();
+
   for (let i = 0; i < enemies.length; i += 1) {
     const enemy = enemies[i];
     const cx = (enemy.x + 0.5) * CELL;
@@ -537,7 +705,7 @@ function drawEnemies(t) {
     ctx.save();
     ctx.translate(cx, cy);
     ctx.rotate(t * 2.3 + enemy.phase);
-    ctx.fillStyle = "rgba(255, 112, 79, 0.35)";
+    ctx.fillStyle = theme.enemyAura;
     ctx.beginPath();
     ctx.moveTo(0, -CELL * 0.42 * pulse);
     ctx.lineTo(CELL * 0.42 * pulse, 0);
@@ -546,7 +714,7 @@ function drawEnemies(t) {
     ctx.closePath();
     ctx.fill();
 
-    ctx.fillStyle = "#ff7d52";
+    ctx.fillStyle = theme.enemyCore;
     ctx.beginPath();
     ctx.arc(0, 0, CELL * 0.22, 0, Math.PI * 2);
     ctx.fill();
@@ -556,7 +724,10 @@ function drawEnemies(t) {
 
 function drawFoodBurst(nowMs) {
   if (!foodBurst) return;
+
+  const theme = getThemeConfig();
   const progress = (nowMs - foodBurst.start) / 380;
+
   if (progress >= 1) {
     foodBurst = null;
     return;
@@ -565,7 +736,7 @@ function drawFoodBurst(nowMs) {
   const cx = (foodBurst.x + 0.5) * CELL;
   const cy = (foodBurst.y + 0.5) * CELL;
 
-  ctx.strokeStyle = `rgba(255, 188, 98, ${0.5 - progress * 0.45})`;
+  ctx.strokeStyle = `rgba(${theme.burstRGB}, ${0.5 - progress * 0.45})`;
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.arc(cx, cy, CELL * (0.35 + progress * 0.7), 0, Math.PI * 2);
@@ -573,8 +744,9 @@ function drawFoodBurst(nowMs) {
 }
 
 function drawGameOverOverlay(nowMs) {
+  const theme = getThemeConfig();
   const alpha = Math.min(0.68, ((nowMs - gameOverAt) / 280) * 0.68);
-  ctx.fillStyle = `rgba(8, 11, 20, ${alpha})`;
+  ctx.fillStyle = `rgba(${theme.overlayRGB}, ${alpha})`;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "#ffffff";
   ctx.font = "bold 30px Segoe UI";
@@ -603,12 +775,14 @@ function setDirection(dir) {
     left: { x: -1, y: 0 },
     right: { x: 1, y: 0 }
   };
+
   const candidate = map[dir];
   if (!candidate) return;
 
   if (candidate.x === -direction.x && candidate.y === -direction.y) return;
 
   nextDirection = candidate;
+
   if (!started) {
     startGame();
     return;
@@ -658,11 +832,20 @@ function onKeyDown(event) {
 
 function onCanvasPointerDown(event) {
   if (event.pointerType === "mouse") return;
+
   swipeStart = {
     x: event.clientX,
     y: event.clientY
   };
-  canvas.setPointerCapture(event.pointerId);
+
+  if (canvas.setPointerCapture) {
+    try {
+      canvas.setPointerCapture(event.pointerId);
+    } catch (error) {
+      // Ignore unsupported pointer capture scenarios.
+    }
+  }
+
   event.preventDefault();
 }
 
@@ -696,24 +879,120 @@ function onCanvasPointerCancel() {
   swipeStart = null;
 }
 
+function onGlobalTouchEnd(event) {
+  const now = Date.now();
+  if (now - lastTouchEndAt < DOUBLE_TAP_GUARD_MS) {
+    event.preventDefault();
+  }
+  lastTouchEndAt = now;
+}
+
+function onGlobalGestureStart(event) {
+  event.preventDefault();
+}
+
 function setPlayingStatus() {
-  statusEl.textContent = `Playing - Level ${level}`;
+  const config = getDifficultyConfig();
+  statusEl.textContent = `Playing - ${config.label} - Level ${level}`;
 }
 
 function setTemporaryStatus(message, durationMs) {
   clearStatusTimer();
   statusEl.textContent = message;
+
   statusTimeout = setTimeout(() => {
     statusTimeout = null;
-    if (running) setPlayingStatus();
+    if (running) {
+      setPlayingStatus();
+      return;
+    }
+
+    if (!started) {
+      statusEl.textContent = getIdleStatus();
+    }
   }, durationMs);
 }
 
 function clearStatusTimer() {
-  if (statusTimeout) {
-    clearTimeout(statusTimeout);
-    statusTimeout = null;
+  if (!statusTimeout) return;
+  clearTimeout(statusTimeout);
+  statusTimeout = null;
+}
+
+function setDifficulty(nextDifficulty) {
+  const normalized = normalizeKey(nextDifficulty, DIFFICULTY_PRESETS, difficulty);
+  if (normalized === difficulty) return;
+
+  difficulty = normalized;
+  localStorage.setItem(STORAGE_KEYS.difficulty, difficulty);
+  updateDifficultyButtons();
+
+  initGame();
+  setTemporaryStatus(`Difficulty set to ${DIFFICULTY_PRESETS[difficulty].label}`, 1500);
+}
+
+function updateDifficultyButtons() {
+  difficultyButtons.forEach((button) => {
+    const isActive = button.dataset.difficulty === difficulty;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
+}
+
+function setTheme(nextTheme) {
+  activeTheme = normalizeKey(nextTheme, BACKGROUND_THEMES, activeTheme);
+  localStorage.setItem(STORAGE_KEYS.theme, activeTheme);
+}
+
+function setSnakeSkin(nextSkin) {
+  activeSkin = normalizeKey(nextSkin, SNAKE_SKINS, activeSkin);
+  localStorage.setItem(STORAGE_KEYS.snakeSkin, activeSkin);
+}
+
+function setControlLayout(nextLayout) {
+  preferredControlLayout = normalizeKey(nextLayout, CONTROL_LAYOUT_PRESETS, preferredControlLayout);
+  localStorage.setItem(STORAGE_KEYS.controlLayout, preferredControlLayout);
+  applyControlLayout();
+}
+
+function applyControlLayout() {
+  if (!touchControlsEl) return;
+  const layoutName = getRuntimeControlLayout();
+  touchControlsEl.dataset.layout = CONTROL_LAYOUT_PRESETS[layoutName].layout;
+}
+
+function getRuntimeControlLayout() {
+  if (!isTouchDevice) return preferredControlLayout;
+
+  if (window.innerWidth <= 360) return "compact";
+  if (window.innerWidth >= 470) return "wide";
+
+  return preferredControlLayout;
+}
+
+function getDifficultyConfig() {
+  return DIFFICULTY_PRESETS[difficulty];
+}
+
+function getThemeConfig() {
+  return BACKGROUND_THEMES[activeTheme];
+}
+
+function getSkinConfig() {
+  return SNAKE_SKINS[activeSkin];
+}
+
+function normalizeKey(value, source, fallback) {
+  if (value && Object.prototype.hasOwnProperty.call(source, value)) {
+    return value;
   }
+  return fallback;
+}
+
+function getIdleStatus() {
+  return isTouchDevice
+    ? "Tap Start, swipe board, or use the pad"
+    : "Press Start or Arrow Keys";
 }
 
 function shuffleCopy(list) {
@@ -731,6 +1010,10 @@ function shuffleInPlace(list) {
   }
 }
 
+function randomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 function startRenderLoop() {
   if (rafId) return;
 
@@ -742,18 +1025,31 @@ function startRenderLoop() {
   rafId = requestAnimationFrame(render);
 }
 
+window.addEventListener("resize", applyControlLayout);
 document.addEventListener("keydown", onKeyDown);
 startBtn.addEventListener("click", startGame);
 pauseBtn.addEventListener("click", togglePause);
 restartBtn.addEventListener("click", initGame);
-touchButtons.forEach((btn) => {
-  btn.addEventListener("pointerdown", (event) => {
+
+difficultyButtons.forEach((button) => {
+  button.addEventListener("click", () => setDifficulty(button.dataset.difficulty));
+});
+
+touchButtons.forEach((button) => {
+  button.addEventListener("pointerdown", (event) => {
     event.preventDefault();
-    setDirection(btn.dataset.dir);
+    setDirection(button.dataset.dir);
   });
 });
+
 canvas.addEventListener("pointerdown", onCanvasPointerDown);
 canvas.addEventListener("pointerup", onCanvasPointerUp);
 canvas.addEventListener("pointercancel", onCanvasPointerCancel);
 
+document.addEventListener("touchend", onGlobalTouchEnd, { passive: false });
+document.addEventListener("gesturestart", onGlobalGestureStart, { passive: false });
+
+setTheme(activeTheme);
+setSnakeSkin(activeSkin);
+setControlLayout(preferredControlLayout);
 initGame();
