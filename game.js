@@ -12,6 +12,8 @@ const pauseBtn = document.getElementById("pauseBtn");
 const restartBtn = document.getElementById("restartBtn");
 const difficultyButtons = document.querySelectorAll("[data-difficulty]");
 const touchControlsEl = document.getElementById("touchControls");
+const touchSettingsToggle = document.getElementById("touchSettingsToggle");
+const touchSettingsPanel = document.getElementById("touchSettingsPanel");
 const controlLayoutSelect = document.getElementById("controlLayoutSelect");
 const controlSizeSelect = document.getElementById("controlSizeSelect");
 const controlSideSelect = document.getElementById("controlSideSelect");
@@ -1023,6 +1025,21 @@ function updateTouchControlSettingsUI() {
   if (controlSideSelect) controlSideSelect.value = preferredControlSide;
 }
 
+function setTouchSettingsOpen(isOpen) {
+  if (!touchSettingsToggle || !touchSettingsPanel) return;
+  touchSettingsPanel.hidden = !isOpen;
+  touchSettingsToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+  touchSettingsToggle.setAttribute(
+    "aria-label",
+    isOpen ? "Close touch settings" : "Open touch settings"
+  );
+}
+
+function toggleTouchSettings() {
+  if (!touchSettingsPanel) return;
+  setTouchSettingsOpen(touchSettingsPanel.hidden);
+}
+
 function getDifficultyConfig() {
   return DIFFICULTY_PRESETS[difficulty];
 }
@@ -1100,6 +1117,10 @@ if (controlSideSelect) {
   controlSideSelect.addEventListener("change", () => setControlSide(controlSideSelect.value));
 }
 
+if (touchSettingsToggle) {
+  touchSettingsToggle.addEventListener("click", toggleTouchSettings);
+}
+
 touchButtons.forEach((button) => {
   button.addEventListener("pointerdown", (event) => {
     event.preventDefault();
@@ -1119,4 +1140,5 @@ setSnakeSkin(activeSkin);
 setControlLayout(preferredControlLayout);
 setControlSize(preferredControlSize);
 setControlSide(preferredControlSide);
+setTouchSettingsOpen(false);
 initGame();

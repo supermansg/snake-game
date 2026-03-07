@@ -39,31 +39,47 @@
     </section>
 
     <section id="touchControls" class="touch-controls" aria-label="Touch controls">
-      <div class="touch-toolbar" aria-label="Touch settings">
-        <label class="touch-setting" for="controlLayoutSelect">
-          <span>Layout</span>
-          <select id="controlLayoutSelect">
-            <option value="classic">Classic</option>
-            <option value="compact">Compact</option>
-            <option value="wide">Wide</option>
-          </select>
-        </label>
-        <label class="touch-setting" for="controlSizeSelect">
-          <span>Size</span>
-          <select id="controlSizeSelect">
-            <option value="small">Small</option>
-            <option value="medium">Medium</option>
-            <option value="large">Large</option>
-          </select>
-        </label>
-        <label class="touch-setting" for="controlSideSelect">
-          <span>Side</span>
-          <select id="controlSideSelect">
-            <option value="left">Left</option>
-            <option value="center">Center</option>
-            <option value="right">Right</option>
-          </select>
-        </label>
+      <div class="touch-header">
+        <p class="touch-title">Touch Controls</p>
+        <button
+          id="touchSettingsToggle"
+          class="gear-btn"
+          type="button"
+          aria-expanded="false"
+          aria-controls="touchSettingsPanel"
+          aria-label="Open touch settings"
+        >
+          &#9881;
+        </button>
+      </div>
+
+      <div id="touchSettingsPanel" class="touch-settings" hidden>
+        <div class="touch-toolbar" aria-label="Touch settings">
+          <label class="touch-setting" for="controlLayoutSelect">
+            <span>Layout</span>
+            <select id="controlLayoutSelect">
+              <option value="classic">Classic</option>
+              <option value="compact">Compact</option>
+              <option value="wide">Wide</option>
+            </select>
+          </label>
+          <label class="touch-setting" for="controlSizeSelect">
+            <span>Size</span>
+            <select id="controlSizeSelect">
+              <option value="small">Small</option>
+              <option value="medium">Medium</option>
+              <option value="large">Large</option>
+            </select>
+          </label>
+          <label class="touch-setting" for="controlSideSelect">
+            <span>Side</span>
+            <select id="controlSideSelect">
+              <option value="left">Left</option>
+              <option value="center">Center</option>
+              <option value="right">Right</option>
+            </select>
+          </label>
+        </div>
       </div>
 
       <div class="touch-pad">
