@@ -12,6 +12,9 @@ const pauseBtn = document.getElementById("pauseBtn");
 const restartBtn = document.getElementById("restartBtn");
 const difficultyButtons = document.querySelectorAll("[data-difficulty]");
 const touchControlsEl = document.getElementById("touchControls");
+const controlLayoutSelect = document.getElementById("controlLayoutSelect");
+const controlSizeSelect = document.getElementById("controlSizeSelect");
+const controlSideSelect = document.getElementById("controlSideSelect");
 const touchButtons = document.querySelectorAll("[data-dir]");
 const isTouchDevice = window.matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
 
@@ -25,7 +28,9 @@ const STORAGE_KEYS = {
   difficulty: "snake_difficulty",
   theme: "snake_theme",
   snakeSkin: "snake_skin",
-  controlLayout: "snake_control_layout"
+  controlLayout: "snake_control_layout",
+  controlSize: "snake_control_size",
+  controlSide: "snake_control_side"
 };
 
 const DIFFICULTY_PRESETS = {
@@ -135,6 +140,30 @@ const CONTROL_LAYOUT_PRESETS = {
   }
 };
 
+const CONTROL_SIZE_PRESETS = {
+  small: {
+    size: "small"
+  },
+  medium: {
+    size: "medium"
+  },
+  large: {
+    size: "large"
+  }
+};
+
+const CONTROL_SIDE_PRESETS = {
+  left: {
+    side: "left"
+  },
+  center: {
+    side: "center"
+  },
+  right: {
+    side: "right"
+  }
+};
+
 const CARDINALS = [
   { x: 1, y: 0 },
   { x: -1, y: 0 },
@@ -158,6 +187,16 @@ let preferredControlLayout = normalizeKey(
   localStorage.getItem(STORAGE_KEYS.controlLayout),
   CONTROL_LAYOUT_PRESETS,
   "classic"
+);
+let preferredControlSize = normalizeKey(
+  localStorage.getItem(STORAGE_KEYS.controlSize),
+  CONTROL_SIZE_PRESETS,
+  "medium"
+);
+let preferredControlSide = normalizeKey(
+  localStorage.getItem(STORAGE_KEYS.controlSide),
+  CONTROL_SIDE_PRESETS,
+  "center"
 );
 
 let bestScore = Number(localStorage.getItem(STORAGE_KEYS.bestScore) || 0);
@@ -204,6 +243,7 @@ function initGame() {
   clearStatusTimer();
   updateDifficultyButtons();
   applyControlLayout();
+  updateTouchControlSettingsUI();
 
   scoreEl.textContent = "0";
   levelEl.textContent = String(level);
@@ -953,21 +993,34 @@ function setControlLayout(nextLayout) {
   preferredControlLayout = normalizeKey(nextLayout, CONTROL_LAYOUT_PRESETS, preferredControlLayout);
   localStorage.setItem(STORAGE_KEYS.controlLayout, preferredControlLayout);
   applyControlLayout();
+  updateTouchControlSettingsUI();
+}
+
+function setControlSize(nextSize) {
+  preferredControlSize = normalizeKey(nextSize, CONTROL_SIZE_PRESETS, preferredControlSize);
+  localStorage.setItem(STORAGE_KEYS.controlSize, preferredControlSize);
+  applyControlLayout();
+  updateTouchControlSettingsUI();
+}
+
+function setControlSide(nextSide) {
+  preferredControlSide = normalizeKey(nextSide, CONTROL_SIDE_PRESETS, preferredControlSide);
+  localStorage.setItem(STORAGE_KEYS.controlSide, preferredControlSide);
+  applyControlLayout();
+  updateTouchControlSettingsUI();
 }
 
 function applyControlLayout() {
   if (!touchControlsEl) return;
-  const layoutName = getRuntimeControlLayout();
-  touchControlsEl.dataset.layout = CONTROL_LAYOUT_PRESETS[layoutName].layout;
+  touchControlsEl.dataset.layout = CONTROL_LAYOUT_PRESETS[preferredControlLayout].layout;
+  touchControlsEl.dataset.size = CONTROL_SIZE_PRESETS[preferredControlSize].size;
+  touchControlsEl.dataset.side = CONTROL_SIDE_PRESETS[preferredControlSide].side;
 }
 
-function getRuntimeControlLayout() {
-  if (!isTouchDevice) return preferredControlLayout;
-
-  if (window.innerWidth <= 360) return "compact";
-  if (window.innerWidth >= 470) return "wide";
-
-  return preferredControlLayout;
+function updateTouchControlSettingsUI() {
+  if (controlLayoutSelect) controlLayoutSelect.value = preferredControlLayout;
+  if (controlSizeSelect) controlSizeSelect.value = preferredControlSize;
+  if (controlSideSelect) controlSideSelect.value = preferredControlSide;
 }
 
 function getDifficultyConfig() {
@@ -1035,6 +1088,18 @@ difficultyButtons.forEach((button) => {
   button.addEventListener("click", () => setDifficulty(button.dataset.difficulty));
 });
 
+if (controlLayoutSelect) {
+  controlLayoutSelect.addEventListener("change", () => setControlLayout(controlLayoutSelect.value));
+}
+
+if (controlSizeSelect) {
+  controlSizeSelect.addEventListener("change", () => setControlSize(controlSizeSelect.value));
+}
+
+if (controlSideSelect) {
+  controlSideSelect.addEventListener("change", () => setControlSide(controlSideSelect.value));
+}
+
 touchButtons.forEach((button) => {
   button.addEventListener("pointerdown", (event) => {
     event.preventDefault();
@@ -1052,4 +1117,6 @@ document.addEventListener("gesturestart", onGlobalGestureStart, { passive: false
 setTheme(activeTheme);
 setSnakeSkin(activeSkin);
 setControlLayout(preferredControlLayout);
+setControlSize(preferredControlSize);
+setControlSide(preferredControlSide);
 initGame();

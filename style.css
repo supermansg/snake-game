@@ -8,9 +8,8 @@
   --accent: #34d399;
   --warn: #f8c55f;
   --danger: #ff7272;
-  --primary: #5e8dff;
   --shadow: rgba(6, 10, 22, 0.58);
-  --touch-btn-size: 66px;
+  --touch-btn-size: 68px;
   --touch-gap: 12px;
   --touch-radius: 16px;
 }
@@ -35,20 +34,16 @@ body {
   color: var(--text);
   display: grid;
   place-items: center;
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> cc53276 (Improve snake game visuals, mobile responsiveness, and difficulty settings)
   padding:
     max(12px, env(safe-area-inset-top))
     14px
     max(16px, env(safe-area-inset-bottom))
     14px;
-  overscroll-behavior: none;
+  touch-action: manipulation;
 }
 
 .wrap {
-  width: min(96vw, 460px);
+  width: min(96vw, 520px);
   display: grid;
   gap: 12px;
   background: linear-gradient(180deg, rgba(18, 27, 45, 0.55), rgba(10, 15, 24, 0.45));
@@ -119,8 +114,7 @@ h1 {
 .board-shell {
   border-radius: 15px;
   padding: 8px;
-  background:
-    linear-gradient(140deg, rgba(101, 131, 200, 0.36), rgba(57, 87, 153, 0.18));
+  background: linear-gradient(140deg, rgba(101, 131, 200, 0.36), rgba(57, 87, 153, 0.18));
   border: 1px solid rgba(124, 151, 214, 0.35);
   box-shadow:
     inset 0 1px 0 rgba(212, 225, 255, 0.2),
@@ -134,24 +128,16 @@ canvas {
   border-radius: 11px;
   border: 1px solid rgba(72, 96, 144, 0.75);
   background: linear-gradient(180deg, #141a26, #0f131d);
-  box-shadow: 0 14px 36px rgba(4, 8, 16, 0.45);
+  box-shadow: 0 12px 30px rgba(4, 8, 16, 0.52);
   touch-action: none;
   user-select: none;
->>>>>>> cc53276 (Improve snake game visuals, mobile responsiveness, and difficulty settings)
 }
 
 .controls {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
-<<<<<<< HEAD
-<<<<<<< HEAD
   user-select: none;
-=======
->>>>>>> 520d96e (Initial snake game)
-=======
-  user-select: none;
->>>>>>> cc53276 (Improve snake game visuals, mobile responsiveness, and difficulty settings)
 }
 
 button {
@@ -163,16 +149,8 @@ button {
   background: var(--accent);
   font-weight: 700;
   cursor: pointer;
-<<<<<<< HEAD
-<<<<<<< HEAD
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-=======
->>>>>>> 520d96e (Initial snake game)
-=======
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
->>>>>>> cc53276 (Improve snake game visuals, mobile responsiveness, and difficulty settings)
 }
 
 button:hover {
@@ -212,70 +190,82 @@ button:active {
 
 .touch-controls {
   display: grid;
-  gap: 8px;
-<<<<<<< HEAD
-<<<<<<< HEAD
-  user-select: none;
-}
-
-.touch-btn {
-=======
-}
-
-.touch-controls > button,
-.touch-row > button {
->>>>>>> 520d96e (Initial snake game)
-=======
-  user-select: none;
-}
-
-.touch-btn {
-  background: #5a8cff;
-  color: #fff;
-}
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-.touch-pad {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(58px, 1fr));
-  grid-template-areas:
-    ". up ."
-    "left down right";
   gap: 10px;
+  user-select: none;
+  border: 1px solid rgba(115, 139, 191, 0.2);
+  border-radius: 14px;
+  padding: 10px;
+  background: linear-gradient(180deg, rgba(10, 16, 28, 0.28), rgba(10, 16, 28, 0.58));
+  backdrop-filter: blur(3px);
 }
 
-.touch-btn.up {
-  grid-area: up;
-}
-
-.touch-btn.left {
-  grid-area: left;
-}
-
-.touch-btn.down {
-  grid-area: down;
-}
-
-.touch-btn.right {
-  grid-area: right;
-}
-
-.touch-hint {
-  margin: 0;
-  font-size: 0.86rem;
-  color: #a4b1cc;
-=======
-.touch-row {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+.touch-toolbar {
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
->>>>>>> 520d96e (Initial snake game)
-=======
+  justify-content: center;
+  width: max-content;
+  max-width: 100%;
+}
+
+.touch-setting {
+  display: grid;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: #b8c6e3;
+}
+
+.touch-setting select {
+  min-height: 32px;
+  border-radius: 9px;
+  border: 1px solid rgba(129, 156, 211, 0.35);
+  background: rgba(17, 27, 46, 0.9);
+  color: #d7e3fa;
+  padding: 4px 8px;
+  font-size: 0.84rem;
+}
+
+.touch-controls[data-layout="classic"] {
+  --touch-gap: 12px;
+}
+
+.touch-controls[data-layout="compact"] {
+  --touch-gap: 8px;
+}
+
+.touch-controls[data-layout="wide"] {
+  --touch-gap: 14px;
+}
+
+.touch-controls[data-size="small"] {
+  --touch-btn-size: 56px;
+}
+
+.touch-controls[data-size="medium"] {
+  --touch-btn-size: 68px;
+}
+
+.touch-controls[data-size="large"] {
+  --touch-btn-size: 80px;
+}
+
+.touch-controls[data-side="left"] {
+  justify-items: start;
+}
+
+.touch-controls[data-side="center"] {
+  justify-items: center;
+}
+
+.touch-controls[data-side="right"] {
+  justify-items: end;
+}
+
 .touch-pad {
   display: grid;
-  justify-content: center;
-  grid-template-columns: repeat(3, minmax(var(--touch-btn-size), 1fr));
+  width: max-content;
+  max-width: 100%;
+  grid-template-columns: repeat(3, minmax(var(--touch-btn-size), var(--touch-btn-size)));
   grid-template-areas:
     ". up ."
     "left down right";
@@ -311,8 +301,15 @@ button:active {
 
 .touch-hint {
   margin: 0;
-  font-size: 0.86rem;
-  color: #a4b1cc;
+  text-align: center;
+  font-size: 0.84rem;
+  color: #9fb1d9;
+}
+
+@media (hover: none) {
+  button:hover {
+    filter: none;
+  }
 }
 
 @media (min-width: 780px) {
@@ -320,10 +317,6 @@ button:active {
     display: none;
   }
 }
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> cc53276 (Improve snake game visuals, mobile responsiveness, and difficulty settings)
 
 @media (max-width: 779px) {
   .wrap {
@@ -334,10 +327,6 @@ button:active {
 
   h1 {
     font-size: 1.55rem;
-  }
-
-  .difficulty-btn {
-    min-height: 42px;
   }
 
   .hud {
@@ -361,23 +350,6 @@ button:active {
   .touch-controls {
     position: sticky;
     bottom: max(8px, env(safe-area-inset-bottom));
-    background: linear-gradient(180deg, rgba(10, 16, 28, 0.24), rgba(10, 16, 28, 0.56));
-    border: 1px solid rgba(115, 139, 191, 0.2);
-    border-radius: 14px;
-    padding: 10px;
-    backdrop-filter: blur(3px);
-  }
-
-  .touch-controls[data-layout="classic"] {
-    --touch-btn-size: 70px;
-  }
-
-  .touch-controls[data-layout="compact"] {
-    --touch-btn-size: 62px;
-  }
-
-  .touch-controls[data-layout="wide"] {
-    --touch-btn-size: 78px;
   }
 }
 
@@ -389,9 +361,13 @@ button:active {
   #status {
     grid-column: 1 / -1;
   }
+
+  .touch-setting {
+    font-size: 0.74rem;
+  }
+
+  .touch-setting select {
+    min-height: 30px;
+    font-size: 0.8rem;
+  }
 }
-<<<<<<< HEAD
-=======
->>>>>>> 520d96e (Initial snake game)
-=======
->>>>>>> cc53276 (Improve snake game visuals, mobile responsiveness, and difficulty settings)
