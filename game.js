@@ -6,6 +6,7 @@ const bestEl = document.getElementById("best");
 const levelEl = document.getElementById("level");
 const hazardsEl = document.getElementById("hazards");
 const statusEl = document.getElementById("status");
+const modeLabelEl = document.getElementById("modeLabel");
 
 const startBtn = document.getElementById("startBtn");
 const pauseBtn = document.getElementById("pauseBtn");
@@ -212,6 +213,10 @@ let statusTimeout = null;
 let foodBurst = null;
 let swipeStart = null;
 let lastTouchEndAt = 0;
+let boardFlash = null;
+let boardShakeUntil = 0;
+let floatingTexts = [];
+let gameOverMessage = "";
 
 bestEl.textContent = String(bestScore);
 
@@ -241,18 +246,23 @@ function initGame() {
   started = false;
   gameOverAt = 0;
   foodBurst = null;
+  boardFlash = null;
+  boardShakeUntil = 0;
+  floatingTexts = [];
+  gameOverMessage = "";
 
   clearStatusTimer();
   updateDifficultyButtons();
   applyControlLayout();
   updateTouchControlSettingsUI();
+  updateModeLabel();
 
   scoreEl.textContent = "0";
   levelEl.textContent = String(level);
   updateHazardsLabel();
   statusEl.textContent = getIdleStatus();
 
-  pauseBtn.textContent = "Pause";
+  updateActionButtons();
   stopLoop();
   startRenderLoop();
   draw(performance.now());
@@ -270,7 +280,7 @@ function startGame() {
   gameOverAt = 0;
   running = true;
   setPlayingStatus();
-  pauseBtn.textContent = "Pause";
+  updateActionButtons();
   runLoop();
 }
 
@@ -281,7 +291,7 @@ function pauseGame() {
   stopLoop();
   clearStatusTimer();
   statusEl.textContent = "Paused";
-  pauseBtn.textContent = "Resume";
+  updateActionButtons();
 }
 
 function togglePause() {
@@ -357,6 +367,8 @@ function tick() {
       y: newHead.y,
       start: performance.now()
     };
+    triggerBoardFlash("eat");
+    addFloatingText("+1", newHead.x, newHead.y, "#ffd36d");
 
     food = createFood();
   } else {
@@ -404,10 +416,13 @@ function isEnemyTouchingSnake() {
 function gameOver(message) {
   running = false;
   gameOverAt = performance.now();
+  gameOverMessage = message;
   clearStatusTimer();
   stopLoop();
-  statusEl.textContent = `${message}. Press Restart`;
-  pauseBtn.textContent = "Pause";
+  statusEl.textContent = `${message}. Press New Run or Restart`;
+  triggerBoardFlash("danger");
+  boardShakeUntil = performance.now() + 280;
+  updateActionButtons();
 }
 
 function createFood() {
@@ -603,18 +618,30 @@ function getCurrentSpeedMs() {
 
 function draw(nowMs) {
   const t = nowMs * 0.001;
+  const shake = getBoardShakeOffset(nowMs);
+
+  ctx.save();
+  ctx.translate(shake.x, shake.y);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawBackground(t);
+  drawBoardFlash(nowMs);
   drawGrid(t);
   drawObstacles(t);
   drawFood(t);
   drawEnemies(t);
   drawSnake(t);
   drawFoodBurst(nowMs);
+  drawFloatingTexts(nowMs);
 
   if (gameOverAt > 0) {
     drawGameOverOverlay(nowMs);
+  } else if (!started) {
+    drawStateOverlay("Ready to Play", "Press Play, swipe, or hit an arrow key");
+  } else if (!running) {
+    drawStateOverlay("Paused", "Press Resume or tap a direction to keep going");
   }
+
+  ctx.restore();
 }
 
 function drawBackground(t) {
@@ -625,6 +652,20 @@ function drawBackground(t) {
   grad.addColorStop(0.55, theme.boardMid);
   grad.addColorStop(1, theme.boardBottom);
   ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+function drawBoardFlash(nowMs) {
+  if (!boardFlash) return;
+
+  const progress = (nowMs - boardFlash.start) / boardFlash.duration;
+  if (progress >= 1) {
+    boardFlash = null;
+    return;
+  }
+
+  const alpha = boardFlash.alpha * (1 - progress);
+  ctx.fillStyle = `rgba(${boardFlash.rgb}, ${alpha})`;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
 
@@ -790,10 +831,48 @@ function drawGameOverOverlay(nowMs) {
   const alpha = Math.min(0.68, ((nowMs - gameOverAt) / 280) * 0.68);
   ctx.fillStyle = `rgba(${theme.overlayRGB}, ${alpha})`;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+  drawStateOverlay("Game Over", `${gameOverMessage} | Score ${score}`);
+}
+
+function drawStateOverlay(title, subtitle) {
+  const cardWidth = canvas.width * 0.76;
+  const cardHeight = 112;
+  const x = (canvas.width - cardWidth) / 2;
+  const y = (canvas.height - cardHeight) / 2;
+
+  ctx.fillStyle = "rgba(9, 15, 28, 0.82)";
+  roundRect(x, y, cardWidth, cardHeight, 16);
+  ctx.fill();
+
+  ctx.strokeStyle = "rgba(136, 166, 236, 0.26)";
+  ctx.lineWidth = 1.4;
+  roundRect(x, y, cardWidth, cardHeight, 16);
+  ctx.stroke();
+
   ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 30px Segoe UI";
   ctx.textAlign = "center";
-  ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2);
+  ctx.font = "bold 28px Segoe UI";
+  ctx.fillText(title, canvas.width / 2, y + 42);
+
+  ctx.fillStyle = "#c8d7f7";
+  ctx.font = "16px Segoe UI";
+  ctx.fillText(subtitle, canvas.width / 2, y + 75);
+}
+
+function drawFloatingTexts(nowMs) {
+  if (floatingTexts.length === 0) return;
+
+  floatingTexts = floatingTexts.filter((entry) => nowMs - entry.start < entry.duration);
+
+  floatingTexts.forEach((entry) => {
+    const progress = (nowMs - entry.start) / entry.duration;
+    const x = (entry.x + 0.5) * CELL;
+    const y = (entry.y + 0.5) * CELL - progress * 18;
+    ctx.fillStyle = withAlpha(entry.color, 1 - progress);
+    ctx.font = "bold 16px Segoe UI";
+    ctx.textAlign = "center";
+    ctx.fillText(entry.text, x, y);
+  });
 }
 
 function roundRect(x, y, w, h, r) {
@@ -901,7 +980,7 @@ function onCanvasPointerUp(event) {
   swipeStart = null;
 
   if (Math.max(absX, absY) < SWIPE_MIN_DISTANCE) {
-    if (!started || (!running && gameOverAt === 0)) {
+    if (!running) {
       startGame();
     }
     event.preventDefault();
@@ -922,6 +1001,13 @@ function onCanvasPointerCancel() {
 }
 
 function onGlobalTouchEnd(event) {
+  const target = event.target;
+  const shouldGuard =
+    target instanceof Element &&
+    target.closest(".board-shell, .touch-controls, .controls, .difficulty");
+
+  if (!shouldGuard) return;
+
   const now = Date.now();
   if (now - lastTouchEndAt < DOUBLE_TAP_GUARD_MS) {
     event.preventDefault();
@@ -979,6 +1065,7 @@ function updateDifficultyButtons() {
     button.classList.toggle("active", isActive);
     button.setAttribute("aria-pressed", isActive ? "true" : "false");
   });
+  updateModeLabel();
 }
 
 function setTheme(nextTheme) {
@@ -1025,6 +1112,21 @@ function updateTouchControlSettingsUI() {
   if (controlSideSelect) controlSideSelect.value = preferredControlSide;
 }
 
+function updateModeLabel() {
+  if (!modeLabelEl) return;
+  modeLabelEl.textContent = getDifficultyConfig().label;
+}
+
+function updateActionButtons() {
+  startBtn.textContent = running ? "Playing" : gameOverAt > 0 ? "New Run" : started ? "Resume" : "Play";
+  startBtn.disabled = running;
+
+  pauseBtn.textContent = running ? "Pause" : started && gameOverAt === 0 ? "Resume" : "Pause";
+  pauseBtn.disabled = !started || gameOverAt > 0;
+
+  restartBtn.disabled = !started && gameOverAt === 0;
+}
+
 function setTouchSettingsOpen(isOpen) {
   if (!touchSettingsToggle || !touchSettingsPanel) return;
   touchSettingsPanel.hidden = !isOpen;
@@ -1063,6 +1165,67 @@ function getIdleStatus() {
   return isTouchDevice
     ? "Tap Start, swipe board, or use the pad"
     : "Press Start or Arrow Keys";
+}
+
+function triggerBoardFlash(kind) {
+  if (kind === "danger") {
+    boardFlash = {
+      start: performance.now(),
+      duration: 260,
+      alpha: 0.18,
+      rgb: "255, 96, 96"
+    };
+    return;
+  }
+
+  boardFlash = {
+    start: performance.now(),
+    duration: 180,
+    alpha: 0.14,
+    rgb: "255, 215, 109"
+  };
+}
+
+function addFloatingText(text, x, y, color) {
+  floatingTexts.push({
+    text,
+    x,
+    y,
+    color,
+    start: performance.now(),
+    duration: 520
+  });
+}
+
+function getBoardShakeOffset(nowMs) {
+  if (nowMs >= boardShakeUntil) {
+    return { x: 0, y: 0 };
+  }
+
+  const intensity = (boardShakeUntil - nowMs) / 80;
+  return {
+    x: Math.sin(nowMs * 0.09) * intensity,
+    y: Math.cos(nowMs * 0.11) * intensity
+  };
+}
+
+function withAlpha(color, alpha) {
+  if (color.startsWith("rgb(")) {
+    return color.replace("rgb(", "rgba(").replace(")", `, ${alpha})`);
+  }
+
+  if (color.startsWith("#")) {
+    const hex = color.slice(1);
+    const normalized = hex.length === 3
+      ? hex.split("").map((ch) => ch + ch).join("")
+      : hex;
+    const r = parseInt(normalized.slice(0, 2), 16);
+    const g = parseInt(normalized.slice(2, 4), 16);
+    const b = parseInt(normalized.slice(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
+  return color;
 }
 
 function shuffleCopy(list) {
