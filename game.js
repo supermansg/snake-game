@@ -93,8 +93,11 @@ const BACKGROUND_THEMES = {
     boardMid: "#0f1628",
     boardBottom: "#0a101d",
     gridRGB: "92, 120, 188",
+    vignetteRGB: "6, 10, 20",
+    boardGlow: "rgba(81, 121, 255, 0.16)",
     foodAura: "rgba(247, 126, 115, 0.25)",
     foodCore: "#ff7e72",
+    foodHighlight: "#ffe6ac",
     obstacleFillRGB: "94, 120, 170",
     obstacleStroke: "#84a0d7",
     enemyAura: "rgba(255, 126, 85, 0.35)",
@@ -107,8 +110,11 @@ const BACKGROUND_THEMES = {
     boardMid: "#122233",
     boardBottom: "#0a1622",
     gridRGB: "92, 164, 178",
+    vignetteRGB: "5, 15, 18",
+    boardGlow: "rgba(82, 210, 177, 0.14)",
     foodAura: "rgba(245, 177, 79, 0.2)",
     foodCore: "#f9b85a",
+    foodHighlight: "#fff0ba",
     obstacleFillRGB: "85, 133, 137",
     obstacleStroke: "#9bd6ca",
     enemyAura: "rgba(241, 108, 108, 0.34)",
@@ -122,12 +128,18 @@ const SNAKE_SKINS = {
   classic: {
     head: "#54e3a5",
     body: "#2fc487",
-    eye: "#082a1e"
+    eye: "#082a1e",
+    headGlow: "rgba(84, 227, 165, 0.26)",
+    bodyGlow: "rgba(47, 196, 135, 0.14)",
+    highlight: "rgba(222, 255, 241, 0.32)"
   },
   cobalt: {
     head: "#77b2ff",
     body: "#4c8fff",
-    eye: "#0b1d3b"
+    eye: "#0b1d3b",
+    headGlow: "rgba(119, 178, 255, 0.24)",
+    bodyGlow: "rgba(76, 143, 255, 0.14)",
+    highlight: "rgba(230, 242, 255, 0.28)"
   }
 };
 
@@ -217,6 +229,7 @@ let boardFlash = null;
 let boardShakeUntil = 0;
 let floatingTexts = [];
 let gameOverMessage = "";
+let stageBanner = null;
 
 bestEl.textContent = String(bestScore);
 
@@ -250,6 +263,7 @@ function initGame() {
   boardShakeUntil = 0;
   floatingTexts = [];
   gameOverMessage = "";
+  stageBanner = null;
 
   clearStatusTimer();
   updateDifficultyButtons();
@@ -570,6 +584,14 @@ function updateLevel() {
   }
 
   levelEl.textContent = String(level);
+  stageBanner = {
+    title: `Level ${level}`,
+    subtitle: "Hazards increased",
+    color: "rgba(120, 174, 255, 0.92)",
+    start: performance.now(),
+    duration: 1500
+  };
+  triggerBoardFlash("level");
   setTemporaryStatus(`Level ${level}! Hazards increased`, 1200);
 }
 
@@ -620,9 +642,9 @@ function draw(nowMs) {
   const t = nowMs * 0.001;
   const shake = getBoardShakeOffset(nowMs);
 
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.save();
   ctx.translate(shake.x, shake.y);
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawBackground(t);
   drawBoardFlash(nowMs);
   drawGrid(t);
@@ -632,6 +654,7 @@ function draw(nowMs) {
   drawSnake(t);
   drawFoodBurst(nowMs);
   drawFloatingTexts(nowMs);
+  drawStageBanner(nowMs);
 
   if (gameOverAt > 0) {
     drawGameOverOverlay(nowMs);
@@ -652,6 +675,32 @@ function drawBackground(t) {
   grad.addColorStop(0.55, theme.boardMid);
   grad.addColorStop(1, theme.boardBottom);
   ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const glow = ctx.createRadialGradient(
+    canvas.width * 0.5,
+    canvas.height * 0.18,
+    0,
+    canvas.width * 0.5,
+    canvas.height * 0.18,
+    canvas.width * 0.72
+  );
+  glow.addColorStop(0, theme.boardGlow);
+  glow.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const vignette = ctx.createRadialGradient(
+    canvas.width * 0.5,
+    canvas.height * 0.5,
+    canvas.width * 0.15,
+    canvas.width * 0.5,
+    canvas.height * 0.5,
+    canvas.width * 0.8
+  );
+  vignette.addColorStop(0, "rgba(0, 0, 0, 0)");
+  vignette.addColorStop(1, `rgba(${theme.vignetteRGB}, 0.46)`);
+  ctx.fillStyle = vignette;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
 
@@ -688,6 +737,10 @@ function drawGrid(t) {
     ctx.lineTo(canvas.width, p);
     ctx.stroke();
   }
+
+  ctx.strokeStyle = `rgba(${theme.gridRGB}, 0.14)`;
+  ctx.lineWidth = 1.6;
+  ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
 }
 
 function drawFood(t) {
@@ -701,9 +754,25 @@ function drawFood(t) {
   ctx.arc(cx, cy, CELL * 0.46 * pulse, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = theme.foodCore;
-  roundRect(food.x * CELL + 3, food.y * CELL + 3, CELL - 6, CELL - 6, 6);
+  const size = CELL - 7;
+  const x = food.x * CELL + 3.5;
+  const y = food.y * CELL + 3.5;
+  const core = ctx.createLinearGradient(x, y, x + size, y + size);
+  core.addColorStop(0, theme.foodHighlight);
+  core.addColorStop(0.42, theme.foodCore);
+  core.addColorStop(1, withAlpha(theme.foodCore, 0.78));
+  ctx.fillStyle = core;
+  roundRect(x, y, size, size, 7);
   ctx.fill();
+
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.24)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cx, y + 2.2);
+  ctx.lineTo(cx, y + size - 2.2);
+  ctx.moveTo(x + 2.2, cy);
+  ctx.lineTo(x + size - 2.2, cy);
+  ctx.stroke();
 }
 
 function drawSnake(t) {
@@ -713,16 +782,26 @@ function drawSnake(t) {
     const part = snake[i];
     const isHead = i === 0;
     const wave = Math.sin(t * 12 - i * 0.5) * 0.65;
+    const x = part.x * CELL + 1.9 + wave * 0.28;
+    const y = part.y * CELL + 1.9 + wave * 0.28;
+    const size = CELL - 3.8;
 
-    ctx.fillStyle = isHead ? skin.head : skin.body;
-    roundRect(
-      part.x * CELL + 1.9 + wave * 0.28,
-      part.y * CELL + 1.9 + wave * 0.28,
-      CELL - 3.8,
-      CELL - 3.8,
-      6
-    );
+    ctx.fillStyle = isHead ? skin.headGlow : skin.bodyGlow;
+    roundRect(x - 0.4, y - 0.4, size + 0.8, size + 0.8, 7);
     ctx.fill();
+
+    const fill = ctx.createLinearGradient(x, y, x + size, y + size);
+    fill.addColorStop(0, withAlpha(skin.highlight, isHead ? 0.95 : 0.72));
+    fill.addColorStop(0.32, isHead ? skin.head : skin.body);
+    fill.addColorStop(1, withAlpha(isHead ? skin.head : skin.body, 0.76));
+    ctx.fillStyle = fill;
+    roundRect(x, y, size, size, 6);
+    ctx.fill();
+
+    ctx.strokeStyle = isHead ? "rgba(232, 255, 246, 0.18)" : "rgba(209, 247, 231, 0.1)";
+    ctx.lineWidth = 1;
+    roundRect(x, y, size, size, 6);
+    ctx.stroke();
   }
 
   drawSnakeEyes();
@@ -768,11 +847,22 @@ function drawObstacles(t) {
     const y = obstacle.y * CELL + 2;
     const size = CELL - 4;
 
-    ctx.fillStyle = `rgba(${theme.obstacleFillRGB}, ${glow})`;
+    const fill = ctx.createLinearGradient(x, y, x + size, y + size);
+    fill.addColorStop(0, `rgba(${theme.obstacleFillRGB}, ${glow + 0.12})`);
+    fill.addColorStop(1, `rgba(${theme.obstacleFillRGB}, ${Math.max(0.18, glow - 0.08)})`);
+    ctx.fillStyle = fill;
     ctx.fillRect(x, y, size, size);
     ctx.strokeStyle = theme.obstacleStroke;
     ctx.lineWidth = 1.25;
     ctx.strokeRect(x + 0.7, y + 0.7, size - 1.4, size - 1.4);
+
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+    ctx.beginPath();
+    ctx.moveTo(x + 2, y + 2);
+    ctx.lineTo(x + size - 2, y + size - 2);
+    ctx.moveTo(x + size - 2, y + 2);
+    ctx.lineTo(x + 2, y + size - 2);
+    ctx.stroke();
   }
 }
 
@@ -873,6 +963,40 @@ function drawFloatingTexts(nowMs) {
     ctx.textAlign = "center";
     ctx.fillText(entry.text, x, y);
   });
+}
+
+function drawStageBanner(nowMs) {
+  if (!stageBanner) return;
+
+  const progress = (nowMs - stageBanner.start) / stageBanner.duration;
+  if (progress >= 1) {
+    stageBanner = null;
+    return;
+  }
+
+  const alpha = progress < 0.2 ? progress / 0.2 : 1 - (progress - 0.2) / 0.8;
+  const slide = Math.max(0, 1 - progress * 2.4) * 16;
+
+  ctx.save();
+  ctx.translate(0, slide);
+  ctx.fillStyle = withAlpha(stageBanner.color, alpha * 0.22);
+  roundRect(76, 26, canvas.width - 152, 54, 14);
+  ctx.fill();
+
+  ctx.strokeStyle = withAlpha(stageBanner.color, alpha * 0.48);
+  ctx.lineWidth = 1.2;
+  roundRect(76, 26, canvas.width - 152, 54, 14);
+  ctx.stroke();
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = withAlpha("#ffffff", alpha);
+  ctx.font = "bold 22px Segoe UI";
+  ctx.fillText(stageBanner.title, canvas.width / 2, 49);
+
+  ctx.fillStyle = withAlpha("#d7e4ff", alpha * 0.96);
+  ctx.font = "14px Segoe UI";
+  ctx.fillText(stageBanner.subtitle, canvas.width / 2, 67);
+  ctx.restore();
 }
 
 function roundRect(x, y, w, h, r) {
@@ -1178,6 +1302,16 @@ function triggerBoardFlash(kind) {
     return;
   }
 
+  if (kind === "level") {
+    boardFlash = {
+      start: performance.now(),
+      duration: 260,
+      alpha: 0.16,
+      rgb: "120, 174, 255"
+    };
+    return;
+  }
+
   boardFlash = {
     start: performance.now(),
     duration: 180,
@@ -1210,6 +1344,11 @@ function getBoardShakeOffset(nowMs) {
 }
 
 function withAlpha(color, alpha) {
+  if (color.startsWith("rgba(")) {
+    const values = color.slice(5, -1).split(",").map((part) => part.trim());
+    return `rgba(${values[0]}, ${values[1]}, ${values[2]}, ${alpha})`;
+  }
+
   if (color.startsWith("rgb(")) {
     return color.replace("rgb(", "rgba(").replace(")", `, ${alpha})`);
   }
