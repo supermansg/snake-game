@@ -87,7 +87,7 @@ const DEFAULT_BOARD_BACKGROUND = "./defualt background.png";
 
 const DIFFICULTY_PRESETS = {
   easy: {
-    label: "Easy",
+    label: "קל",
     baseSpeedMs: 172,
     minSpeedMs: 84,
     speedScoreFactor: 3,
@@ -106,7 +106,7 @@ const DIFFICULTY_PRESETS = {
     portalLevelEvery: 3
   },
   medium: {
-    label: "Medium",
+    label: "בינוני",
     baseSpeedMs: 148,
     minSpeedMs: 64,
     speedScoreFactor: 4,
@@ -125,7 +125,7 @@ const DIFFICULTY_PRESETS = {
     portalLevelEvery: 3
   },
   hard: {
-    label: "Hard",
+    label: "קשה",
     baseSpeedMs: 126,
     minSpeedMs: 52,
     speedScoreFactor: 5,
@@ -208,22 +208,22 @@ const PICKUP_STYLES = {
 
 const GADGET_HELP = {
   shield: {
-    title: "Shield Core",
+    title: "ליבת מגן",
     icon: "S",
     description:
-      "Shield protects you from one crash. If you hit a wall, obstacle, or enemy once, the run continues and the shield breaks instead of ending the game."
+      "המגן שומר עליך מפגיעה אחת. אם תפגע בקיר, במכשול או באויב פעם אחת, הריצה תימשך והמגן יישבר במקום שהמשחק יסתיים."
   },
   blaster: {
-    title: "Blaster Cell",
+    title: "תא בלסטר",
     icon: "B",
     description:
-      "Blaster gives you charges for the Fire button. Use it to zap the nearest enemy off the board and create breathing room when the map gets crowded."
+      "הבלסטר נותן לך מטענים לכפתור הירי. אפשר להשתמש בו כדי לחסל את האויב הקרוב ביותר ולפנות מקום כשהלוח נהיה צפוף."
   },
   slow: {
-    title: "Time Field",
+    title: "שדה זמן",
     icon: "T",
     description:
-      "Time Field slows enemy movement for a few seconds. It is best used when hazards are stacking and you need a safer route to the next fruit."
+      "שדה הזמן מאט את תנועת האויבים לכמה שניות. הכי טוב להשתמש בו כשכמות האיומים גדלה ואתה צריך נתיב בטוח יותר לפרי הבא."
   }
 };
 
@@ -344,12 +344,12 @@ let laserShot = null;
 let personalRecords = loadPersonalRecords();
 let communityRecords = [];
 let communityStatus = {
-  mode: COMMUNITY_LEADERBOARD_ENDPOINT ? "Connecting" : "Offline demo",
+  mode: COMMUNITY_LEADERBOARD_ENDPOINT ? "מתחבר" : "דמו לא מקוון",
   detail: COMMUNITY_LEADERBOARD_ENDPOINT
-    ? "Connecting to community board..."
-    : "Community board: backend not connected yet"
+    ? "מתחבר ללוח הקהילתי..."
+    : "לוח קהילתי: צד השרת עדיין לא מחובר"
 };
-let playerName = localStorage.getItem(STORAGE_KEYS.playerName) || "ArcadeHero";
+let playerName = localStorage.getItem(STORAGE_KEYS.playerName) || "שחקן";
 let boardBackgroundSource = localStorage.getItem(STORAGE_KEYS.boardBackground) || "";
 let boardBackgroundImage = null;
 let boardBackgroundLoaded = false;
@@ -450,7 +450,7 @@ function pauseGame() {
   running = false;
   stopLoop();
   clearStatusTimer();
-  statusEl.textContent = "Paused";
+  statusEl.textContent = "המשחק מושהה";
   updateActionButtons();
 }
 
@@ -492,23 +492,23 @@ function tick() {
   const willEat = isFoodCell(newHead);
 
   if (isWallCollision(newHead)) {
-    if (!tryUseShield("Shield absorbed the hit")) gameOver("Wall collision");
+    if (!tryUseShield("המגן ספג את הפגיעה")) gameOver("התנגשות בקיר");
     return;
   }
 
   if (isSelfCollision(newHead, willEat)) {
-    if (!tryUseShield("Shield saved the run")) gameOver("You hit yourself");
+    if (!tryUseShield("המגן הציל את הריצה")) gameOver("פגעת בעצמך");
     return;
   }
 
   if (isObstacleCollision(newHead)) {
-    if (!tryUseShield("Shield broke on impact")) gameOver("Obstacle collision");
+    if (!tryUseShield("המגן נשבר מהפגיעה")) gameOver("התנגשות במכשול");
     return;
   }
 
   if (isEnemyCollision(newHead)) {
-    if (!tryUseShield("Shield repelled the enemy")) {
-      gameOver("Enemy collision");
+    if (!tryUseShield("המגן הדף את האויב")) {
+      gameOver("התנגשות באויב");
     } else {
       enemies = enemies.filter((enemy) => !(enemy.x === newHead.x && enemy.y === newHead.y));
       updateHazardsLabel();
@@ -551,8 +551,8 @@ function tick() {
   moveEnemies();
 
   if (isEnemyTouchingSnake()) {
-    if (!tryUseShield("Shield repelled the enemy")) {
-      gameOver("Enemy caught you");
+    if (!tryUseShield("המגן הדף את האויב")) {
+      gameOver("אויב תפס אותך");
       return;
     }
     enemies = enemies.filter(
@@ -603,7 +603,7 @@ function gameOver(message) {
   clearStatusTimer();
   stopLoop();
   playSound("fail");
-  statusEl.textContent = `${message}. Press New Run or Restart`;
+  statusEl.textContent = `${message}. לחץ על ריצה חדשה או התחל מחדש`;
   triggerBoardFlash("danger");
   boardShakeUntil = performance.now() + 280;
   saveRunToLeaderboards();
@@ -715,7 +715,7 @@ function resolvePortalTravel(pos) {
   }
   triggerBoardFlash("portal");
   playSound("portal");
-  addFloatingText("Warp", pos.x, pos.y, "#9cc7ff");
+  addFloatingText("קפיצה", pos.x, pos.y, "#9cc7ff");
   return { x: destination.x, y: destination.y };
 }
 
@@ -791,14 +791,14 @@ function updateLevel() {
 
   levelEl.textContent = String(level);
   stageBanner = {
-    title: `Level ${level}`,
-    subtitle: "Hazards increased",
+    title: `שלב ${level}`,
+    subtitle: "כמות האיומים עלתה",
     color: "rgba(120, 174, 255, 0.92)",
     start: performance.now(),
     duration: 1500
   };
   triggerBoardFlash("level");
-  setTemporaryStatus(`Level ${level}! Hazards increased`, 1200);
+  setTemporaryStatus(`שלב ${level}! כמות האיומים עלתה`, 1200);
 }
 
 function applyLevelDifficulty(currentLevel) {
@@ -842,7 +842,7 @@ function maybeSpawnPickup() {
     y: cell.y,
     phase: Math.random() * Math.PI * 2
   };
-  setTemporaryStatus(`${formatPickupName(type)} dropped on the grid`, 900);
+  setTemporaryStatus(`${formatPickupName(type)} הופיע על הלוח`, 900);
   updateAbilityLabel();
 }
 
@@ -859,7 +859,7 @@ function maybeSpawnPortals() {
     { id: "A", x: first.x, y: first.y, phase: Math.random() * Math.PI * 2, charges: 3 },
     { id: "B", x: second.x, y: second.y, phase: Math.random() * Math.PI * 2, charges: 3 }
   ];
-  setTemporaryStatus("Portals opened", 900);
+  setTemporaryStatus("פורטלים נפתחו", 900);
 }
 
 function choosePickupType() {
@@ -901,18 +901,18 @@ function collectPickup(pickup) {
   switch (pickup.type) {
     case "shield":
       playerPowerState.shield += 1;
-      setTemporaryStatus("Shield ready", 1100);
-      addFloatingText("Shield", pickup.x, pickup.y, "#7de3ff");
+      setTemporaryStatus("מגן מוכן", 1100);
+      addFloatingText("מגן", pickup.x, pickup.y, "#7de3ff");
       break;
     case "blaster":
       playerPowerState.blasterCharges += 2;
-      setTemporaryStatus("Blaster charges +2", 1100);
-      addFloatingText("Blaster", pickup.x, pickup.y, "#cfa8ff");
+      setTemporaryStatus("2+ מטעני בלסטר", 1100);
+      addFloatingText("בלסטר", pickup.x, pickup.y, "#cfa8ff");
       break;
     case "slow":
       playerPowerState.slowUntil = performance.now() + 7000;
-      setTemporaryStatus("Slow field active", 1100);
-      addFloatingText("Slow", pickup.x, pickup.y, "#9ff3c8");
+      setTemporaryStatus("שדה האטה פעיל", 1100);
+      addFloatingText("האטה", pickup.x, pickup.y, "#9ff3c8");
       break;
     default:
       break;
@@ -932,7 +932,7 @@ function tryUseShield(message) {
   if (playerPowerState.shield <= 0) return false;
   playerPowerState.shield -= 1;
   triggerBoardFlash("shield");
-  addFloatingText("Shield", snake[0].x, snake[0].y, "#7de3ff");
+  addFloatingText("מגן", snake[0].x, snake[0].y, "#7de3ff");
   setTemporaryStatus(message, 900);
   updateAbilityLabel();
   updateActionButtons();
@@ -981,9 +981,9 @@ function draw(nowMs) {
   if (gameOverAt > 0) {
     drawGameOverOverlay(nowMs);
   } else if (!started) {
-    drawStateOverlay("Ready to Play", "Press Play, swipe, or hit an arrow key");
+    drawStateOverlay("מוכן לשחק", "לחץ על התחל, החליק על הלוח או השתמש במקשי החצים");
   } else if (!running) {
-    drawStateOverlay("Paused", "Press Resume or tap a direction to keep going");
+    drawStateOverlay("המשחק מושהה", "לחץ על המשך או בחר כיוון כדי להמשיך");
   }
 
   ctx.restore();
@@ -1492,7 +1492,7 @@ function drawGameOverOverlay(nowMs) {
   const alpha = Math.min(0.68, ((nowMs - gameOverAt) / 280) * 0.68);
   ctx.fillStyle = `rgba(${theme.overlayRGB}, ${alpha})`;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  drawStateOverlay("Game Over", `${gameOverMessage} | Score ${score}`);
+  drawStateOverlay("המשחק נגמר", `${gameOverMessage} | ניקוד ${score}`);
 }
 
 function drawStateOverlay(title, subtitle) {
@@ -1744,7 +1744,7 @@ function onGlobalGestureStart(event) {
 
 function setPlayingStatus() {
   const config = getDifficultyConfig();
-  statusEl.textContent = `Playing - ${config.label} - Level ${level}`;
+  statusEl.textContent = `משחק פעיל - ${config.label} - שלב ${level}`;
 }
 
 function setTemporaryStatus(message, durationMs) {
@@ -1779,7 +1779,7 @@ function setDifficulty(nextDifficulty) {
   updateDifficultyButtons();
 
   initGame();
-  setTemporaryStatus(`Difficulty set to ${DIFFICULTY_PRESETS[difficulty].label}`, 1500);
+  setTemporaryStatus(`רמת הקושי הוגדרה ל־${DIFFICULTY_PRESETS[difficulty].label}`, 1500);
 }
 
 function updateDifficultyButtons() {
@@ -1902,23 +1902,23 @@ function updateCustomizationUI() {
   if (backgroundStatusEl) {
     if (boardBackgroundLoaded) {
       backgroundStatusEl.textContent = boardBackgroundSessionOnly
-        ? "Session image active"
+        ? "תמונה פעילה לסשן הזה"
         : !boardBackgroundSource
-        ? "Default logo active"
+        ? "לוגו ברירת המחדל פעיל"
         : boardBackgroundSource.startsWith("data:")
-        ? "Device image active"
-        : "URL image active";
+        ? "תמונה מהמכשיר פעילה"
+        : "תמונה מקישור פעילה";
     } else if (boardBackgroundError) {
       backgroundStatusEl.textContent = boardBackgroundError;
     } else {
-      backgroundStatusEl.textContent = "Default board";
+      backgroundStatusEl.textContent = "רקע ברירת מחדל";
     }
   }
 }
 
 function loadBoardBackground(source) {
   const resolvedSource = source || DEFAULT_BOARD_BACKGROUND;
-  boardBackgroundError = "Loading image...";
+  boardBackgroundError = "טוען תמונה...";
   boardBackgroundLoaded = false;
   boardBackgroundResolvedSource = resolvedSource;
   updateCustomizationUI();
@@ -1934,8 +1934,8 @@ function loadBoardBackground(source) {
     boardBackgroundLoaded = false;
     boardBackgroundImage = null;
     boardBackgroundError = resolvedSource === DEFAULT_BOARD_BACKGROUND
-      ? "Default background failed to load"
-      : "Image failed to load";
+      ? "טעינת רקע ברירת המחדל נכשלה"
+      : "טעינת התמונה נכשלה";
     updateCustomizationUI();
   };
   image.src = resolvedSource;
@@ -1982,7 +1982,7 @@ function openGadgetHelp(type) {
   if (gadgetHelpSkipToggle) gadgetHelpSkipToggle.checked = gadgetTipsDisabled;
 
   gadgetHelpPanel.hidden = false;
-  statusEl.textContent = `${help.title} tutorial`;
+  statusEl.textContent = `הסבר על ${help.title}`;
   updateActionButtons();
 }
 
@@ -2083,28 +2083,28 @@ function updateAbilityLabel() {
   if (!abilityLabelEl) return;
 
   if (playerPowerState.blasterCharges > 0) {
-    abilityLabelEl.textContent = `Blaster x${playerPowerState.blasterCharges}`;
+    abilityLabelEl.textContent = `בלסטר x${playerPowerState.blasterCharges}`;
     return;
   }
 
   if (playerPowerState.shield > 0) {
-    abilityLabelEl.textContent = `Shield x${playerPowerState.shield}`;
+    abilityLabelEl.textContent = `מגן x${playerPowerState.shield}`;
     return;
   }
 
   if (performance.now() < playerPowerState.slowUntil) {
-    abilityLabelEl.textContent = "Slow field";
+    abilityLabelEl.textContent = "שדה האטה";
     return;
   }
 
-  abilityLabelEl.textContent = activePickup ? `Pickup: ${formatPickupName(activePickup.type)}` : "No Boost";
+  abilityLabelEl.textContent = activePickup ? `איסוף: ${formatPickupName(activePickup.type)}` : "אין בוסט";
 }
 
 function updateActionButtons() {
-  startBtn.textContent = running ? "Playing" : gameOverAt > 0 ? "New Run" : started ? "Resume" : "Play";
+  startBtn.textContent = running ? "משחק" : gameOverAt > 0 ? "ריצה חדשה" : started ? "המשך" : "התחל";
   startBtn.disabled = running || gadgetHelpOpen;
 
-  pauseBtn.textContent = running ? "Pause" : started && gameOverAt === 0 ? "Resume" : "Pause";
+  pauseBtn.textContent = running ? "עצור" : started && gameOverAt === 0 ? "המשך" : "עצור";
   pauseBtn.disabled = !started || gameOverAt > 0 || gadgetHelpOpen;
 
   restartBtn.disabled = (!started && gameOverAt === 0) || gadgetHelpOpen;
@@ -2120,7 +2120,7 @@ function setTouchSettingsOpen(isOpen) {
   touchSettingsToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
   touchSettingsToggle.setAttribute(
     "aria-label",
-    isOpen ? "Close touch settings" : "Open touch settings"
+    isOpen ? "סגור הגדרות מגע" : "פתח הגדרות מגע"
   );
 }
 
@@ -2162,17 +2162,17 @@ function fireWeapon() {
   triggerBoardFlash("weapon");
   playSound("weapon");
   addFloatingText("+2", bestTarget.enemy.x, bestTarget.enemy.y, "#d9b3ff");
-  setTemporaryStatus("Blaster fired", 700);
+  setTemporaryStatus("הבלסטר נורה", 700);
 }
 
 function formatPickupName(type) {
   switch (type) {
     case "shield":
-      return "Shield";
+      return "מגן";
     case "blaster":
-      return "Blaster";
+      return "בלסטר";
     case "slow":
-      return "Slow";
+      return "האטה";
     default:
       return type;
   }
@@ -2199,8 +2199,8 @@ function normalizeKey(value, source, fallback) {
 
 function getIdleStatus() {
   return isTouchDevice
-    ? "Tap Start, swipe board, or use the pad"
-    : "Press Start or Arrow Keys";
+    ? "לחץ על התחל, החליק על הלוח או השתמש בבקרים"
+    : "לחץ על התחל או על מקשי החצים";
 }
 
 function loadPersonalRecords() {
@@ -2239,7 +2239,7 @@ function renderLeaderboards() {
 
   const personalBest = personalRecords[0]?.score || 0;
   if (personalBestSummaryEl) {
-    personalBestSummaryEl.textContent = `${personalBest} pts`;
+    personalBestSummaryEl.textContent = `${personalBest} נק'`;
   }
 
   if (communityStatusEl) {
@@ -2255,7 +2255,7 @@ function renderLeaderboardList(target, entries, includeMeta) {
   if (!target) return;
 
   if (!entries || entries.length === 0) {
-    target.innerHTML = "<li><span>No scores yet</span><span>Play a run</span></li>";
+    target.innerHTML = "<li><span>עדיין אין שיאים</span><span>שחק ריצה אחת</span></li>";
     return;
   }
 
@@ -2263,10 +2263,10 @@ function renderLeaderboardList(target, entries, includeMeta) {
     .slice(0, includeMeta ? MAX_PERSONAL_RECORDS : MAX_COMMUNITY_RECORDS)
     .map((entry) => {
       const rightLabel = includeMeta
-        ? `Lv ${entry.level} | ${entry.difficulty}`
-        : `${entry.score} pts`;
+        ? `שלב ${entry.level} | ${entry.difficulty}`
+        : `${entry.score} נק'`;
       const leftLabel = includeMeta
-        ? `${entry.score} pts`
+        ? `${entry.score} נק'`
         : `${entry.player}`;
       const primary = includeMeta ? entry.player : leftLabel;
       return `<li><span>${escapeHtml(primary)}</span><span>${escapeHtml(includeMeta ? leftLabel + " | " + rightLabel : rightLabel)}</span></li>`;
@@ -2278,16 +2278,16 @@ async function loadCommunityLeaderboard() {
   if (!COMMUNITY_LEADERBOARD_ENDPOINT) {
     communityRecords = getDemoCommunityRecords();
     communityStatus = {
-      mode: "Offline demo",
-      detail: "Community board: connect a backend endpoint to enable real shared scores"
+      mode: "דמו לא מקוון",
+      detail: "כדי להפעיל לוח קהילתי אמיתי צריך לחבר צד שרת"
     };
     renderLeaderboards();
     return;
   }
 
   communityStatus = {
-    mode: "Online",
-    detail: "Loading community board..."
+    mode: "מחובר",
+    detail: "טוען את הלוח הקהילתי..."
   };
   renderLeaderboards();
 
@@ -2305,14 +2305,14 @@ async function loadCommunityLeaderboard() {
     const payload = await response.json();
     communityRecords = Array.isArray(payload) ? payload.slice(0, MAX_COMMUNITY_RECORDS) : getDemoCommunityRecords();
     communityStatus = {
-      mode: "Live",
-      detail: "Community board connected"
+      mode: "חי",
+      detail: "הלוח הקהילתי מחובר"
     };
   } catch {
     communityRecords = getDemoCommunityRecords();
     communityStatus = {
-      mode: "Offline demo",
-      detail: "Community board fallback: backend unavailable"
+      mode: "דמו לא מקוון",
+      detail: "הלוח הקהילתי חזר למצב גיבוי כי השרת לא זמין"
     };
   }
 
@@ -2333,8 +2333,8 @@ async function submitCommunityScore(entry) {
     await loadCommunityLeaderboard();
   } catch {
     communityStatus = {
-      mode: "Offline demo",
-      detail: "Community submit failed: showing fallback board"
+      mode: "דמו לא מקוון",
+      detail: "שליחת השיא נכשלה, מוצג לוח גיבוי"
     };
     renderLeaderboards();
   }
@@ -2342,17 +2342,17 @@ async function submitCommunityScore(entry) {
 
 function getDemoCommunityRecords() {
   return [
-    { player: "ByteRunner", score: 92, level: 14, difficulty: "Hard" },
-    { player: "GridFox", score: 71, level: 11, difficulty: "Medium" },
-    { player: "LaserEel", score: 58, level: 9, difficulty: "Hard" },
-    { player: "NovaTail", score: 43, level: 8, difficulty: "Medium" },
-    { player: "ArcPilot", score: 30, level: 6, difficulty: "Easy" }
+    { player: "רץ־בייט", score: 92, level: 14, difficulty: "קשה" },
+    { player: "שועל־גריד", score: 71, level: 11, difficulty: "בינוני" },
+    { player: "צלופח־לייזר", score: 58, level: 9, difficulty: "קשה" },
+    { player: "זנב־נובה", score: 43, level: 8, difficulty: "בינוני" },
+    { player: "טייס־ארקייד", score: 30, level: 6, difficulty: "קל" }
   ];
 }
 
 function sanitizePlayerName(value) {
   const trimmed = (value || "").trim().slice(0, 14);
-  return trimmed || "ArcadeHero";
+  return trimmed || "שחקן";
 }
 
 function escapeHtml(value) {
@@ -2669,7 +2669,7 @@ if (backgroundFileInput) {
     const file = backgroundFileInput.files?.[0];
     if (!file) return;
     if (file.size > 8_000_000) {
-      boardBackgroundError = "Choose an image under 8MB";
+      boardBackgroundError = "בחר תמונה עד 8MB";
       updateCustomizationUI();
       backgroundFileInput.value = "";
       return;
@@ -2684,7 +2684,7 @@ if (backgroundFileInput) {
       backgroundFileInput.value = "";
     };
     reader.onerror = () => {
-      boardBackgroundError = "Image upload failed";
+      boardBackgroundError = "העלאת התמונה נכשלה";
       updateCustomizationUI();
       backgroundFileInput.value = "";
     };

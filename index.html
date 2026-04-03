@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="he" dir="rtl">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
@@ -12,69 +12,69 @@
       <div class="brand-row">
         <h1>Snake Me</h1>
         <div class="utility-actions">
-          <button id="menuBtn" class="utility-btn" type="button" aria-label="Open menu">Menu</button>
-          <button id="recordsBtn" class="utility-btn" type="button" aria-label="Open leaderboards">Records</button>
+          <button id="menuBtn" class="utility-btn" type="button" aria-label="פתח תפריט">תפריט</button>
+          <button id="recordsBtn" class="utility-btn" type="button" aria-label="פתח טבלאות שיאים">שיאים</button>
         </div>
       </div>
-      <section class="difficulty" aria-label="Difficulty selector">
-        <p class="difficulty-label">Difficulty</p>
-        <div class="difficulty-buttons" role="group" aria-label="Choose difficulty">
-          <button id="difficultyEasy" class="difficulty-btn" data-difficulty="easy" type="button">Easy</button>
-          <button id="difficultyMedium" class="difficulty-btn" data-difficulty="medium" type="button">Medium</button>
-          <button id="difficultyHard" class="difficulty-btn" data-difficulty="hard" type="button">Hard</button>
+      <section class="difficulty" aria-label="בחירת רמת קושי">
+        <p class="difficulty-label">רמת קושי</p>
+        <div class="difficulty-buttons" role="group" aria-label="בחר רמת קושי">
+          <button id="difficultyEasy" class="difficulty-btn" data-difficulty="easy" type="button">קל</button>
+          <button id="difficultyMedium" class="difficulty-btn" data-difficulty="medium" type="button">בינוני</button>
+          <button id="difficultyHard" class="difficulty-btn" data-difficulty="hard" type="button">קשה</button>
         </div>
       </section>
     </header>
 
-    <section class="hud" aria-label="Game status">
+    <section class="hud" aria-label="מצב המשחק">
       <div class="hud-stat">
-        <span class="hud-label">Score</span>
+        <span class="hud-label">ניקוד</span>
         <strong id="score" class="hud-value">0</strong>
       </div>
       <div class="hud-stat">
-        <span class="hud-label">Best</span>
+        <span class="hud-label">שיא</span>
         <strong id="best" class="hud-value">0</strong>
       </div>
       <div class="hud-stat">
-        <span class="hud-label">Level</span>
+        <span class="hud-label">שלב</span>
         <strong id="level" class="hud-value">1</strong>
       </div>
       <div class="hud-stat">
-        <span class="hud-label">Hazards</span>
+        <span class="hud-label">איומים</span>
         <strong id="hazards" class="hud-value">0</strong>
       </div>
       <div class="status-row">
-        <p id="status" class="status-text">Press Start or Arrow Keys</p>
+        <p id="status" class="status-text">לחץ על התחל או על מקשי החצים</p>
         <div class="status-badges">
-          <span id="modeLabel" class="mode-pill">Medium</span>
-          <span id="abilityLabel" class="info-pill">No Boost</span>
+          <span id="modeLabel" class="mode-pill">בינוני</span>
+          <span id="abilityLabel" class="info-pill">אין בוסט</span>
         </div>
       </div>
     </section>
 
-    <section id="boardShell" class="board-shell" aria-label="Game board frame">
-      <canvas id="game" width="420" height="420" aria-label="Snake game canvas"></canvas>
+    <section id="boardShell" class="board-shell" aria-label="מסגרת לוח המשחק">
+      <canvas id="game" width="420" height="420" aria-label="לוח משחק סנייק"></canvas>
     </section>
 
-    <section class="controls" aria-label="Game controls">
-      <button id="startBtn" type="button">Start</button>
-      <button id="pauseBtn" type="button">Pause</button>
-      <button id="restartBtn" type="button">Restart</button>
-      <button id="fireBtn" class="fire-btn" type="button">Fire</button>
+    <section class="controls" aria-label="כפתורי משחק">
+      <button id="startBtn" type="button">התחל</button>
+      <button id="pauseBtn" type="button">עצור</button>
+      <button id="restartBtn" type="button">התחל מחדש</button>
+      <button id="fireBtn" class="fire-btn" type="button">ירי</button>
     </section>
 
-    <section id="touchControls" class="touch-controls" aria-label="Touch controls">
+    <section id="touchControls" class="touch-controls" aria-label="בקרי מגע">
       <div class="touch-header">
-        <p class="touch-title">Touch Controls</p>
+        <p class="touch-title">בקרי מגע</p>
         <div class="touch-header-actions">
-          <button id="touchFireBtn" class="touch-fire-btn" type="button">Fire</button>
+          <button id="touchFireBtn" class="touch-fire-btn" type="button">ירי</button>
           <button
             id="touchSettingsToggle"
             class="gear-btn"
             type="button"
             aria-expanded="false"
             aria-controls="touchSettingsPanel"
-            aria-label="Open touch settings"
+            aria-label="פתח הגדרות מגע"
           >
             &#9881;
           </button>
@@ -82,140 +82,140 @@
       </div>
 
       <div id="touchSettingsPanel" class="touch-settings" hidden>
-        <div class="touch-toolbar" aria-label="Touch settings">
+        <div class="touch-toolbar" aria-label="הגדרות מגע">
           <label class="touch-setting" for="controlLayoutSelect">
-            <span>Layout</span>
+            <span>פריסה</span>
             <select id="controlLayoutSelect">
-              <option value="classic">Classic</option>
-              <option value="compact">Compact</option>
-              <option value="wide">Wide</option>
+              <option value="classic">קלאסית</option>
+              <option value="compact">קומפקטית</option>
+              <option value="wide">רחבה</option>
             </select>
           </label>
           <label class="touch-setting" for="controlSizeSelect">
-            <span>Size</span>
+            <span>גודל</span>
             <select id="controlSizeSelect">
-              <option value="small">Small</option>
-              <option value="medium">Medium</option>
-              <option value="large">Large</option>
+              <option value="small">קטן</option>
+              <option value="medium">בינוני</option>
+              <option value="large">גדול</option>
             </select>
           </label>
           <label class="touch-setting" for="controlSideSelect">
-            <span>Side</span>
+            <span>צד</span>
             <select id="controlSideSelect">
-              <option value="left">Left</option>
-              <option value="center">Center</option>
-              <option value="right">Right</option>
+              <option value="left">שמאל</option>
+              <option value="center">מרכז</option>
+              <option value="right">ימין</option>
             </select>
           </label>
         </div>
       </div>
 
       <div class="touch-pad">
-        <button class="touch-btn up" data-dir="up" type="button">Up</button>
-        <button class="touch-btn left" data-dir="left" type="button">Left</button>
-        <button class="touch-btn down" data-dir="down" type="button">Down</button>
-        <button class="touch-btn right" data-dir="right" type="button">Right</button>
+        <button class="touch-btn up" data-dir="up" type="button">למעלה</button>
+        <button class="touch-btn left" data-dir="left" type="button">שמאלה</button>
+        <button class="touch-btn down" data-dir="down" type="button">למטה</button>
+        <button class="touch-btn right" data-dir="right" type="button">ימינה</button>
       </div>
-      <p class="touch-hint">Tip: Swipe on the board or use the D-pad</p>
+      <p class="touch-hint">טיפ: אפשר להחליק על הלוח או להשתמש ב־D-pad</p>
     </section>
 
     <footer class="app-footer">C Dudi Sgulam 2026</footer>
   </main>
 
-  <section id="menuPanel" class="overlay-panel" hidden aria-label="Game menu">
+  <section id="menuPanel" class="overlay-panel" hidden aria-label="תפריט המשחק">
     <div class="overlay-backdrop" data-close-overlay="menu"></div>
     <div class="overlay-card menu-card">
       <div class="overlay-header">
         <div>
-          <p class="overlay-kicker">Profile & Style</p>
-          <h2>Snake Me Menu</h2>
+          <p class="overlay-kicker">פרופיל ועיצוב</p>
+          <h2>תפריט Snake Me</h2>
         </div>
-        <button id="closeMenuBtn" class="utility-btn close-btn" type="button" aria-label="Close menu">Close</button>
+        <button id="closeMenuBtn" class="utility-btn close-btn" type="button" aria-label="סגור תפריט">סגור</button>
       </div>
 
       <div class="menu-grid">
-        <section class="menu-panel-block" aria-label="Player profile">
+        <section class="menu-panel-block" aria-label="פרופיל שחקן">
           <div class="leaderboard-title-row">
-            <h3>Profile</h3>
-            <span class="mini-pill">Saved locally</span>
+            <h3>פרופיל</h3>
+            <span class="mini-pill">נשמר מקומית</span>
           </div>
 
           <label class="name-field" for="profileNameInput">
-            <span>First Name / Nickname</span>
-            <input id="profileNameInput" type="text" maxlength="14" placeholder="ArcadeHero">
+            <span>שם פרטי / כינוי</span>
+            <input id="profileNameInput" type="text" maxlength="14" placeholder="שחקן">
           </label>
         </section>
 
-        <section class="menu-panel-block" aria-label="Visual style">
+        <section class="menu-panel-block" aria-label="עיצוב חזותי">
           <div class="leaderboard-title-row">
-            <h3>Visual Style</h3>
-            <span class="mini-pill">Live preview</span>
+            <h3>עיצוב חזותי</h3>
+            <span class="mini-pill">תצוגה חיה</span>
           </div>
 
           <div class="menu-form-grid">
             <label class="touch-setting" for="themeSelect">
-              <span>Board Theme</span>
+              <span>ערכת לוח</span>
               <select id="themeSelect">
-                <option value="neon">Neon Grid</option>
-                <option value="aurora">Aurora Glow</option>
+                <option value="neon">גריד ניאון</option>
+                <option value="aurora">זוהר אורורה</option>
               </select>
             </label>
 
             <label class="touch-setting" for="snakeSkinSelect">
-              <span>Snake Skin</span>
+              <span>סקין לנחש</span>
               <select id="snakeSkinSelect">
-                <option value="classic">Classic Green</option>
-                <option value="cobalt">Cobalt Blue</option>
+                <option value="classic">ירוק קלאסי</option>
+                <option value="cobalt">כחול קובלט</option>
               </select>
             </label>
           </div>
 
-          <div class="settings-stack" aria-label="Gameplay settings">
+          <div class="settings-stack" aria-label="הגדרות משחק">
             <label class="switch-row" for="soundToggle">
               <span>
-                <strong>Sound FX</strong>
-                <small>Eat, gadget, fail, and weapon sounds</small>
+                <strong>אפקטים קוליים</strong>
+                <small>צלילי אכילה, גאדג'טים, פסילה וירי</small>
               </span>
               <input id="soundToggle" type="checkbox" role="switch">
             </label>
 
             <label class="switch-row" for="gadgetTipsToggle">
               <span>
-                <strong>Gadget Tips</strong>
-                <small>Pause once to explain a gadget the first time</small>
+                <strong>הסברי גאדג'טים</strong>
+                <small>עוצר פעם אחת כדי להסביר גאדג'ט באיסוף הראשון</small>
               </span>
               <input id="gadgetTipsToggle" type="checkbox" role="switch">
             </label>
           </div>
         </section>
 
-        <section class="menu-panel-block menu-panel-wide" aria-label="Board background">
+        <section class="menu-panel-block menu-panel-wide" aria-label="רקע הלוח">
           <div class="leaderboard-title-row">
-            <h3>Board Background</h3>
-            <span id="backgroundStatus" class="mini-pill">Default board</span>
+            <h3>רקע הלוח</h3>
+            <span id="backgroundStatus" class="mini-pill">רקע ברירת מחדל</span>
           </div>
 
           <div id="backgroundPreview" class="background-preview" aria-hidden="true"></div>
 
           <div class="menu-form-grid">
             <label class="name-field" for="backgroundUrlInput">
-              <span>Image URL</span>
+              <span>קישור לתמונה</span>
               <input id="backgroundUrlInput" type="url" placeholder="https://example.com/board-bg.jpg">
             </label>
 
             <div class="background-actions">
-              <button id="applyBackgroundUrlBtn" class="utility-btn" type="button">Apply URL</button>
+              <button id="applyBackgroundUrlBtn" class="utility-btn" type="button">החל קישור</button>
             </div>
           </div>
 
           <div class="menu-form-grid menu-form-grid-compact">
             <label class="name-field file-field" for="backgroundFileInput">
-              <span>Upload from device</span>
+              <span>העלה מהמכשיר</span>
               <input id="backgroundFileInput" type="file" accept="image/*">
             </label>
 
             <div class="background-actions">
-              <button id="clearBackgroundBtn" class="utility-btn danger-ghost-btn" type="button">Clear Background</button>
+              <button id="clearBackgroundBtn" class="utility-btn danger-ghost-btn" type="button">נקה רקע</button>
             </div>
           </div>
         </section>
@@ -223,15 +223,15 @@
     </div>
   </section>
 
-  <section id="gadgetHelpPanel" class="overlay-panel" hidden aria-label="Gadget help">
+  <section id="gadgetHelpPanel" class="overlay-panel" hidden aria-label="הסבר על גאדג'ט">
     <div class="overlay-backdrop" data-close-overlay="gadget-help"></div>
     <div class="overlay-card tutorial-card">
       <div class="overlay-header">
         <div>
-          <p class="overlay-kicker">New Gadget</p>
-          <h2 id="gadgetHelpTitle">Shield</h2>
+          <p class="overlay-kicker">גאדג'ט חדש</p>
+          <h2 id="gadgetHelpTitle">מגן</h2>
         </div>
-        <button id="closeGadgetHelpBtn" class="utility-btn close-btn" type="button" aria-label="Close gadget help">Continue</button>
+        <button id="closeGadgetHelpBtn" class="utility-btn close-btn" type="button" aria-label="המשך למשחק">המשך</button>
       </div>
 
       <div class="tutorial-body">
@@ -240,8 +240,8 @@
           <p id="gadgetHelpDescription" class="tutorial-description"></p>
           <label class="switch-row compact-switch" for="gadgetHelpSkipToggle">
             <span>
-              <strong>Skip future gadget popups</strong>
-              <small>Good if you already know how the boosts work</small>
+              <strong>אל תציג שוב חלונות הסבר</strong>
+              <small>מומלץ אם אתה כבר מכיר את הגאדג'טים והבוסטים</small>
             </span>
             <input id="gadgetHelpSkipToggle" type="checkbox" role="switch">
           </label>
@@ -250,38 +250,38 @@
     </div>
   </section>
 
-  <section id="leaderboardPanel" class="overlay-panel" hidden aria-label="Leaderboards">
+  <section id="leaderboardPanel" class="overlay-panel" hidden aria-label="טבלאות שיאים">
     <div class="overlay-backdrop" data-close-overlay="leaderboard"></div>
     <div class="overlay-card">
       <div class="overlay-header">
         <div>
-          <p class="overlay-kicker">Scoreboards</p>
-          <h2>Records</h2>
+          <p class="overlay-kicker">טבלאות ניקוד</p>
+          <h2>שיאים</h2>
         </div>
-        <button id="closeLeaderboardBtn" class="utility-btn close-btn" type="button" aria-label="Close leaderboards">Close</button>
+        <button id="closeLeaderboardBtn" class="utility-btn close-btn" type="button" aria-label="סגור שיאים">סגור</button>
       </div>
 
       <div class="leaderboard-controls">
         <label class="name-field" for="playerNameInput">
-          <span>Player Name</span>
-          <input id="playerNameInput" type="text" maxlength="14" placeholder="ArcadeHero">
+          <span>שם שחקן</span>
+          <input id="playerNameInput" type="text" maxlength="14" placeholder="שחקן">
         </label>
-        <p id="communityStatus" class="community-status">Community board: backend not connected yet</p>
+        <p id="communityStatus" class="community-status">לוח קהילתי: צד השרת עדיין לא מחובר</p>
       </div>
 
       <div class="leaderboard-grid">
-        <section class="leaderboard-column" aria-label="Your records">
+        <section class="leaderboard-column" aria-label="השיאים שלך">
           <div class="leaderboard-title-row">
-            <h3>Your Best Runs</h3>
+            <h3>הריצות הטובות שלך</h3>
             <span id="personalBestSummary" class="mini-pill">0 pts</span>
           </div>
           <ol id="localLeaderboardList" class="leaderboard-list"></ol>
         </section>
 
-        <section class="leaderboard-column" aria-label="Community records">
+        <section class="leaderboard-column" aria-label="שיאי הקהילה">
           <div class="leaderboard-title-row">
-            <h3>Community</h3>
-            <span id="communityModeBadge" class="mini-pill">Offline demo</span>
+            <h3>קהילה</h3>
+            <span id="communityModeBadge" class="mini-pill">דמו לא מקוון</span>
           </div>
           <ol id="globalLeaderboardList" class="leaderboard-list"></ol>
         </section>
