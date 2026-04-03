@@ -34,12 +34,20 @@ const closeMenuBtn = document.getElementById("closeMenuBtn");
 const profileNameInput = document.getElementById("profileNameInput");
 const themeSelect = document.getElementById("themeSelect");
 const snakeSkinSelect = document.getElementById("snakeSkinSelect");
+const soundToggle = document.getElementById("soundToggle");
+const gadgetTipsToggle = document.getElementById("gadgetTipsToggle");
 const backgroundUrlInput = document.getElementById("backgroundUrlInput");
 const applyBackgroundUrlBtn = document.getElementById("applyBackgroundUrlBtn");
 const backgroundFileInput = document.getElementById("backgroundFileInput");
 const clearBackgroundBtn = document.getElementById("clearBackgroundBtn");
 const backgroundPreviewEl = document.getElementById("backgroundPreview");
 const backgroundStatusEl = document.getElementById("backgroundStatus");
+const gadgetHelpPanel = document.getElementById("gadgetHelpPanel");
+const gadgetHelpTitleEl = document.getElementById("gadgetHelpTitle");
+const gadgetHelpDescriptionEl = document.getElementById("gadgetHelpDescription");
+const gadgetHelpIconEl = document.getElementById("gadgetHelpIcon");
+const gadgetHelpSkipToggle = document.getElementById("gadgetHelpSkipToggle");
+const closeGadgetHelpBtn = document.getElementById("closeGadgetHelpBtn");
 const leaderboardPanel = document.getElementById("leaderboardPanel");
 const closeLeaderboardBtn = document.getElementById("closeLeaderboardBtn");
 const playerNameInput = document.getElementById("playerNameInput");
@@ -69,8 +77,13 @@ const STORAGE_KEYS = {
   controlSide: "snake_control_side",
   playerName: "snake_player_name",
   personalRecords: "snake_personal_records",
-  boardBackground: "snake_board_background"
+  boardBackground: "snake_board_background",
+  audioMuted: "snake_audio_muted",
+  gadgetTipsDisabled: "snake_gadget_tips_disabled",
+  gadgetTipsSeen: "snake_gadget_tips_seen"
 };
+
+const DEFAULT_BOARD_BACKGROUND = "./defualt background.png";
 
 const DIFFICULTY_PRESETS = {
   easy: {
@@ -190,6 +203,27 @@ const PICKUP_STYLES = {
     fill: "#82ebb7",
     glow: "rgba(130, 235, 183, 0.22)",
     label: "T"
+  }
+};
+
+const GADGET_HELP = {
+  shield: {
+    title: "Shield Core",
+    icon: "S",
+    description:
+      "Shield protects you from one crash. If you hit a wall, obstacle, or enemy once, the run continues and the shield breaks instead of ending the game."
+  },
+  blaster: {
+    title: "Blaster Cell",
+    icon: "B",
+    description:
+      "Blaster gives you charges for the Fire button. Use it to zap the nearest enemy off the board and create breathing room when the map gets crowded."
+  },
+  slow: {
+    title: "Time Field",
+    icon: "T",
+    description:
+      "Time Field slows enemy movement for a few seconds. It is best used when hazards are stacking and you need a safer route to the next fruit."
   }
 };
 
@@ -320,6 +354,15 @@ let boardBackgroundSource = localStorage.getItem(STORAGE_KEYS.boardBackground) |
 let boardBackgroundImage = null;
 let boardBackgroundLoaded = false;
 let boardBackgroundError = "";
+let boardBackgroundResolvedSource = "";
+let boardBackgroundSessionOnly = false;
+let audioMuted = localStorage.getItem(STORAGE_KEYS.audioMuted) === "1";
+let gadgetTipsDisabled = localStorage.getItem(STORAGE_KEYS.gadgetTipsDisabled) === "1";
+let seenGadgetTips = loadSeenGadgetTips();
+let audioContext = null;
+let gadgetHelpOpen = false;
+let gadgetHelpResumeAfterClose = false;
+let activeGadgetHelpType = "";
 
 bestEl.textContent = String(bestScore);
 
@@ -393,6 +436,7 @@ function startGame() {
 
   if (!started) started = true;
 
+  primeAudio();
   gameOverAt = 0;
   running = true;
   setPlayingStatus();
@@ -495,6 +539,7 @@ function tick() {
       start: performance.now()
     };
     triggerBoardFlash("eat");
+    playSound("eat");
     addFloatingText("+1", newHead.x, newHead.y, "#ffd36d");
 
     food = createFood();
@@ -557,6 +602,7 @@ function gameOver(message) {
   gameOverMessage = message;
   clearStatusTimer();
   stopLoop();
+  playSound("fail");
   statusEl.textContent = `${message}. Press New Run or Restart`;
   triggerBoardFlash("danger");
   boardShakeUntil = performance.now() + 280;
@@ -668,6 +714,7 @@ function resolvePortalTravel(pos) {
     activePortals = [];
   }
   triggerBoardFlash("portal");
+  playSound("portal");
   addFloatingText("Warp", pos.x, pos.y, "#9cc7ff");
   return { x: destination.x, y: destination.y };
 }
@@ -872,8 +919,13 @@ function collectPickup(pickup) {
   }
 
   triggerBoardFlash("pickup");
+  playSound("gadget");
   updateAbilityLabel();
   updateActionButtons();
+
+  if (shouldShowGadgetHelp(pickup.type)) {
+    requestAnimationFrame(() => openGadgetHelp(pickup.type));
+  }
 }
 
 function tryUseShield(message) {
@@ -1128,10 +1180,12 @@ function drawPickup(t) {
   drawPickupShape(activePickup.type, cx, cy, CELL * 0.32 * pulse);
   ctx.fill();
 
-  ctx.fillStyle = "rgba(8, 16, 30, 0.86)";
-  ctx.textAlign = "center";
-  ctx.font = "bold 14px Segoe UI";
-  ctx.fillText(style.label, cx, cy + 5);
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.26)";
+  ctx.lineWidth = 1.2;
+  drawPickupShape(activePickup.type, cx, cy, CELL * 0.32 * pulse);
+  ctx.stroke();
+
+  drawPickupGlyph(activePickup.type, cx, cy);
 }
 
 function drawPickupShape(type, cx, cy, radius) {
@@ -1169,6 +1223,47 @@ function drawPickupShape(type, cx, cy, radius) {
   ctx.closePath();
 }
 
+function drawPickupGlyph(type, cx, cy) {
+  ctx.save();
+  ctx.strokeStyle = "rgba(11, 18, 32, 0.86)";
+  ctx.lineWidth = 2.2;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.beginPath();
+
+  if (type === "shield") {
+    ctx.moveTo(cx, cy - 8);
+    ctx.lineTo(cx + 6, cy - 4);
+    ctx.lineTo(cx + 4, cy + 5);
+    ctx.lineTo(cx, cy + 9);
+    ctx.lineTo(cx - 4, cy + 5);
+    ctx.lineTo(cx - 6, cy - 4);
+    ctx.closePath();
+  } else if (type === "slow") {
+    ctx.moveTo(cx - 4, cy - 7);
+    ctx.lineTo(cx + 4, cy - 7);
+    ctx.lineTo(cx + 1.5, cy - 1);
+    ctx.lineTo(cx + 1.5, cy + 1);
+    ctx.lineTo(cx + 4, cy + 7);
+    ctx.lineTo(cx - 4, cy + 7);
+    ctx.lineTo(cx - 1.5, cy + 1);
+    ctx.lineTo(cx - 1.5, cy - 1);
+    ctx.closePath();
+  } else {
+    ctx.moveTo(cx - 7, cy);
+    ctx.lineTo(cx + 7, cy);
+    ctx.moveTo(cx, cy - 7);
+    ctx.lineTo(cx, cy + 7);
+    ctx.moveTo(cx - 4.5, cy - 4.5);
+    ctx.lineTo(cx + 4.5, cy + 4.5);
+    ctx.moveTo(cx + 4.5, cy - 4.5);
+    ctx.lineTo(cx - 4.5, cy + 4.5);
+  }
+
+  ctx.stroke();
+  ctx.restore();
+}
+
 function drawSnake(t) {
   const skin = getSkinConfig();
 
@@ -1179,6 +1274,10 @@ function drawSnake(t) {
     const x = part.x * CELL + 1.9 + wave * 0.28;
     const y = part.y * CELL + 1.9 + wave * 0.28;
     const size = CELL - 3.8;
+
+    ctx.fillStyle = "rgba(3, 7, 15, 0.24)";
+    roundRect(x + 0.8, y + 1.8, size, size, 7);
+    ctx.fill();
 
     ctx.fillStyle = isHead ? skin.headGlow : skin.bodyGlow;
     roundRect(x - 0.4, y - 0.4, size + 0.8, size + 0.8, 7);
@@ -1192,10 +1291,28 @@ function drawSnake(t) {
     roundRect(x, y, size, size, 6);
     ctx.fill();
 
+    const belly = ctx.createLinearGradient(x, y + size * 0.2, x, y + size);
+    belly.addColorStop(0, "rgba(255, 255, 255, 0)");
+    belly.addColorStop(1, "rgba(225, 250, 238, 0.14)");
+    ctx.fillStyle = belly;
+    roundRect(x + 1.4, y + size * 0.45, size - 2.8, size * 0.34, 4);
+    ctx.fill();
+
     ctx.strokeStyle = isHead ? "rgba(232, 255, 246, 0.18)" : "rgba(209, 247, 231, 0.1)";
     ctx.lineWidth = 1;
     roundRect(x, y, size, size, 6);
     ctx.stroke();
+
+    if (!isHead) {
+      ctx.strokeStyle = "rgba(222, 248, 236, 0.08)";
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(x + 3, y + size * 0.28);
+      ctx.lineTo(x + size - 3, y + size * 0.28);
+      ctx.moveTo(x + 3, y + size * 0.52);
+      ctx.lineTo(x + size - 3, y + size * 0.52);
+      ctx.stroke();
+    }
   }
 
   drawSnakeEyes();
@@ -1225,6 +1342,24 @@ function drawSnakeEyes() {
     centerX + direction.x * eyeForward - perpendicular.x * eyeSpread,
     centerY + direction.y * eyeForward - perpendicular.y * eyeSpread,
     eyeRadius,
+    0,
+    Math.PI * 2
+  );
+  ctx.fill();
+
+  ctx.fillStyle = "rgba(255, 255, 255, 0.72)";
+  ctx.beginPath();
+  ctx.arc(
+    centerX + direction.x * eyeForward + perpendicular.x * eyeSpread - 0.35,
+    centerY + direction.y * eyeForward + perpendicular.y * eyeSpread - 0.45,
+    0.45,
+    0,
+    Math.PI * 2
+  );
+  ctx.arc(
+    centerX + direction.x * eyeForward - perpendicular.x * eyeSpread - 0.35,
+    centerY + direction.y * eyeForward - perpendicular.y * eyeSpread - 0.45,
+    0.45,
     0,
     Math.PI * 2
   );
@@ -1301,6 +1436,16 @@ function drawEnemies(t) {
     ctx.moveTo(0, -CELL * 0.12);
     ctx.lineTo(0, CELL * 0.12);
     ctx.stroke();
+
+    ctx.fillStyle = "rgba(18, 7, 7, 0.82)";
+    ctx.beginPath();
+    ctx.arc(0, 0, CELL * 0.08, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "rgba(255, 236, 216, 0.8)";
+    ctx.beginPath();
+    ctx.arc(-1.2, -1.2, CELL * 0.025, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
   }
 }
@@ -1465,6 +1610,10 @@ function setDirection(dir) {
 }
 
 function onKeyDown(event) {
+  if (gadgetHelpOpen && event.key !== "Escape" && event.key !== "Enter" && event.key !== " ") {
+    return;
+  }
+
   switch (event.key) {
     case "ArrowUp":
     case "w":
@@ -1488,9 +1637,17 @@ function onKeyDown(event) {
       break;
     case " ":
       event.preventDefault();
+      if (gadgetHelpOpen) {
+        closeGadgetHelp();
+        break;
+      }
       togglePause();
       break;
     case "Enter":
+      if (gadgetHelpOpen) {
+        closeGadgetHelp();
+        break;
+      }
       if (!running && started) {
         initGame();
         startGame();
@@ -1501,6 +1658,10 @@ function onKeyDown(event) {
       fireWeapon();
       break;
     case "Escape":
+      if (gadgetHelpOpen) {
+        closeGadgetHelp();
+        break;
+      }
       if (menuPanel && !menuPanel.hidden) {
         setMenuOpen(false);
       }
@@ -1649,6 +1810,23 @@ function setPlayerName(nextName) {
   updateCustomizationUI();
 }
 
+function setAudioMuted(isMuted) {
+  audioMuted = Boolean(isMuted);
+  localStorage.setItem(STORAGE_KEYS.audioMuted, audioMuted ? "1" : "0");
+  if (audioContext && audioMuted) {
+    audioContext.suspend().catch(() => {});
+  } else if (audioContext && !audioMuted) {
+    audioContext.resume().catch(() => {});
+  }
+  updateCustomizationUI();
+}
+
+function setGadgetTipsDisabled(isDisabled) {
+  gadgetTipsDisabled = Boolean(isDisabled);
+  localStorage.setItem(STORAGE_KEYS.gadgetTipsDisabled, gadgetTipsDisabled ? "1" : "0");
+  updateCustomizationUI();
+}
+
 function setControlLayout(nextLayout) {
   preferredControlLayout = normalizeKey(nextLayout, CONTROL_LAYOUT_PRESETS, preferredControlLayout);
   localStorage.setItem(STORAGE_KEYS.controlLayout, preferredControlLayout);
@@ -1686,11 +1864,28 @@ function updateTouchControlSettingsUI() {
   if (controlSideSelect) controlSideSelect.value = preferredControlSide;
 }
 
+function loadSeenGadgetTips() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.gadgetTipsSeen);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(parsed) ? parsed : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveSeenGadgetTips() {
+  localStorage.setItem(STORAGE_KEYS.gadgetTipsSeen, JSON.stringify([...seenGadgetTips]));
+}
+
 function updateCustomizationUI() {
   if (playerNameInput) playerNameInput.value = playerName;
   if (profileNameInput) profileNameInput.value = playerName;
   if (themeSelect) themeSelect.value = activeTheme;
   if (snakeSkinSelect) snakeSkinSelect.value = activeSkin;
+  if (soundToggle) soundToggle.checked = !audioMuted;
+  if (gadgetTipsToggle) gadgetTipsToggle.checked = !gadgetTipsDisabled;
+
   if (backgroundUrlInput && boardBackgroundSource.startsWith("http")) {
     backgroundUrlInput.value = boardBackgroundSource;
   } else if (backgroundUrlInput && (!boardBackgroundSource || boardBackgroundSource.startsWith("data:"))) {
@@ -1700,13 +1895,17 @@ function updateCustomizationUI() {
   if (backgroundPreviewEl) {
     backgroundPreviewEl.classList.toggle("has-image", boardBackgroundLoaded);
     backgroundPreviewEl.style.backgroundImage = boardBackgroundLoaded
-      ? `url("${boardBackgroundSource}")`
+      ? `url("${boardBackgroundResolvedSource}")`
       : "";
   }
 
   if (backgroundStatusEl) {
     if (boardBackgroundLoaded) {
-      backgroundStatusEl.textContent = boardBackgroundSource.startsWith("data:")
+      backgroundStatusEl.textContent = boardBackgroundSessionOnly
+        ? "Session image active"
+        : !boardBackgroundSource
+        ? "Default logo active"
+        : boardBackgroundSource.startsWith("data:")
         ? "Device image active"
         : "URL image active";
     } else if (boardBackgroundError) {
@@ -1718,40 +1917,161 @@ function updateCustomizationUI() {
 }
 
 function loadBoardBackground(source) {
-  if (!source) {
-    boardBackgroundSource = "";
-    boardBackgroundImage = null;
-    boardBackgroundLoaded = false;
-    boardBackgroundError = "";
-    localStorage.removeItem(STORAGE_KEYS.boardBackground);
-    updateCustomizationUI();
-    return;
-  }
-
+  const resolvedSource = source || DEFAULT_BOARD_BACKGROUND;
   boardBackgroundError = "Loading image...";
   boardBackgroundLoaded = false;
+  boardBackgroundResolvedSource = resolvedSource;
   updateCustomizationUI();
 
   const image = new Image();
   image.onload = () => {
-    boardBackgroundSource = source;
     boardBackgroundImage = image;
     boardBackgroundLoaded = true;
     boardBackgroundError = "";
-    try {
-      localStorage.setItem(STORAGE_KEYS.boardBackground, source);
-    } catch {
-      boardBackgroundError = "Image too large for local storage";
-    }
     updateCustomizationUI();
   };
   image.onerror = () => {
     boardBackgroundLoaded = false;
     boardBackgroundImage = null;
-    boardBackgroundError = "Image failed to load";
+    boardBackgroundError = resolvedSource === DEFAULT_BOARD_BACKGROUND
+      ? "Default background failed to load"
+      : "Image failed to load";
     updateCustomizationUI();
   };
-  image.src = source;
+  image.src = resolvedSource;
+}
+
+function setCustomBoardBackground(source) {
+  boardBackgroundSource = source;
+  boardBackgroundSessionOnly = false;
+  if (!source) {
+    localStorage.removeItem(STORAGE_KEYS.boardBackground);
+  } else {
+    try {
+      localStorage.setItem(STORAGE_KEYS.boardBackground, source);
+    } catch {
+      boardBackgroundSessionOnly = true;
+    }
+  }
+  loadBoardBackground(boardBackgroundSource);
+}
+
+function shouldShowGadgetHelp(type) {
+  return !gadgetTipsDisabled && !seenGadgetTips.has(type);
+}
+
+function openGadgetHelp(type) {
+  const help = GADGET_HELP[type];
+  if (!gadgetHelpPanel || !help || gadgetHelpOpen) return;
+
+  gadgetHelpOpen = true;
+  activeGadgetHelpType = type;
+  gadgetHelpResumeAfterClose = running;
+
+  if (menuPanel) menuPanel.hidden = true;
+  if (leaderboardPanel) leaderboardPanel.hidden = true;
+
+  if (running) {
+    running = false;
+    stopLoop();
+  }
+
+  if (gadgetHelpTitleEl) gadgetHelpTitleEl.textContent = help.title;
+  if (gadgetHelpDescriptionEl) gadgetHelpDescriptionEl.textContent = help.description;
+  if (gadgetHelpIconEl) gadgetHelpIconEl.textContent = help.icon;
+  if (gadgetHelpSkipToggle) gadgetHelpSkipToggle.checked = gadgetTipsDisabled;
+
+  gadgetHelpPanel.hidden = false;
+  statusEl.textContent = `${help.title} tutorial`;
+  updateActionButtons();
+}
+
+function closeGadgetHelp() {
+  if (!gadgetHelpOpen) return;
+
+  seenGadgetTips.add(activeGadgetHelpType);
+  saveSeenGadgetTips();
+  setGadgetTipsDisabled(Boolean(gadgetHelpSkipToggle?.checked));
+  gadgetHelpOpen = false;
+  activeGadgetHelpType = "";
+  if (gadgetHelpPanel) gadgetHelpPanel.hidden = true;
+
+  if (gadgetHelpResumeAfterClose && started && gameOverAt === 0) {
+    running = true;
+    setPlayingStatus();
+    runLoop();
+  } else if (!started) {
+    statusEl.textContent = getIdleStatus();
+  }
+
+  gadgetHelpResumeAfterClose = false;
+  updateActionButtons();
+}
+
+function primeAudio() {
+  if (audioMuted) return;
+  const AudioCtor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtor) return;
+
+  if (!audioContext) {
+    audioContext = new AudioCtor();
+  }
+
+  if (audioContext.state === "suspended") {
+    audioContext.resume().catch(() => {});
+  }
+}
+
+function playSound(kind) {
+  if (audioMuted) return;
+  primeAudio();
+  if (!audioContext) return;
+
+  switch (kind) {
+    case "eat":
+      playTone(620, 0.06, 0.05, "triangle", 960);
+      playTone(880, 0.05, 0.03, "sine", 1180, 0.05);
+      break;
+    case "gadget":
+      playTone(360, 0.08, 0.045, "triangle", 520);
+      playTone(540, 0.08, 0.04, "triangle", 740, 0.07);
+      playTone(820, 0.09, 0.03, "sine", 960, 0.11);
+      break;
+    case "weapon":
+      playTone(920, 0.06, 0.045, "square", 660);
+      break;
+    case "portal":
+      playTone(420, 0.09, 0.03, "sine", 760);
+      playTone(760, 0.12, 0.025, "triangle", 420, 0.03);
+      break;
+    case "fail":
+      playTone(240, 0.22, 0.07, "sawtooth", 110);
+      playTone(160, 0.28, 0.045, "triangle", 80, 0.03);
+      break;
+    default:
+      break;
+  }
+}
+
+function playTone(startFreq, duration, volume, type, endFreq = startFreq, delay = 0) {
+  if (!audioContext) return;
+
+  const now = audioContext.currentTime + delay;
+  const oscillator = audioContext.createOscillator();
+  const gainNode = audioContext.createGain();
+
+  oscillator.type = type;
+  oscillator.frequency.setValueAtTime(startFreq, now);
+  oscillator.frequency.exponentialRampToValueAtTime(Math.max(40, endFreq), now + duration);
+
+  gainNode.gain.setValueAtTime(0.0001, now);
+  gainNode.gain.exponentialRampToValueAtTime(volume, now + 0.015);
+  gainNode.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+  oscillator.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+  oscillator.start(now);
+  oscillator.stop(now + duration + 0.02);
 }
 
 function updateModeLabel() {
@@ -1782,14 +2102,14 @@ function updateAbilityLabel() {
 
 function updateActionButtons() {
   startBtn.textContent = running ? "Playing" : gameOverAt > 0 ? "New Run" : started ? "Resume" : "Play";
-  startBtn.disabled = running;
+  startBtn.disabled = running || gadgetHelpOpen;
 
   pauseBtn.textContent = running ? "Pause" : started && gameOverAt === 0 ? "Resume" : "Pause";
-  pauseBtn.disabled = !started || gameOverAt > 0;
+  pauseBtn.disabled = !started || gameOverAt > 0 || gadgetHelpOpen;
 
-  restartBtn.disabled = !started && gameOverAt === 0;
+  restartBtn.disabled = (!started && gameOverAt === 0) || gadgetHelpOpen;
 
-  const canFire = playerPowerState.blasterCharges > 0 && enemies.length > 0 && started && gameOverAt === 0;
+  const canFire = playerPowerState.blasterCharges > 0 && enemies.length > 0 && started && gameOverAt === 0 && !gadgetHelpOpen;
   fireBtn.disabled = !canFire;
   touchFireBtn.disabled = !canFire;
 }
@@ -1840,6 +2160,7 @@ function fireWeapon() {
   updateAbilityLabel();
   updateActionButtons();
   triggerBoardFlash("weapon");
+  playSound("weapon");
   addFloatingText("+2", bestTarget.enemy.x, bestTarget.enemy.y, "#d9b3ff");
   setTemporaryStatus("Blaster fired", 700);
 }
@@ -2048,6 +2369,9 @@ function setLeaderboardOpen(isOpen) {
   if (isOpen && menuPanel) {
     menuPanel.hidden = true;
   }
+  if (isOpen && gadgetHelpPanel) {
+    gadgetHelpPanel.hidden = true;
+  }
   leaderboardPanel.hidden = !isOpen;
   requestAnimationFrame(syncViewportLayout);
 }
@@ -2056,6 +2380,9 @@ function setMenuOpen(isOpen) {
   if (!menuPanel) return;
   if (isOpen && leaderboardPanel) {
     leaderboardPanel.hidden = true;
+  }
+  if (isOpen && gadgetHelpPanel) {
+    gadgetHelpPanel.hidden = true;
   }
   menuPanel.hidden = !isOpen;
 }
@@ -2310,14 +2637,30 @@ if (snakeSkinSelect) {
   snakeSkinSelect.addEventListener("change", () => setSnakeSkin(snakeSkinSelect.value));
 }
 
+if (soundToggle) {
+  soundToggle.addEventListener("change", () => {
+    setAudioMuted(!soundToggle.checked);
+    if (soundToggle.checked) {
+      primeAudio();
+      playSound("eat");
+    }
+  });
+}
+
+if (gadgetTipsToggle) {
+  gadgetTipsToggle.addEventListener("change", () => {
+    setGadgetTipsDisabled(!gadgetTipsToggle.checked);
+  });
+}
+
 if (applyBackgroundUrlBtn && backgroundUrlInput) {
   applyBackgroundUrlBtn.addEventListener("click", () => {
     const value = backgroundUrlInput.value.trim();
     if (!value) {
-      loadBoardBackground("");
+      setCustomBoardBackground("");
       return;
     }
-    loadBoardBackground(value);
+    setCustomBoardBackground(value);
   });
 }
 
@@ -2325,8 +2668,8 @@ if (backgroundFileInput) {
   backgroundFileInput.addEventListener("change", () => {
     const file = backgroundFileInput.files?.[0];
     if (!file) return;
-    if (file.size > 1_500_000) {
-      boardBackgroundError = "Choose an image under 1.5MB";
+    if (file.size > 8_000_000) {
+      boardBackgroundError = "Choose an image under 8MB";
       updateCustomizationUI();
       backgroundFileInput.value = "";
       return;
@@ -2336,7 +2679,7 @@ if (backgroundFileInput) {
     reader.onload = () => {
       const result = typeof reader.result === "string" ? reader.result : "";
       if (result) {
-        loadBoardBackground(result);
+        setCustomBoardBackground(result);
       }
       backgroundFileInput.value = "";
     };
@@ -2353,7 +2696,20 @@ if (clearBackgroundBtn) {
   clearBackgroundBtn.addEventListener("click", () => {
     if (backgroundUrlInput) backgroundUrlInput.value = "";
     if (backgroundFileInput) backgroundFileInput.value = "";
-    loadBoardBackground("");
+    setCustomBoardBackground("");
+  });
+}
+
+if (closeGadgetHelpBtn) {
+  closeGadgetHelpBtn.addEventListener("click", closeGadgetHelp);
+}
+
+if (gadgetHelpPanel) {
+  gadgetHelpPanel.addEventListener("click", (event) => {
+    const target = event.target;
+    if (target instanceof Element && target.hasAttribute("data-close-overlay")) {
+      closeGadgetHelp();
+    }
   });
 }
 

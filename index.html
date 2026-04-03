@@ -169,6 +169,24 @@
               </select>
             </label>
           </div>
+
+          <div class="settings-stack" aria-label="Gameplay settings">
+            <label class="switch-row" for="soundToggle">
+              <span>
+                <strong>Sound FX</strong>
+                <small>Eat, gadget, fail, and weapon sounds</small>
+              </span>
+              <input id="soundToggle" type="checkbox" role="switch">
+            </label>
+
+            <label class="switch-row" for="gadgetTipsToggle">
+              <span>
+                <strong>Gadget Tips</strong>
+                <small>Pause once to explain a gadget the first time</small>
+              </span>
+              <input id="gadgetTipsToggle" type="checkbox" role="switch">
+            </label>
+          </div>
         </section>
 
         <section class="menu-panel-block menu-panel-wide" aria-label="Board background">
@@ -201,6 +219,33 @@
             </div>
           </div>
         </section>
+      </div>
+    </div>
+  </section>
+
+  <section id="gadgetHelpPanel" class="overlay-panel" hidden aria-label="Gadget help">
+    <div class="overlay-backdrop" data-close-overlay="gadget-help"></div>
+    <div class="overlay-card tutorial-card">
+      <div class="overlay-header">
+        <div>
+          <p class="overlay-kicker">New Gadget</p>
+          <h2 id="gadgetHelpTitle">Shield</h2>
+        </div>
+        <button id="closeGadgetHelpBtn" class="utility-btn close-btn" type="button" aria-label="Close gadget help">Continue</button>
+      </div>
+
+      <div class="tutorial-body">
+        <div id="gadgetHelpIcon" class="tutorial-icon" aria-hidden="true">S</div>
+        <div class="tutorial-copy">
+          <p id="gadgetHelpDescription" class="tutorial-description"></p>
+          <label class="switch-row compact-switch" for="gadgetHelpSkipToggle">
+            <span>
+              <strong>Skip future gadget popups</strong>
+              <small>Good if you already know how the boosts work</small>
+            </span>
+            <input id="gadgetHelpSkipToggle" type="checkbox" role="switch">
+          </label>
+        </div>
       </div>
     </div>
   </section>
