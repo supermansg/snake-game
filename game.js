@@ -5,6 +5,7 @@ const topbarEl = document.querySelector(".topbar");
 const hudEl = document.querySelector(".hud");
 const controlsEl = document.querySelector(".controls");
 const boardShellEl = document.getElementById("boardShell");
+const footerEl = document.querySelector(".app-footer");
 
 const scoreEl = document.getElementById("score");
 const bestEl = document.getElementById("best");
@@ -18,6 +19,7 @@ const startBtn = document.getElementById("startBtn");
 const pauseBtn = document.getElementById("pauseBtn");
 const restartBtn = document.getElementById("restartBtn");
 const fireBtn = document.getElementById("fireBtn");
+const menuBtn = document.getElementById("menuBtn");
 const recordsBtn = document.getElementById("recordsBtn");
 const difficultyButtons = document.querySelectorAll("[data-difficulty]");
 const touchControlsEl = document.getElementById("touchControls");
@@ -27,6 +29,17 @@ const touchFireBtn = document.getElementById("touchFireBtn");
 const controlLayoutSelect = document.getElementById("controlLayoutSelect");
 const controlSizeSelect = document.getElementById("controlSizeSelect");
 const controlSideSelect = document.getElementById("controlSideSelect");
+const menuPanel = document.getElementById("menuPanel");
+const closeMenuBtn = document.getElementById("closeMenuBtn");
+const profileNameInput = document.getElementById("profileNameInput");
+const themeSelect = document.getElementById("themeSelect");
+const snakeSkinSelect = document.getElementById("snakeSkinSelect");
+const backgroundUrlInput = document.getElementById("backgroundUrlInput");
+const applyBackgroundUrlBtn = document.getElementById("applyBackgroundUrlBtn");
+const backgroundFileInput = document.getElementById("backgroundFileInput");
+const clearBackgroundBtn = document.getElementById("clearBackgroundBtn");
+const backgroundPreviewEl = document.getElementById("backgroundPreview");
+const backgroundStatusEl = document.getElementById("backgroundStatus");
 const leaderboardPanel = document.getElementById("leaderboardPanel");
 const closeLeaderboardBtn = document.getElementById("closeLeaderboardBtn");
 const playerNameInput = document.getElementById("playerNameInput");
@@ -55,7 +68,8 @@ const STORAGE_KEYS = {
   controlSize: "snake_control_size",
   controlSide: "snake_control_side",
   playerName: "snake_player_name",
-  personalRecords: "snake_personal_records"
+  personalRecords: "snake_personal_records",
+  boardBackground: "snake_board_background"
 };
 
 const DIFFICULTY_PRESETS = {
@@ -73,7 +87,10 @@ const DIFFICULTY_PRESETS = {
     maxEnemies: 3,
     extraEnemyChance: 0,
     enemyMoveBaseInterval: 5,
-    enemyMoveMinInterval: 2
+    enemyMoveMinInterval: 2,
+    pickupEvery: 2,
+    pickupChance: 0.92,
+    portalLevelEvery: 3
   },
   medium: {
     label: "Medium",
@@ -89,7 +106,10 @@ const DIFFICULTY_PRESETS = {
     maxEnemies: 5,
     extraEnemyChance: 0.05,
     enemyMoveBaseInterval: 4,
-    enemyMoveMinInterval: 1
+    enemyMoveMinInterval: 1,
+    pickupEvery: 2,
+    pickupChance: 0.8,
+    portalLevelEvery: 3
   },
   hard: {
     label: "Hard",
@@ -105,7 +125,10 @@ const DIFFICULTY_PRESETS = {
     maxEnemies: 7,
     extraEnemyChance: 0.24,
     enemyMoveBaseInterval: 3,
-    enemyMoveMinInterval: 1
+    enemyMoveMinInterval: 1,
+    pickupEvery: 3,
+    pickupChance: 0.74,
+    portalLevelEvery: 2
   }
 };
 
@@ -120,10 +143,13 @@ const BACKGROUND_THEMES = {
     foodAura: "rgba(247, 126, 115, 0.25)",
     foodCore: "#ff7e72",
     foodHighlight: "#ffe6ac",
+    foodLeaf: "#86db8c",
     obstacleFillRGB: "94, 120, 170",
     obstacleStroke: "#84a0d7",
+    obstacleAccent: "rgba(215, 230, 255, 0.16)",
     enemyAura: "rgba(255, 126, 85, 0.35)",
     enemyCore: "#ff8b61",
+    enemySpike: "#ffd39b",
     burstRGB: "255, 198, 112",
     overlayRGB: "8, 12, 22"
   },
@@ -137,12 +163,33 @@ const BACKGROUND_THEMES = {
     foodAura: "rgba(245, 177, 79, 0.2)",
     foodCore: "#f9b85a",
     foodHighlight: "#fff0ba",
+    foodLeaf: "#a8ecba",
     obstacleFillRGB: "85, 133, 137",
     obstacleStroke: "#9bd6ca",
+    obstacleAccent: "rgba(220, 255, 250, 0.14)",
     enemyAura: "rgba(241, 108, 108, 0.34)",
     enemyCore: "#ff7268",
+    enemySpike: "#ffe0ab",
     burstRGB: "136, 244, 208",
     overlayRGB: "6, 20, 22"
+  }
+};
+
+const PICKUP_STYLES = {
+  shield: {
+    fill: "#78ddff",
+    glow: "rgba(120, 221, 255, 0.22)",
+    label: "S"
+  },
+  blaster: {
+    fill: "#c58eff",
+    glow: "rgba(197, 142, 255, 0.22)",
+    label: "B"
+  },
+  slow: {
+    fill: "#82ebb7",
+    glow: "rgba(130, 235, 183, 0.22)",
+    label: "T"
   }
 };
 
@@ -269,6 +316,10 @@ let communityStatus = {
     : "Community board: backend not connected yet"
 };
 let playerName = localStorage.getItem(STORAGE_KEYS.playerName) || "ArcadeHero";
+let boardBackgroundSource = localStorage.getItem(STORAGE_KEYS.boardBackground) || "";
+let boardBackgroundImage = null;
+let boardBackgroundLoaded = false;
+let boardBackgroundError = "";
 
 bestEl.textContent = String(bestScore);
 
@@ -316,6 +367,7 @@ function initGame() {
   updateDifficultyButtons();
   applyControlLayout();
   updateTouchControlSettingsUI();
+  updateCustomizationUI();
   updateModeLabel();
   updateAbilityLabel();
   renderLeaderboards();
@@ -729,10 +781,11 @@ function applyLevelDifficulty(currentLevel) {
 
 function maybeSpawnPickup() {
   if (activePickup) return;
-  if (score === 0 || score % 3 !== 0) return;
+  const config = getDifficultyConfig();
+  if (score === 0 || score % config.pickupEvery !== 0) return;
+  if (Math.random() > config.pickupChance) return;
 
-  const types = ["shield", "blaster", "slow"];
-  const type = types[randomInt(0, types.length - 1)];
+  const type = choosePickupType();
   const cell = findOpenCell();
   if (!cell) return;
 
@@ -742,12 +795,14 @@ function maybeSpawnPickup() {
     y: cell.y,
     phase: Math.random() * Math.PI * 2
   };
+  setTemporaryStatus(`${formatPickupName(type)} dropped on the grid`, 900);
   updateAbilityLabel();
 }
 
 function maybeSpawnPortals() {
+  const config = getDifficultyConfig();
   if (activePortals.length === 2) return;
-  if (level < 2 || level % 2 !== 0) return;
+  if (level < config.portalLevelEvery || level % config.portalLevelEvery !== 0) return;
 
   const first = findOpenCell();
   const second = findOpenCell(first);
@@ -757,6 +812,23 @@ function maybeSpawnPortals() {
     { id: "A", x: first.x, y: first.y, phase: Math.random() * Math.PI * 2, charges: 3 },
     { id: "B", x: second.x, y: second.y, phase: Math.random() * Math.PI * 2, charges: 3 }
   ];
+  setTemporaryStatus("Portals opened", 900);
+}
+
+function choosePickupType() {
+  const weightedPool = [
+    "shield",
+    "shield",
+    "blaster",
+    "blaster",
+    "slow"
+  ];
+
+  if (playerPowerState.blasterCharges === 0) weightedPool.push("blaster");
+  if (playerPowerState.shield === 0) weightedPool.push("shield");
+  if (level >= 3) weightedPool.push("slow");
+
+  return weightedPool[randomInt(0, weightedPool.length - 1)];
 }
 
 function findOpenCell(avoid = null) {
@@ -888,6 +960,8 @@ function drawBackground(t) {
   ctx.fillStyle = glow;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+  drawCustomBoardBackground();
+
   const vignette = ctx.createRadialGradient(
     canvas.width * 0.5,
     canvas.height * 0.5,
@@ -899,6 +973,30 @@ function drawBackground(t) {
   vignette.addColorStop(0, "rgba(0, 0, 0, 0)");
   vignette.addColorStop(1, `rgba(${theme.vignetteRGB}, 0.46)`);
   ctx.fillStyle = vignette;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+function drawCustomBoardBackground() {
+  if (!boardBackgroundImage || !boardBackgroundLoaded) return;
+
+  const scale = Math.max(
+    canvas.width / boardBackgroundImage.width,
+    canvas.height / boardBackgroundImage.height
+  );
+  const width = boardBackgroundImage.width * scale;
+  const height = boardBackgroundImage.height * scale;
+  const x = (canvas.width - width) / 2;
+  const y = (canvas.height - height) / 2;
+
+  ctx.save();
+  ctx.globalAlpha = 0.24;
+  ctx.drawImage(boardBackgroundImage, x, y, width, height);
+  ctx.restore();
+
+  const shade = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  shade.addColorStop(0, "rgba(7, 12, 22, 0.24)");
+  shade.addColorStop(1, "rgba(5, 8, 16, 0.38)");
+  ctx.fillStyle = shade;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
 
@@ -982,24 +1080,35 @@ function drawFood(t) {
   ctx.arc(cx, cy, CELL * 0.46 * pulse, 0, Math.PI * 2);
   ctx.fill();
 
-  const size = CELL - 7;
-  const x = food.x * CELL + 3.5;
-  const y = food.y * CELL + 3.5;
-  const core = ctx.createLinearGradient(x, y, x + size, y + size);
+  const size = CELL - 8;
+  const x = food.x * CELL + 4;
+  const y = food.y * CELL + 4;
+  const core = ctx.createRadialGradient(
+    cx - 2,
+    cy - 3,
+    2,
+    cx,
+    cy,
+    CELL * 0.46
+  );
   core.addColorStop(0, theme.foodHighlight);
-  core.addColorStop(0.42, theme.foodCore);
+  core.addColorStop(0.38, theme.foodCore);
   core.addColorStop(1, withAlpha(theme.foodCore, 0.78));
   ctx.fillStyle = core;
-  roundRect(x, y, size, size, 7);
+  ctx.beginPath();
+  ctx.arc(cx, cy, size * 0.44, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.24)";
-  ctx.lineWidth = 1;
+  ctx.fillStyle = theme.foodLeaf;
   ctx.beginPath();
-  ctx.moveTo(cx, y + 2.2);
-  ctx.lineTo(cx, y + size - 2.2);
-  ctx.moveTo(x + 2.2, cy);
-  ctx.lineTo(x + size - 2.2, cy);
+  ctx.ellipse(cx + 3.8, y + 2.5, 4.5, 2.6, -0.45, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.22)";
+  ctx.lineWidth = 1.1;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - size * 0.24);
+  ctx.quadraticCurveTo(cx + 1.5, cy - size * 0.44, cx + 3.4, cy - size * 0.5);
   ctx.stroke();
 }
 
@@ -1009,33 +1118,55 @@ function drawPickup(t) {
   const cx = (activePickup.x + 0.5) * CELL;
   const cy = (activePickup.y + 0.5) * CELL;
   const pulse = 1 + Math.sin(t * 6 + activePickup.phase) * 0.14;
-
-  const pickupStyles = {
-    shield: { fill: "#78ddff", glow: "rgba(120, 221, 255, 0.22)", label: "S" },
-    blaster: { fill: "#c58eff", glow: "rgba(197, 142, 255, 0.22)", label: "B" },
-    slow: { fill: "#82ebb7", glow: "rgba(130, 235, 183, 0.22)", label: "T" }
-  };
-
-  const style = pickupStyles[activePickup.type];
+  const style = PICKUP_STYLES[activePickup.type];
   ctx.fillStyle = style.glow;
   ctx.beginPath();
   ctx.arc(cx, cy, CELL * 0.48 * pulse, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.fillStyle = style.fill;
-  roundRect(
-    activePickup.x * CELL + 4,
-    activePickup.y * CELL + 4,
-    CELL - 8,
-    CELL - 8,
-    8
-  );
+  drawPickupShape(activePickup.type, cx, cy, CELL * 0.32 * pulse);
   ctx.fill();
 
   ctx.fillStyle = "rgba(8, 16, 30, 0.86)";
   ctx.textAlign = "center";
   ctx.font = "bold 14px Segoe UI";
   ctx.fillText(style.label, cx, cy + 5);
+}
+
+function drawPickupShape(type, cx, cy, radius) {
+  ctx.beginPath();
+
+  if (type === "shield") {
+    ctx.moveTo(cx, cy - radius - 2);
+    ctx.lineTo(cx + radius, cy - radius * 0.2);
+    ctx.lineTo(cx + radius * 0.7, cy + radius);
+    ctx.lineTo(cx, cy + radius + 4);
+    ctx.lineTo(cx - radius * 0.7, cy + radius);
+    ctx.lineTo(cx - radius, cy - radius * 0.2);
+    ctx.closePath();
+    return;
+  }
+
+  if (type === "slow") {
+    ctx.moveTo(cx - radius, cy - radius);
+    ctx.lineTo(cx + radius, cy - radius);
+    ctx.lineTo(cx + radius * 0.3, cy);
+    ctx.lineTo(cx + radius, cy + radius);
+    ctx.lineTo(cx - radius, cy + radius);
+    ctx.lineTo(cx - radius * 0.3, cy);
+    ctx.closePath();
+    return;
+  }
+
+  for (let i = 0; i < 6; i += 1) {
+    const angle = -Math.PI / 2 + (Math.PI * 2 * i) / 6;
+    const px = cx + Math.cos(angle) * radius;
+    const py = cy + Math.sin(angle) * radius;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
 }
 
 function drawSnake(t) {
@@ -1119,6 +1250,9 @@ function drawObstacles(t) {
     ctx.lineWidth = 1.25;
     ctx.strokeRect(x + 0.7, y + 0.7, size - 1.4, size - 1.4);
 
+    ctx.fillStyle = theme.obstacleAccent;
+    ctx.fillRect(x + 2.5, y + 2.5, size - 5, 3.2);
+
     ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
     ctx.beginPath();
     ctx.moveTo(x + 2, y + 2);
@@ -1143,10 +1277,14 @@ function drawEnemies(t) {
     ctx.rotate(t * 2.3 + enemy.phase);
     ctx.fillStyle = theme.enemyAura;
     ctx.beginPath();
-    ctx.moveTo(0, -CELL * 0.42 * pulse);
-    ctx.lineTo(CELL * 0.42 * pulse, 0);
-    ctx.lineTo(0, CELL * 0.42 * pulse);
-    ctx.lineTo(-CELL * 0.42 * pulse, 0);
+    ctx.moveTo(0, -CELL * 0.44 * pulse);
+    ctx.lineTo(CELL * 0.16 * pulse, -CELL * 0.16);
+    ctx.lineTo(CELL * 0.44 * pulse, 0);
+    ctx.lineTo(CELL * 0.16, CELL * 0.16 * pulse);
+    ctx.lineTo(0, CELL * 0.44 * pulse);
+    ctx.lineTo(-CELL * 0.16, CELL * 0.16 * pulse);
+    ctx.lineTo(-CELL * 0.44 * pulse, 0);
+    ctx.lineTo(-CELL * 0.16 * pulse, -CELL * 0.16);
     ctx.closePath();
     ctx.fill();
 
@@ -1154,6 +1292,15 @@ function drawEnemies(t) {
     ctx.beginPath();
     ctx.arc(0, 0, CELL * 0.22, 0, Math.PI * 2);
     ctx.fill();
+
+    ctx.strokeStyle = theme.enemySpike;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(-CELL * 0.12, -2);
+    ctx.lineTo(CELL * 0.12, -2);
+    ctx.moveTo(0, -CELL * 0.12);
+    ctx.lineTo(0, CELL * 0.12);
+    ctx.stroke();
     ctx.restore();
   }
 }
@@ -1354,6 +1501,9 @@ function onKeyDown(event) {
       fireWeapon();
       break;
     case "Escape":
+      if (menuPanel && !menuPanel.hidden) {
+        setMenuOpen(false);
+      }
       if (leaderboardPanel && !leaderboardPanel.hidden) {
         setLeaderboardOpen(false);
       }
@@ -1483,11 +1633,20 @@ function updateDifficultyButtons() {
 function setTheme(nextTheme) {
   activeTheme = normalizeKey(nextTheme, BACKGROUND_THEMES, activeTheme);
   localStorage.setItem(STORAGE_KEYS.theme, activeTheme);
+  updateCustomizationUI();
 }
 
 function setSnakeSkin(nextSkin) {
   activeSkin = normalizeKey(nextSkin, SNAKE_SKINS, activeSkin);
   localStorage.setItem(STORAGE_KEYS.snakeSkin, activeSkin);
+  updateCustomizationUI();
+}
+
+function setPlayerName(nextName) {
+  playerName = sanitizePlayerName(nextName);
+  localStorage.setItem(STORAGE_KEYS.playerName, playerName);
+  renderLeaderboards();
+  updateCustomizationUI();
 }
 
 function setControlLayout(nextLayout) {
@@ -1525,6 +1684,74 @@ function updateTouchControlSettingsUI() {
   if (controlLayoutSelect) controlLayoutSelect.value = preferredControlLayout;
   if (controlSizeSelect) controlSizeSelect.value = preferredControlSize;
   if (controlSideSelect) controlSideSelect.value = preferredControlSide;
+}
+
+function updateCustomizationUI() {
+  if (playerNameInput) playerNameInput.value = playerName;
+  if (profileNameInput) profileNameInput.value = playerName;
+  if (themeSelect) themeSelect.value = activeTheme;
+  if (snakeSkinSelect) snakeSkinSelect.value = activeSkin;
+  if (backgroundUrlInput && boardBackgroundSource.startsWith("http")) {
+    backgroundUrlInput.value = boardBackgroundSource;
+  } else if (backgroundUrlInput && (!boardBackgroundSource || boardBackgroundSource.startsWith("data:"))) {
+    backgroundUrlInput.value = "";
+  }
+
+  if (backgroundPreviewEl) {
+    backgroundPreviewEl.classList.toggle("has-image", boardBackgroundLoaded);
+    backgroundPreviewEl.style.backgroundImage = boardBackgroundLoaded
+      ? `url("${boardBackgroundSource}")`
+      : "";
+  }
+
+  if (backgroundStatusEl) {
+    if (boardBackgroundLoaded) {
+      backgroundStatusEl.textContent = boardBackgroundSource.startsWith("data:")
+        ? "Device image active"
+        : "URL image active";
+    } else if (boardBackgroundError) {
+      backgroundStatusEl.textContent = boardBackgroundError;
+    } else {
+      backgroundStatusEl.textContent = "Default board";
+    }
+  }
+}
+
+function loadBoardBackground(source) {
+  if (!source) {
+    boardBackgroundSource = "";
+    boardBackgroundImage = null;
+    boardBackgroundLoaded = false;
+    boardBackgroundError = "";
+    localStorage.removeItem(STORAGE_KEYS.boardBackground);
+    updateCustomizationUI();
+    return;
+  }
+
+  boardBackgroundError = "Loading image...";
+  boardBackgroundLoaded = false;
+  updateCustomizationUI();
+
+  const image = new Image();
+  image.onload = () => {
+    boardBackgroundSource = source;
+    boardBackgroundImage = image;
+    boardBackgroundLoaded = true;
+    boardBackgroundError = "";
+    try {
+      localStorage.setItem(STORAGE_KEYS.boardBackground, source);
+    } catch {
+      boardBackgroundError = "Image too large for local storage";
+    }
+    updateCustomizationUI();
+  };
+  image.onerror = () => {
+    boardBackgroundLoaded = false;
+    boardBackgroundImage = null;
+    boardBackgroundError = "Image failed to load";
+    updateCustomizationUI();
+  };
+  image.src = source;
 }
 
 function updateModeLabel() {
@@ -1818,8 +2045,19 @@ function escapeHtml(value) {
 
 function setLeaderboardOpen(isOpen) {
   if (!leaderboardPanel) return;
+  if (isOpen && menuPanel) {
+    menuPanel.hidden = true;
+  }
   leaderboardPanel.hidden = !isOpen;
   requestAnimationFrame(syncViewportLayout);
+}
+
+function setMenuOpen(isOpen) {
+  if (!menuPanel) return;
+  if (isOpen && leaderboardPanel) {
+    leaderboardPanel.hidden = true;
+  }
+  menuPanel.hidden = !isOpen;
 }
 
 function syncViewportLayout() {
@@ -1835,7 +2073,7 @@ function syncViewportLayout() {
   const wrapPaddingBottom = parseFloat(wrapStyle.paddingBottom) || 0;
   const rowGap = parseFloat(wrapStyle.rowGap || wrapStyle.gap) || 0;
 
-  const visibleSections = [topbarEl, hudEl, controlsEl, touchControlsEl].filter(
+  const visibleSections = [topbarEl, hudEl, controlsEl, touchControlsEl, footerEl].filter(
     (el) => el && window.getComputedStyle(el).display !== "none"
   );
   const sectionsHeight = visibleSections.reduce((sum, el) => sum + el.offsetHeight, 0);
@@ -2000,6 +2238,7 @@ startBtn.addEventListener("click", startGame);
 pauseBtn.addEventListener("click", togglePause);
 restartBtn.addEventListener("click", initGame);
 fireBtn.addEventListener("click", fireWeapon);
+menuBtn.addEventListener("click", () => setMenuOpen(true));
 recordsBtn.addEventListener("click", () => setLeaderboardOpen(true));
 touchFireBtn.addEventListener("click", fireWeapon);
 
@@ -2027,6 +2266,19 @@ if (closeLeaderboardBtn) {
   closeLeaderboardBtn.addEventListener("click", () => setLeaderboardOpen(false));
 }
 
+if (closeMenuBtn) {
+  closeMenuBtn.addEventListener("click", () => setMenuOpen(false));
+}
+
+if (menuPanel) {
+  menuPanel.addEventListener("click", (event) => {
+    const target = event.target;
+    if (target instanceof Element && target.hasAttribute("data-close-overlay")) {
+      setMenuOpen(false);
+    }
+  });
+}
+
 if (leaderboardPanel) {
   leaderboardPanel.addEventListener("click", (event) => {
     const target = event.target;
@@ -2039,10 +2291,69 @@ if (leaderboardPanel) {
 if (playerNameInput) {
   playerNameInput.value = playerName;
   playerNameInput.addEventListener("change", () => {
-    playerName = sanitizePlayerName(playerNameInput.value);
-    playerNameInput.value = playerName;
-    localStorage.setItem(STORAGE_KEYS.playerName, playerName);
-    renderLeaderboards();
+    setPlayerName(playerNameInput.value);
+  });
+}
+
+if (profileNameInput) {
+  profileNameInput.value = playerName;
+  profileNameInput.addEventListener("change", () => {
+    setPlayerName(profileNameInput.value);
+  });
+}
+
+if (themeSelect) {
+  themeSelect.addEventListener("change", () => setTheme(themeSelect.value));
+}
+
+if (snakeSkinSelect) {
+  snakeSkinSelect.addEventListener("change", () => setSnakeSkin(snakeSkinSelect.value));
+}
+
+if (applyBackgroundUrlBtn && backgroundUrlInput) {
+  applyBackgroundUrlBtn.addEventListener("click", () => {
+    const value = backgroundUrlInput.value.trim();
+    if (!value) {
+      loadBoardBackground("");
+      return;
+    }
+    loadBoardBackground(value);
+  });
+}
+
+if (backgroundFileInput) {
+  backgroundFileInput.addEventListener("change", () => {
+    const file = backgroundFileInput.files?.[0];
+    if (!file) return;
+    if (file.size > 1_500_000) {
+      boardBackgroundError = "Choose an image under 1.5MB";
+      updateCustomizationUI();
+      backgroundFileInput.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+      if (result) {
+        loadBoardBackground(result);
+      }
+      backgroundFileInput.value = "";
+    };
+    reader.onerror = () => {
+      boardBackgroundError = "Image upload failed";
+      updateCustomizationUI();
+      backgroundFileInput.value = "";
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+if (clearBackgroundBtn) {
+  clearBackgroundBtn.addEventListener("click", () => {
+    if (backgroundUrlInput) backgroundUrlInput.value = "";
+    if (backgroundFileInput) backgroundFileInput.value = "";
+    loadBoardBackground("");
   });
 }
 
@@ -2066,7 +2377,9 @@ setControlLayout(preferredControlLayout);
 setControlSize(preferredControlSize);
 setControlSide(preferredControlSide);
 setTouchSettingsOpen(false);
+setMenuOpen(false);
 setLeaderboardOpen(false);
+loadBoardBackground(boardBackgroundSource);
 initGame();
 void loadCommunityLeaderboard();
 syncViewportLayout();

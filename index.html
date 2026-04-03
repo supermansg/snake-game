@@ -3,15 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>Snake</title>
+  <title>Snake Me</title>
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
   <main class="wrap">
     <header class="topbar">
       <div class="brand-row">
-        <h1>Snake Arena</h1>
+        <h1>Snake Me</h1>
         <div class="utility-actions">
+          <button id="menuBtn" class="utility-btn" type="button" aria-label="Open menu">Menu</button>
           <button id="recordsBtn" class="utility-btn" type="button" aria-label="Open leaderboards">Records</button>
         </div>
       </div>
@@ -117,7 +118,92 @@
       </div>
       <p class="touch-hint">Tip: Swipe on the board or use the D-pad</p>
     </section>
+
+    <footer class="app-footer">C Dudi Sgulam 2026</footer>
   </main>
+
+  <section id="menuPanel" class="overlay-panel" hidden aria-label="Game menu">
+    <div class="overlay-backdrop" data-close-overlay="menu"></div>
+    <div class="overlay-card menu-card">
+      <div class="overlay-header">
+        <div>
+          <p class="overlay-kicker">Profile & Style</p>
+          <h2>Snake Me Menu</h2>
+        </div>
+        <button id="closeMenuBtn" class="utility-btn close-btn" type="button" aria-label="Close menu">Close</button>
+      </div>
+
+      <div class="menu-grid">
+        <section class="menu-panel-block" aria-label="Player profile">
+          <div class="leaderboard-title-row">
+            <h3>Profile</h3>
+            <span class="mini-pill">Saved locally</span>
+          </div>
+
+          <label class="name-field" for="profileNameInput">
+            <span>First Name / Nickname</span>
+            <input id="profileNameInput" type="text" maxlength="14" placeholder="ArcadeHero">
+          </label>
+        </section>
+
+        <section class="menu-panel-block" aria-label="Visual style">
+          <div class="leaderboard-title-row">
+            <h3>Visual Style</h3>
+            <span class="mini-pill">Live preview</span>
+          </div>
+
+          <div class="menu-form-grid">
+            <label class="touch-setting" for="themeSelect">
+              <span>Board Theme</span>
+              <select id="themeSelect">
+                <option value="neon">Neon Grid</option>
+                <option value="aurora">Aurora Glow</option>
+              </select>
+            </label>
+
+            <label class="touch-setting" for="snakeSkinSelect">
+              <span>Snake Skin</span>
+              <select id="snakeSkinSelect">
+                <option value="classic">Classic Green</option>
+                <option value="cobalt">Cobalt Blue</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <section class="menu-panel-block menu-panel-wide" aria-label="Board background">
+          <div class="leaderboard-title-row">
+            <h3>Board Background</h3>
+            <span id="backgroundStatus" class="mini-pill">Default board</span>
+          </div>
+
+          <div id="backgroundPreview" class="background-preview" aria-hidden="true"></div>
+
+          <div class="menu-form-grid">
+            <label class="name-field" for="backgroundUrlInput">
+              <span>Image URL</span>
+              <input id="backgroundUrlInput" type="url" placeholder="https://example.com/board-bg.jpg">
+            </label>
+
+            <div class="background-actions">
+              <button id="applyBackgroundUrlBtn" class="utility-btn" type="button">Apply URL</button>
+            </div>
+          </div>
+
+          <div class="menu-form-grid menu-form-grid-compact">
+            <label class="name-field file-field" for="backgroundFileInput">
+              <span>Upload from device</span>
+              <input id="backgroundFileInput" type="file" accept="image/*">
+            </label>
+
+            <div class="background-actions">
+              <button id="clearBackgroundBtn" class="utility-btn danger-ghost-btn" type="button">Clear Background</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </section>
 
   <section id="leaderboardPanel" class="overlay-panel" hidden aria-label="Leaderboards">
     <div class="overlay-backdrop" data-close-overlay="leaderboard"></div>
