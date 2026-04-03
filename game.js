@@ -1,5 +1,10 @@
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
+const appWrapEl = document.querySelector(".wrap");
+const topbarEl = document.querySelector(".topbar");
+const hudEl = document.querySelector(".hud");
+const controlsEl = document.querySelector(".controls");
+const boardShellEl = document.getElementById("boardShell");
 
 const scoreEl = document.getElementById("score");
 const bestEl = document.getElementById("best");
@@ -7,17 +12,29 @@ const levelEl = document.getElementById("level");
 const hazardsEl = document.getElementById("hazards");
 const statusEl = document.getElementById("status");
 const modeLabelEl = document.getElementById("modeLabel");
+const abilityLabelEl = document.getElementById("abilityLabel");
 
 const startBtn = document.getElementById("startBtn");
 const pauseBtn = document.getElementById("pauseBtn");
 const restartBtn = document.getElementById("restartBtn");
+const fireBtn = document.getElementById("fireBtn");
+const recordsBtn = document.getElementById("recordsBtn");
 const difficultyButtons = document.querySelectorAll("[data-difficulty]");
 const touchControlsEl = document.getElementById("touchControls");
 const touchSettingsToggle = document.getElementById("touchSettingsToggle");
 const touchSettingsPanel = document.getElementById("touchSettingsPanel");
+const touchFireBtn = document.getElementById("touchFireBtn");
 const controlLayoutSelect = document.getElementById("controlLayoutSelect");
 const controlSizeSelect = document.getElementById("controlSizeSelect");
 const controlSideSelect = document.getElementById("controlSideSelect");
+const leaderboardPanel = document.getElementById("leaderboardPanel");
+const closeLeaderboardBtn = document.getElementById("closeLeaderboardBtn");
+const playerNameInput = document.getElementById("playerNameInput");
+const communityStatusEl = document.getElementById("communityStatus");
+const localLeaderboardListEl = document.getElementById("localLeaderboardList");
+const globalLeaderboardListEl = document.getElementById("globalLeaderboardList");
+const personalBestSummaryEl = document.getElementById("personalBestSummary");
+const communityModeBadgeEl = document.getElementById("communityModeBadge");
 const touchButtons = document.querySelectorAll("[data-dir]");
 const isTouchDevice = window.matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
 
@@ -25,6 +42,9 @@ const GRID_SIZE = 21;
 const CELL = canvas.width / GRID_SIZE;
 const SWIPE_MIN_DISTANCE = 24;
 const DOUBLE_TAP_GUARD_MS = 280;
+const COMMUNITY_LEADERBOARD_ENDPOINT = window.SNAKE_LEADERBOARD_ENDPOINT || "";
+const MAX_PERSONAL_RECORDS = 8;
+const MAX_COMMUNITY_RECORDS = 10;
 
 const STORAGE_KEYS = {
   bestScore: "snake_best",
@@ -33,7 +53,9 @@ const STORAGE_KEYS = {
   snakeSkin: "snake_skin",
   controlLayout: "snake_control_layout",
   controlSize: "snake_control_size",
-  controlSide: "snake_control_side"
+  controlSide: "snake_control_side",
+  playerName: "snake_player_name",
+  personalRecords: "snake_personal_records"
 };
 
 const DIFFICULTY_PRESETS = {
@@ -230,6 +252,23 @@ let boardShakeUntil = 0;
 let floatingTexts = [];
 let gameOverMessage = "";
 let stageBanner = null;
+let activePickup = null;
+let activePortals = [];
+let playerPowerState = {
+  shield: 0,
+  blasterCharges: 0,
+  slowUntil: 0
+};
+let laserShot = null;
+let personalRecords = loadPersonalRecords();
+let communityRecords = [];
+let communityStatus = {
+  mode: COMMUNITY_LEADERBOARD_ENDPOINT ? "Connecting" : "Offline demo",
+  detail: COMMUNITY_LEADERBOARD_ENDPOINT
+    ? "Connecting to community board..."
+    : "Community board: backend not connected yet"
+};
+let playerName = localStorage.getItem(STORAGE_KEYS.playerName) || "ArcadeHero";
 
 bestEl.textContent = String(bestScore);
 
@@ -264,12 +303,23 @@ function initGame() {
   floatingTexts = [];
   gameOverMessage = "";
   stageBanner = null;
+  activePickup = null;
+  activePortals = [];
+  playerPowerState = {
+    shield: 0,
+    blasterCharges: 0,
+    slowUntil: 0
+  };
+  laserShot = null;
 
   clearStatusTimer();
   updateDifficultyButtons();
   applyControlLayout();
   updateTouchControlSettingsUI();
   updateModeLabel();
+  updateAbilityLabel();
+  renderLeaderboards();
+  syncViewportLayout();
 
   scoreEl.textContent = "0";
   levelEl.textContent = String(level);
@@ -338,33 +388,44 @@ function tick() {
   direction = nextDirection;
 
   const head = snake[0];
-  const newHead = {
+  const candidateHead = {
     x: head.x + direction.x,
     y: head.y + direction.y
   };
+  const newHead = resolvePortalTravel(candidateHead);
   const willEat = isFoodCell(newHead);
 
   if (isWallCollision(newHead)) {
-    gameOver("Wall collision");
+    if (!tryUseShield("Shield absorbed the hit")) gameOver("Wall collision");
     return;
   }
 
   if (isSelfCollision(newHead, willEat)) {
-    gameOver("You hit yourself");
+    if (!tryUseShield("Shield saved the run")) gameOver("You hit yourself");
     return;
   }
 
   if (isObstacleCollision(newHead)) {
-    gameOver("Obstacle collision");
+    if (!tryUseShield("Shield broke on impact")) gameOver("Obstacle collision");
     return;
   }
 
   if (isEnemyCollision(newHead)) {
-    gameOver("Enemy collision");
+    if (!tryUseShield("Shield repelled the enemy")) {
+      gameOver("Enemy collision");
+    } else {
+      enemies = enemies.filter((enemy) => !(enemy.x === newHead.x && enemy.y === newHead.y));
+      updateHazardsLabel();
+    }
     return;
   }
 
   snake.unshift(newHead);
+
+  if (activePickup && newHead.x === activePickup.x && newHead.y === activePickup.y) {
+    collectPickup(activePickup);
+    activePickup = null;
+  }
 
   if (willEat) {
     score += 1;
@@ -385,6 +446,7 @@ function tick() {
     addFloatingText("+1", newHead.x, newHead.y, "#ffd36d");
 
     food = createFood();
+    maybeSpawnPickup();
   } else {
     snake.pop();
   }
@@ -392,13 +454,23 @@ function tick() {
   moveEnemies();
 
   if (isEnemyTouchingSnake()) {
-    gameOver("Enemy caught you");
+    if (!tryUseShield("Shield repelled the enemy")) {
+      gameOver("Enemy caught you");
+      return;
+    }
+    enemies = enemies.filter(
+      (enemy) => !snake.some((segment) => segment.x === enemy.x && segment.y === enemy.y)
+    );
+    updateHazardsLabel();
     return;
   }
 
   updateLevel();
   updateHazardsLabel();
   updateSpeedIfNeeded();
+  maybeSpawnPortals();
+  updateAbilityLabel();
+  updateActionButtons();
 }
 
 function isWallCollision(pos) {
@@ -436,6 +508,7 @@ function gameOver(message) {
   statusEl.textContent = `${message}. Press New Run or Restart`;
   triggerBoardFlash("danger");
   boardShakeUntil = performance.now() + 280;
+  saveRunToLeaderboards();
   updateActionButtons();
 }
 
@@ -446,13 +519,13 @@ function createFood() {
       y: randomInt(0, GRID_SIZE - 1)
     };
 
-    if (!isBlockedCell(candidate)) return candidate;
+    if (!isBlockedCell(candidate) && !isReservedSpawnCell(candidate)) return candidate;
   }
 
   for (let y = 0; y < GRID_SIZE; y += 1) {
     for (let x = 0; x < GRID_SIZE; x += 1) {
       const fallback = { x, y };
-      if (!isBlockedCell(fallback)) return fallback;
+      if (!isBlockedCell(fallback) && !isReservedSpawnCell(fallback)) return fallback;
     }
   }
 
@@ -464,6 +537,14 @@ function isBlockedCell(pos) {
     snake.some((segment) => segment.x === pos.x && segment.y === pos.y) ||
     isObstacleCollision(pos) ||
     isEnemyCollision(pos)
+  );
+}
+
+function isReservedSpawnCell(pos) {
+  return (
+    isPickupCell(pos) ||
+    isPortalCell(pos) ||
+    isFoodCell(pos)
   );
 }
 
@@ -514,14 +595,40 @@ function isFoodCell(pos) {
   return food && pos.x === food.x && pos.y === food.y;
 }
 
+function isPickupCell(pos) {
+  return activePickup && activePickup.x === pos.x && activePickup.y === pos.y;
+}
+
+function isPortalCell(pos) {
+  return activePortals.some((portal) => portal.x === pos.x && portal.y === pos.y);
+}
+
+function resolvePortalTravel(pos) {
+  if (activePortals.length !== 2) return pos;
+  const source = activePortals.find((portal) => portal.x === pos.x && portal.y === pos.y);
+  if (!source) return pos;
+  const destination = activePortals.find((portal) => portal.id !== source.id);
+  if (!destination) return pos;
+
+  source.charges -= 1;
+  destination.charges -= 1;
+  if (source.charges <= 0 || destination.charges <= 0) {
+    activePortals = [];
+  }
+  triggerBoardFlash("portal");
+  addFloatingText("Warp", pos.x, pos.y, "#9cc7ff");
+  return { x: destination.x, y: destination.y };
+}
+
 function moveEnemies() {
   if (enemies.length === 0) return;
 
   const config = getDifficultyConfig();
   const head = snake[0];
+  const slowActive = performance.now() < playerPowerState.slowUntil;
   const moveInterval = Math.max(
     config.enemyMoveMinInterval,
-    config.enemyMoveBaseInterval - Math.floor(level / 3)
+    config.enemyMoveBaseInterval - Math.floor(level / 3) + (slowActive ? 2 : 0)
   );
 
   for (let i = 0; i < enemies.length; i += 1) {
@@ -620,6 +727,94 @@ function applyLevelDifficulty(currentLevel) {
   }
 }
 
+function maybeSpawnPickup() {
+  if (activePickup) return;
+  if (score === 0 || score % 3 !== 0) return;
+
+  const types = ["shield", "blaster", "slow"];
+  const type = types[randomInt(0, types.length - 1)];
+  const cell = findOpenCell();
+  if (!cell) return;
+
+  activePickup = {
+    type,
+    x: cell.x,
+    y: cell.y,
+    phase: Math.random() * Math.PI * 2
+  };
+  updateAbilityLabel();
+}
+
+function maybeSpawnPortals() {
+  if (activePortals.length === 2) return;
+  if (level < 2 || level % 2 !== 0) return;
+
+  const first = findOpenCell();
+  const second = findOpenCell(first);
+  if (!first || !second) return;
+
+  activePortals = [
+    { id: "A", x: first.x, y: first.y, phase: Math.random() * Math.PI * 2, charges: 3 },
+    { id: "B", x: second.x, y: second.y, phase: Math.random() * Math.PI * 2, charges: 3 }
+  ];
+}
+
+function findOpenCell(avoid = null) {
+  for (let attempts = 0; attempts < 400; attempts += 1) {
+    const candidate = {
+      x: randomInt(0, GRID_SIZE - 1),
+      y: randomInt(0, GRID_SIZE - 1)
+    };
+
+    if (
+      !isBlockedCell(candidate) &&
+      !isReservedSpawnCell(candidate) &&
+      !(avoid && avoid.x === candidate.x && avoid.y === candidate.y)
+    ) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+function collectPickup(pickup) {
+  switch (pickup.type) {
+    case "shield":
+      playerPowerState.shield += 1;
+      setTemporaryStatus("Shield ready", 1100);
+      addFloatingText("Shield", pickup.x, pickup.y, "#7de3ff");
+      break;
+    case "blaster":
+      playerPowerState.blasterCharges += 2;
+      setTemporaryStatus("Blaster charges +2", 1100);
+      addFloatingText("Blaster", pickup.x, pickup.y, "#cfa8ff");
+      break;
+    case "slow":
+      playerPowerState.slowUntil = performance.now() + 7000;
+      setTemporaryStatus("Slow field active", 1100);
+      addFloatingText("Slow", pickup.x, pickup.y, "#9ff3c8");
+      break;
+    default:
+      break;
+  }
+
+  triggerBoardFlash("pickup");
+  updateAbilityLabel();
+  updateActionButtons();
+}
+
+function tryUseShield(message) {
+  if (playerPowerState.shield <= 0) return false;
+  playerPowerState.shield -= 1;
+  triggerBoardFlash("shield");
+  addFloatingText("Shield", snake[0].x, snake[0].y, "#7de3ff");
+  setTemporaryStatus(message, 900);
+  updateAbilityLabel();
+  updateActionButtons();
+  return true;
+}
+
 function updateHazardsLabel() {
   hazardsEl.textContent = String(obstacles.length + enemies.length);
 }
@@ -648,9 +843,12 @@ function draw(nowMs) {
   drawBackground(t);
   drawBoardFlash(nowMs);
   drawGrid(t);
+  drawPortals(t);
   drawObstacles(t);
   drawFood(t);
+  drawPickup(t);
   drawEnemies(t);
+  drawLaserShot(nowMs);
   drawSnake(t);
   drawFoodBurst(nowMs);
   drawFloatingTexts(nowMs);
@@ -743,6 +941,36 @@ function drawGrid(t) {
   ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
 }
 
+function drawPortals(t) {
+  if (activePortals.length !== 2) return;
+
+  activePortals.forEach((portal, index) => {
+    const cx = (portal.x + 0.5) * CELL;
+    const cy = (portal.y + 0.5) * CELL;
+    const pulse = 1 + Math.sin(t * 5 + portal.phase) * 0.08;
+    const outer = CELL * 0.46 * pulse;
+    const inner = CELL * 0.2;
+    const color = index === 0 ? "rgba(116, 173, 255, 0.95)" : "rgba(190, 118, 255, 0.95)";
+
+    ctx.strokeStyle = withAlpha(color, 0.42);
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(cx, cy, outer, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.strokeStyle = withAlpha(color, 0.85);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, outer - 4, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = withAlpha(color, 0.18);
+    ctx.beginPath();
+    ctx.arc(cx, cy, inner, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
 function drawFood(t) {
   const theme = getThemeConfig();
   const pulse = 1 + Math.sin(t * 9) * 0.14;
@@ -773,6 +1001,41 @@ function drawFood(t) {
   ctx.moveTo(x + 2.2, cy);
   ctx.lineTo(x + size - 2.2, cy);
   ctx.stroke();
+}
+
+function drawPickup(t) {
+  if (!activePickup) return;
+
+  const cx = (activePickup.x + 0.5) * CELL;
+  const cy = (activePickup.y + 0.5) * CELL;
+  const pulse = 1 + Math.sin(t * 6 + activePickup.phase) * 0.14;
+
+  const pickupStyles = {
+    shield: { fill: "#78ddff", glow: "rgba(120, 221, 255, 0.22)", label: "S" },
+    blaster: { fill: "#c58eff", glow: "rgba(197, 142, 255, 0.22)", label: "B" },
+    slow: { fill: "#82ebb7", glow: "rgba(130, 235, 183, 0.22)", label: "T" }
+  };
+
+  const style = pickupStyles[activePickup.type];
+  ctx.fillStyle = style.glow;
+  ctx.beginPath();
+  ctx.arc(cx, cy, CELL * 0.48 * pulse, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = style.fill;
+  roundRect(
+    activePickup.x * CELL + 4,
+    activePickup.y * CELL + 4,
+    CELL - 8,
+    CELL - 8,
+    8
+  );
+  ctx.fill();
+
+  ctx.fillStyle = "rgba(8, 16, 30, 0.86)";
+  ctx.textAlign = "center";
+  ctx.font = "bold 14px Segoe UI";
+  ctx.fillText(style.label, cx, cy + 5);
 }
 
 function drawSnake(t) {
@@ -893,6 +1156,22 @@ function drawEnemies(t) {
     ctx.fill();
     ctx.restore();
   }
+}
+
+function drawLaserShot(nowMs) {
+  if (!laserShot) return;
+  const progress = (nowMs - laserShot.start) / 180;
+  if (progress >= 1) {
+    laserShot = null;
+    return;
+  }
+
+  ctx.strokeStyle = `rgba(226, 178, 255, ${0.9 - progress * 0.85})`;
+  ctx.lineWidth = 4 - progress * 2.5;
+  ctx.beginPath();
+  ctx.moveTo((laserShot.from.x + 0.5) * CELL, (laserShot.from.y + 0.5) * CELL);
+  ctx.lineTo((laserShot.to.x + 0.5) * CELL, (laserShot.to.y + 0.5) * CELL);
+  ctx.stroke();
 }
 
 function drawFoodBurst(nowMs) {
@@ -1070,6 +1349,15 @@ function onKeyDown(event) {
         startGame();
       }
       break;
+    case "f":
+    case "F":
+      fireWeapon();
+      break;
+    case "Escape":
+      if (leaderboardPanel && !leaderboardPanel.hidden) {
+        setLeaderboardOpen(false);
+      }
+      break;
     default:
       return;
   }
@@ -1207,6 +1495,7 @@ function setControlLayout(nextLayout) {
   localStorage.setItem(STORAGE_KEYS.controlLayout, preferredControlLayout);
   applyControlLayout();
   updateTouchControlSettingsUI();
+  requestAnimationFrame(syncViewportLayout);
 }
 
 function setControlSize(nextSize) {
@@ -1214,6 +1503,7 @@ function setControlSize(nextSize) {
   localStorage.setItem(STORAGE_KEYS.controlSize, preferredControlSize);
   applyControlLayout();
   updateTouchControlSettingsUI();
+  requestAnimationFrame(syncViewportLayout);
 }
 
 function setControlSide(nextSide) {
@@ -1221,6 +1511,7 @@ function setControlSide(nextSide) {
   localStorage.setItem(STORAGE_KEYS.controlSide, preferredControlSide);
   applyControlLayout();
   updateTouchControlSettingsUI();
+  requestAnimationFrame(syncViewportLayout);
 }
 
 function applyControlLayout() {
@@ -1241,6 +1532,27 @@ function updateModeLabel() {
   modeLabelEl.textContent = getDifficultyConfig().label;
 }
 
+function updateAbilityLabel() {
+  if (!abilityLabelEl) return;
+
+  if (playerPowerState.blasterCharges > 0) {
+    abilityLabelEl.textContent = `Blaster x${playerPowerState.blasterCharges}`;
+    return;
+  }
+
+  if (playerPowerState.shield > 0) {
+    abilityLabelEl.textContent = `Shield x${playerPowerState.shield}`;
+    return;
+  }
+
+  if (performance.now() < playerPowerState.slowUntil) {
+    abilityLabelEl.textContent = "Slow field";
+    return;
+  }
+
+  abilityLabelEl.textContent = activePickup ? `Pickup: ${formatPickupName(activePickup.type)}` : "No Boost";
+}
+
 function updateActionButtons() {
   startBtn.textContent = running ? "Playing" : gameOverAt > 0 ? "New Run" : started ? "Resume" : "Play";
   startBtn.disabled = running;
@@ -1249,6 +1561,10 @@ function updateActionButtons() {
   pauseBtn.disabled = !started || gameOverAt > 0;
 
   restartBtn.disabled = !started && gameOverAt === 0;
+
+  const canFire = playerPowerState.blasterCharges > 0 && enemies.length > 0 && started && gameOverAt === 0;
+  fireBtn.disabled = !canFire;
+  touchFireBtn.disabled = !canFire;
 }
 
 function setTouchSettingsOpen(isOpen) {
@@ -1264,6 +1580,54 @@ function setTouchSettingsOpen(isOpen) {
 function toggleTouchSettings() {
   if (!touchSettingsPanel) return;
   setTouchSettingsOpen(touchSettingsPanel.hidden);
+  requestAnimationFrame(syncViewportLayout);
+}
+
+function fireWeapon() {
+  if (playerPowerState.blasterCharges <= 0 || enemies.length === 0) return;
+
+  const head = snake[0];
+  let bestTarget = null;
+  let bestDistance = Infinity;
+
+  enemies.forEach((enemy, index) => {
+    const distance = Math.abs(enemy.x - head.x) + Math.abs(enemy.y - head.y);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestTarget = { enemy, index };
+    }
+  });
+
+  if (!bestTarget) return;
+
+  playerPowerState.blasterCharges -= 1;
+  laserShot = {
+    from: { ...head },
+    to: { x: bestTarget.enemy.x, y: bestTarget.enemy.y },
+    start: performance.now()
+  };
+  enemies.splice(bestTarget.index, 1);
+  score += 2;
+  scoreEl.textContent = String(score);
+  updateHazardsLabel();
+  updateAbilityLabel();
+  updateActionButtons();
+  triggerBoardFlash("weapon");
+  addFloatingText("+2", bestTarget.enemy.x, bestTarget.enemy.y, "#d9b3ff");
+  setTemporaryStatus("Blaster fired", 700);
+}
+
+function formatPickupName(type) {
+  switch (type) {
+    case "shield":
+      return "Shield";
+    case "blaster":
+      return "Blaster";
+    case "slow":
+      return "Slow";
+    default:
+      return type;
+  }
 }
 
 function getDifficultyConfig() {
@@ -1291,6 +1655,198 @@ function getIdleStatus() {
     : "Press Start or Arrow Keys";
 }
 
+function loadPersonalRecords() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.personalRecords);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRunToLeaderboards() {
+  if (score <= 0) return;
+
+  const entry = {
+    player: sanitizePlayerName(playerName),
+    score,
+    level,
+    difficulty: getDifficultyConfig().label,
+    recordedAt: new Date().toISOString()
+  };
+
+  personalRecords = [entry, ...personalRecords]
+    .sort((a, b) => b.score - a.score || b.level - a.level)
+    .slice(0, MAX_PERSONAL_RECORDS);
+  localStorage.setItem(STORAGE_KEYS.personalRecords, JSON.stringify(personalRecords));
+  renderLeaderboards();
+  void submitCommunityScore(entry);
+}
+
+function renderLeaderboards() {
+  if (playerNameInput) playerNameInput.value = playerName;
+  renderLeaderboardList(localLeaderboardListEl, personalRecords, true);
+  renderLeaderboardList(globalLeaderboardListEl, communityRecords, false);
+
+  const personalBest = personalRecords[0]?.score || 0;
+  if (personalBestSummaryEl) {
+    personalBestSummaryEl.textContent = `${personalBest} pts`;
+  }
+
+  if (communityStatusEl) {
+    communityStatusEl.textContent = communityStatus.detail;
+  }
+
+  if (communityModeBadgeEl) {
+    communityModeBadgeEl.textContent = communityStatus.mode;
+  }
+}
+
+function renderLeaderboardList(target, entries, includeMeta) {
+  if (!target) return;
+
+  if (!entries || entries.length === 0) {
+    target.innerHTML = "<li><span>No scores yet</span><span>Play a run</span></li>";
+    return;
+  }
+
+  target.innerHTML = entries
+    .slice(0, includeMeta ? MAX_PERSONAL_RECORDS : MAX_COMMUNITY_RECORDS)
+    .map((entry) => {
+      const rightLabel = includeMeta
+        ? `Lv ${entry.level} | ${entry.difficulty}`
+        : `${entry.score} pts`;
+      const leftLabel = includeMeta
+        ? `${entry.score} pts`
+        : `${entry.player}`;
+      const primary = includeMeta ? entry.player : leftLabel;
+      return `<li><span>${escapeHtml(primary)}</span><span>${escapeHtml(includeMeta ? leftLabel + " | " + rightLabel : rightLabel)}</span></li>`;
+    })
+    .join("");
+}
+
+async function loadCommunityLeaderboard() {
+  if (!COMMUNITY_LEADERBOARD_ENDPOINT) {
+    communityRecords = getDemoCommunityRecords();
+    communityStatus = {
+      mode: "Offline demo",
+      detail: "Community board: connect a backend endpoint to enable real shared scores"
+    };
+    renderLeaderboards();
+    return;
+  }
+
+  communityStatus = {
+    mode: "Online",
+    detail: "Loading community board..."
+  };
+  renderLeaderboards();
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 1800);
+    const response = await fetch(COMMUNITY_LEADERBOARD_ENDPOINT, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+
+    if (!response.ok) throw new Error(`Leaderboard request failed (${response.status})`);
+    const payload = await response.json();
+    communityRecords = Array.isArray(payload) ? payload.slice(0, MAX_COMMUNITY_RECORDS) : getDemoCommunityRecords();
+    communityStatus = {
+      mode: "Live",
+      detail: "Community board connected"
+    };
+  } catch {
+    communityRecords = getDemoCommunityRecords();
+    communityStatus = {
+      mode: "Offline demo",
+      detail: "Community board fallback: backend unavailable"
+    };
+  }
+
+  renderLeaderboards();
+}
+
+async function submitCommunityScore(entry) {
+  if (!COMMUNITY_LEADERBOARD_ENDPOINT) return;
+
+  try {
+    await fetch(COMMUNITY_LEADERBOARD_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(entry)
+    });
+    await loadCommunityLeaderboard();
+  } catch {
+    communityStatus = {
+      mode: "Offline demo",
+      detail: "Community submit failed: showing fallback board"
+    };
+    renderLeaderboards();
+  }
+}
+
+function getDemoCommunityRecords() {
+  return [
+    { player: "ByteRunner", score: 92, level: 14, difficulty: "Hard" },
+    { player: "GridFox", score: 71, level: 11, difficulty: "Medium" },
+    { player: "LaserEel", score: 58, level: 9, difficulty: "Hard" },
+    { player: "NovaTail", score: 43, level: 8, difficulty: "Medium" },
+    { player: "ArcPilot", score: 30, level: 6, difficulty: "Easy" }
+  ];
+}
+
+function sanitizePlayerName(value) {
+  const trimmed = (value || "").trim().slice(0, 14);
+  return trimmed || "ArcadeHero";
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll("\"", "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function setLeaderboardOpen(isOpen) {
+  if (!leaderboardPanel) return;
+  leaderboardPanel.hidden = !isOpen;
+  requestAnimationFrame(syncViewportLayout);
+}
+
+function syncViewportLayout() {
+  document.documentElement.style.setProperty("--app-height", `${window.innerHeight}px`);
+
+  if (!isTouchDevice || !appWrapEl || !boardShellEl) return;
+
+  const bodyStyle = window.getComputedStyle(document.body);
+  const bodyTop = parseFloat(bodyStyle.paddingTop) || 0;
+  const bodyBottom = parseFloat(bodyStyle.paddingBottom) || 0;
+  const wrapStyle = window.getComputedStyle(appWrapEl);
+  const wrapPaddingTop = parseFloat(wrapStyle.paddingTop) || 0;
+  const wrapPaddingBottom = parseFloat(wrapStyle.paddingBottom) || 0;
+  const rowGap = parseFloat(wrapStyle.rowGap || wrapStyle.gap) || 0;
+
+  const visibleSections = [topbarEl, hudEl, controlsEl, touchControlsEl].filter(
+    (el) => el && window.getComputedStyle(el).display !== "none"
+  );
+  const sectionsHeight = visibleSections.reduce((sum, el) => sum + el.offsetHeight, 0);
+  const gapsHeight = Math.max(0, visibleSections.length - 1) * rowGap;
+  const chrome = bodyTop + bodyBottom + wrapPaddingTop + wrapPaddingBottom + sectionsHeight + gapsHeight + 18;
+  const available = Math.max(180, window.innerHeight - chrome);
+  const size = Math.min(420, available);
+
+  document.documentElement.style.setProperty("--mobile-board-size", `${Math.floor(size)}px`);
+}
+
 function triggerBoardFlash(kind) {
   if (kind === "danger") {
     boardFlash = {
@@ -1308,6 +1864,46 @@ function triggerBoardFlash(kind) {
       duration: 260,
       alpha: 0.16,
       rgb: "120, 174, 255"
+    };
+    return;
+  }
+
+  if (kind === "pickup") {
+    boardFlash = {
+      start: performance.now(),
+      duration: 220,
+      alpha: 0.15,
+      rgb: "130, 235, 183"
+    };
+    return;
+  }
+
+  if (kind === "shield") {
+    boardFlash = {
+      start: performance.now(),
+      duration: 220,
+      alpha: 0.17,
+      rgb: "120, 221, 255"
+    };
+    return;
+  }
+
+  if (kind === "portal") {
+    boardFlash = {
+      start: performance.now(),
+      duration: 200,
+      alpha: 0.14,
+      rgb: "156, 195, 255"
+    };
+    return;
+  }
+
+  if (kind === "weapon") {
+    boardFlash = {
+      start: performance.now(),
+      duration: 160,
+      alpha: 0.16,
+      rgb: "217, 179, 255"
     };
     return;
   }
@@ -1398,10 +1994,14 @@ function startRenderLoop() {
 }
 
 window.addEventListener("resize", applyControlLayout);
+window.addEventListener("resize", syncViewportLayout);
 document.addEventListener("keydown", onKeyDown);
 startBtn.addEventListener("click", startGame);
 pauseBtn.addEventListener("click", togglePause);
 restartBtn.addEventListener("click", initGame);
+fireBtn.addEventListener("click", fireWeapon);
+recordsBtn.addEventListener("click", () => setLeaderboardOpen(true));
+touchFireBtn.addEventListener("click", fireWeapon);
 
 difficultyButtons.forEach((button) => {
   button.addEventListener("click", () => setDifficulty(button.dataset.difficulty));
@@ -1421,6 +2021,29 @@ if (controlSideSelect) {
 
 if (touchSettingsToggle) {
   touchSettingsToggle.addEventListener("click", toggleTouchSettings);
+}
+
+if (closeLeaderboardBtn) {
+  closeLeaderboardBtn.addEventListener("click", () => setLeaderboardOpen(false));
+}
+
+if (leaderboardPanel) {
+  leaderboardPanel.addEventListener("click", (event) => {
+    const target = event.target;
+    if (target instanceof Element && target.hasAttribute("data-close-overlay")) {
+      setLeaderboardOpen(false);
+    }
+  });
+}
+
+if (playerNameInput) {
+  playerNameInput.value = playerName;
+  playerNameInput.addEventListener("change", () => {
+    playerName = sanitizePlayerName(playerNameInput.value);
+    playerNameInput.value = playerName;
+    localStorage.setItem(STORAGE_KEYS.playerName, playerName);
+    renderLeaderboards();
+  });
 }
 
 touchButtons.forEach((button) => {
@@ -1443,4 +2066,7 @@ setControlLayout(preferredControlLayout);
 setControlSize(preferredControlSize);
 setControlSide(preferredControlSide);
 setTouchSettingsOpen(false);
+setLeaderboardOpen(false);
 initGame();
+void loadCommunityLeaderboard();
+syncViewportLayout();

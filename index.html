@@ -9,7 +9,12 @@
 <body>
   <main class="wrap">
     <header class="topbar">
-      <h1>Snake Arena</h1>
+      <div class="brand-row">
+        <h1>Snake Arena</h1>
+        <div class="utility-actions">
+          <button id="recordsBtn" class="utility-btn" type="button" aria-label="Open leaderboards">Records</button>
+        </div>
+      </div>
       <section class="difficulty" aria-label="Difficulty selector">
         <p class="difficulty-label">Difficulty</p>
         <div class="difficulty-buttons" role="group" aria-label="Choose difficulty">
@@ -39,11 +44,14 @@
       </div>
       <div class="status-row">
         <p id="status" class="status-text">Press Start or Arrow Keys</p>
-        <span id="modeLabel" class="mode-pill">Medium</span>
+        <div class="status-badges">
+          <span id="modeLabel" class="mode-pill">Medium</span>
+          <span id="abilityLabel" class="info-pill">No Boost</span>
+        </div>
       </div>
     </section>
 
-    <section class="board-shell" aria-label="Game board frame">
+    <section id="boardShell" class="board-shell" aria-label="Game board frame">
       <canvas id="game" width="420" height="420" aria-label="Snake game canvas"></canvas>
     </section>
 
@@ -51,21 +59,25 @@
       <button id="startBtn" type="button">Start</button>
       <button id="pauseBtn" type="button">Pause</button>
       <button id="restartBtn" type="button">Restart</button>
+      <button id="fireBtn" class="fire-btn" type="button">Fire</button>
     </section>
 
     <section id="touchControls" class="touch-controls" aria-label="Touch controls">
       <div class="touch-header">
         <p class="touch-title">Touch Controls</p>
-        <button
-          id="touchSettingsToggle"
-          class="gear-btn"
-          type="button"
-          aria-expanded="false"
-          aria-controls="touchSettingsPanel"
-          aria-label="Open touch settings"
-        >
-          &#9881;
-        </button>
+        <div class="touch-header-actions">
+          <button id="touchFireBtn" class="touch-fire-btn" type="button">Fire</button>
+          <button
+            id="touchSettingsToggle"
+            class="gear-btn"
+            type="button"
+            aria-expanded="false"
+            aria-controls="touchSettingsPanel"
+            aria-label="Open touch settings"
+          >
+            &#9881;
+          </button>
+        </div>
       </div>
 
       <div id="touchSettingsPanel" class="touch-settings" hidden>
@@ -106,6 +118,45 @@
       <p class="touch-hint">Tip: Swipe on the board or use the D-pad</p>
     </section>
   </main>
+
+  <section id="leaderboardPanel" class="overlay-panel" hidden aria-label="Leaderboards">
+    <div class="overlay-backdrop" data-close-overlay="leaderboard"></div>
+    <div class="overlay-card">
+      <div class="overlay-header">
+        <div>
+          <p class="overlay-kicker">Scoreboards</p>
+          <h2>Records</h2>
+        </div>
+        <button id="closeLeaderboardBtn" class="utility-btn close-btn" type="button" aria-label="Close leaderboards">Close</button>
+      </div>
+
+      <div class="leaderboard-controls">
+        <label class="name-field" for="playerNameInput">
+          <span>Player Name</span>
+          <input id="playerNameInput" type="text" maxlength="14" placeholder="ArcadeHero">
+        </label>
+        <p id="communityStatus" class="community-status">Community board: backend not connected yet</p>
+      </div>
+
+      <div class="leaderboard-grid">
+        <section class="leaderboard-column" aria-label="Your records">
+          <div class="leaderboard-title-row">
+            <h3>Your Best Runs</h3>
+            <span id="personalBestSummary" class="mini-pill">0 pts</span>
+          </div>
+          <ol id="localLeaderboardList" class="leaderboard-list"></ol>
+        </section>
+
+        <section class="leaderboard-column" aria-label="Community records">
+          <div class="leaderboard-title-row">
+            <h3>Community</h3>
+            <span id="communityModeBadge" class="mini-pill">Offline demo</span>
+          </div>
+          <ol id="globalLeaderboardList" class="leaderboard-list"></ol>
+        </section>
+      </div>
+    </div>
+  </section>
 
   <script src="./game.js"></script>
 </body>

@@ -1,4 +1,5 @@
 :root {
+  --app-height: 100dvh;
   --bg-0: #080c15;
   --bg-1: #12192a;
   --panel: rgba(17, 24, 39, 0.74);
@@ -12,6 +13,7 @@
   --touch-btn-size: 68px;
   --touch-gap: 12px;
   --touch-radius: 16px;
+  --mobile-board-size: 320px;
 }
 
 * {
@@ -25,7 +27,8 @@ body {
 }
 
 body {
-  min-height: 100vh;
+  min-height: var(--app-height);
+  height: var(--app-height);
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   background:
     radial-gradient(circle at 14% 10%, rgba(70, 94, 148, 0.33) 0%, transparent 34%),
@@ -40,10 +43,14 @@ body {
     max(16px, env(safe-area-inset-bottom))
     14px;
   touch-action: manipulation;
+  overflow: hidden;
 }
 
 .wrap {
   width: min(96vw, 520px);
+  max-width: 520px;
+  min-height: 0;
+  height: min(calc(var(--app-height) - 24px), 920px);
   display: grid;
   gap: 12px;
   background:
@@ -57,11 +64,27 @@ body {
     inset 0 0 0 1px rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(6px);
   padding: 14px;
+  overflow: hidden;
 }
 
 .topbar {
   display: grid;
   gap: 10px;
+}
+
+.brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.utility-actions,
+.touch-header-actions,
+.status-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 h1 {
@@ -72,6 +95,17 @@ h1 {
   text-shadow:
     0 2px 14px rgba(53, 143, 242, 0.26),
     0 0 18px rgba(122, 179, 255, 0.12);
+}
+
+.utility-btn {
+  min-height: 38px;
+  padding: 8px 12px;
+  background: rgba(24, 34, 58, 0.88);
+  color: #dce7ff;
+  border: 1px solid rgba(120, 148, 206, 0.34);
+  box-shadow:
+    inset 0 1px 0 rgba(222, 235, 255, 0.12),
+    0 6px 16px rgba(10, 16, 30, 0.2);
 }
 
 .difficulty {
@@ -154,9 +188,25 @@ h1 {
   letter-spacing: 0.05em;
 }
 
+.info-pill,
+.mini-pill {
+  white-space: nowrap;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(23, 34, 58, 0.76);
+  border: 1px solid rgba(118, 151, 217, 0.22);
+  color: #d6e4ff;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
 .board-shell {
   border-radius: 15px;
   padding: 8px;
+  width: min(100%, 436px);
+  aspect-ratio: 1 / 1;
+  justify-self: center;
   background:
     linear-gradient(140deg, rgba(101, 131, 200, 0.36), rgba(57, 87, 153, 0.18)),
     linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0));
@@ -169,7 +219,7 @@ h1 {
 
 canvas {
   width: 100%;
-  height: auto;
+  height: 100%;
   display: block;
   border-radius: 11px;
   border: 1px solid rgba(72, 96, 144, 0.75);
@@ -181,12 +231,18 @@ canvas {
 
 .controls {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   user-select: none;
   padding: 2px;
   border-radius: 14px;
   background: rgba(10, 17, 31, 0.3);
+}
+
+.fire-btn,
+.touch-fire-btn {
+  background: linear-gradient(180deg, #8c82ff, #5d57d7);
+  color: #f7f4ff;
 }
 
 button {
@@ -291,6 +347,12 @@ button:disabled {
   color: #dbe7ff;
   font-size: 1.02rem;
   line-height: 1;
+}
+
+.touch-fire-btn {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
 }
 
 .gear-btn[aria-expanded="true"] {
@@ -418,6 +480,136 @@ button:disabled {
   opacity: 0.92;
 }
 
+.overlay-panel[hidden] {
+  display: none;
+}
+
+.overlay-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.overlay-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 10, 18, 0.74);
+  backdrop-filter: blur(6px);
+}
+
+.overlay-card {
+  position: relative;
+  z-index: 1;
+  width: min(92vw, 760px);
+  max-height: min(calc(var(--app-height) - 36px), 780px);
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  overflow: auto;
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(18, 27, 45, 0.94), rgba(10, 15, 24, 0.92)),
+    radial-gradient(circle at top, rgba(87, 122, 216, 0.12), transparent 54%);
+  border: 1px solid rgba(129, 156, 211, 0.26);
+  box-shadow: 0 28px 56px rgba(0, 0, 0, 0.42);
+}
+
+.overlay-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.overlay-header h2,
+.leaderboard-title-row h3 {
+  margin: 0;
+}
+
+.overlay-kicker {
+  margin: 0 0 4px;
+  color: #9fb2dc;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.close-btn {
+  min-width: 78px;
+}
+
+.leaderboard-controls {
+  display: grid;
+  gap: 10px;
+}
+
+.name-field {
+  display: grid;
+  gap: 6px;
+  color: #c9d8f5;
+  font-size: 0.84rem;
+}
+
+.name-field input {
+  min-height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(129, 156, 211, 0.3);
+  background: rgba(14, 23, 40, 0.92);
+  color: #f0f5ff;
+  padding: 0 12px;
+  font-size: 0.95rem;
+}
+
+.community-status {
+  margin: 0;
+  color: #9fb2dc;
+  font-size: 0.84rem;
+}
+
+.leaderboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.leaderboard-column {
+  display: grid;
+  gap: 10px;
+  min-height: 220px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(11, 19, 35, 0.62);
+  border: 1px solid rgba(120, 146, 200, 0.18);
+}
+
+.leaderboard-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.leaderboard-list {
+  margin: 0;
+  padding-left: 22px;
+  display: grid;
+  gap: 8px;
+  color: #e3edff;
+}
+
+.leaderboard-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(21, 31, 53, 0.66);
+  border: 1px solid rgba(110, 137, 188, 0.12);
+}
+
 @media (hover: none) {
   button:hover {
     filter: none;
@@ -432,43 +624,80 @@ button:disabled {
 
 @media (max-width: 779px) {
   .wrap {
-    width: min(98vw, 520px);
-    gap: 10px;
-    padding: 12px;
+    width: min(100vw - 20px, 520px);
+    height: calc(var(--app-height) - 16px);
+    gap: 8px;
+    padding: 10px;
   }
 
   h1 {
-    font-size: 1.6rem;
+    font-size: 1.28rem;
+    letter-spacing: 0.05em;
+  }
+
+  .utility-btn {
+    min-height: 34px;
+    padding: 7px 10px;
+    font-size: 0.85rem;
   }
 
   .hud {
-    gap: 6px;
-    padding: 9px 10px;
+    gap: 5px;
+    padding: 8px;
   }
 
   .hud-stat {
-    padding: 9px 9px 8px;
+    padding: 8px 8px 7px;
   }
 
   .hud-value {
-    font-size: 1.05rem;
+    font-size: 0.98rem;
   }
 
   .status-row {
-    align-items: flex-start;
+    padding: 8px 10px;
   }
 
   .controls {
-    gap: 9px;
+    gap: 6px;
   }
 
   .controls button {
-    min-height: 50px;
-    font-size: 1rem;
+    min-height: 42px;
+    font-size: 0.9rem;
   }
 
   .touch-controls {
-    margin-top: 2px;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .touch-controls[data-size="small"] {
+    --touch-btn-size: 50px;
+  }
+
+  .touch-controls[data-size="medium"] {
+    --touch-btn-size: 58px;
+  }
+
+  .touch-controls[data-size="large"] {
+    --touch-btn-size: 66px;
+  }
+
+  .board-shell {
+    width: min(100%, var(--mobile-board-size));
+  }
+
+  .touch-title,
+  .touch-hint,
+  .community-status {
+    font-size: 0.78rem;
+  }
+
+  .overlay-card {
+    width: min(96vw, 760px);
+    max-height: calc(var(--app-height) - 16px);
+    padding: 14px;
   }
 }
 
@@ -477,9 +706,17 @@ button:disabled {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .brand-row {
+    align-items: flex-start;
+  }
+
   .status-row {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .status-badges {
+    flex-wrap: wrap;
   }
 
   .touch-setting {
@@ -493,5 +730,13 @@ button:disabled {
 
   .touch-toolbar {
     grid-template-columns: 1fr;
+  }
+
+  .leaderboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .touch-hint {
+    display: none;
   }
 }
