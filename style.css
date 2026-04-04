@@ -73,6 +73,97 @@ body {
   overflow: hidden;
 }
 
+.wrap.compact-viewport {
+  width: min(100vw, 980px);
+  height: var(--app-height);
+  gap: 8px;
+  padding: 10px;
+}
+
+.wrap.compact-viewport .topbar {
+  gap: 6px;
+}
+
+.wrap.compact-viewport .difficulty-label,
+.wrap.compact-viewport .status-row,
+.wrap.compact-viewport .app-footer {
+  display: none;
+}
+
+.wrap.compact-viewport h1 {
+  font-size: clamp(1.15rem, 2vw, 1.7rem);
+}
+
+.wrap.compact-viewport .utility-btn {
+  min-height: 34px;
+  padding: 7px 10px;
+  font-size: 0.82rem;
+}
+
+.wrap.compact-viewport .difficulty-buttons {
+  gap: 6px;
+}
+
+.wrap.compact-viewport .difficulty-btn {
+  min-height: 36px;
+  padding: 8px 10px;
+  font-size: 0.88rem;
+}
+
+.wrap.compact-viewport .hud {
+  padding: 6px 8px;
+  gap: 6px;
+}
+
+.wrap.compact-viewport .hud-stat {
+  padding: 7px 8px;
+  gap: 2px;
+}
+
+.wrap.compact-viewport .hud-label {
+  font-size: 0.68rem;
+}
+
+.wrap.compact-viewport .hud-value {
+  font-size: 0.96rem;
+}
+
+.wrap.compact-viewport .controls {
+  gap: 6px;
+  padding: 0;
+  background: transparent;
+}
+
+.wrap.compact-viewport .controls button {
+  min-height: 38px;
+  font-size: 0.84rem;
+}
+
+.wrap.compact-viewport .touch-controls {
+  gap: 6px;
+  padding: 6px 0 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.wrap.compact-viewport .touch-header {
+  gap: 6px;
+}
+
+.wrap.compact-viewport .touch-title {
+  font-size: 0.8rem;
+}
+
+.wrap.compact-viewport .touch-fire-btn,
+.wrap.compact-viewport .gear-btn {
+  min-height: 34px;
+}
+
+.wrap.compact-viewport .touch-hint {
+  display: none;
+}
+
 .topbar,
 .hud,
 .controls,
@@ -986,11 +1077,23 @@ input:focus-visible {
 }
 
 @media (max-width: 779px) {
+  body {
+    padding:
+      max(6px, env(safe-area-inset-top))
+      0
+      max(8px, env(safe-area-inset-bottom))
+      0;
+  }
+
   .wrap {
-    width: min(100vw - 12px, 780px);
-    height: calc(var(--app-height) - 16px);
+    width: 100vw;
+    max-width: none;
+    height: var(--app-height);
     gap: 8px;
     padding: 8px;
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
   }
 
   h1 {
@@ -1036,15 +1139,15 @@ input:focus-visible {
   }
 
   .touch-controls[data-size="small"] {
-    --touch-btn-size: 50px;
+    --touch-btn-size: 48px;
   }
 
   .touch-controls[data-size="medium"] {
-    --touch-btn-size: 58px;
+    --touch-btn-size: 54px;
   }
 
   .touch-controls[data-size="large"] {
-    --touch-btn-size: 66px;
+    --touch-btn-size: 60px;
   }
 
   .board-shell {
@@ -1127,6 +1230,25 @@ input:focus-visible {
     font-size: 0.8rem;
   }
 
+  .utility-btn {
+    min-height: 32px;
+    padding: 6px 9px;
+    font-size: 0.78rem;
+  }
+
+  .difficulty-btn {
+    min-height: 34px;
+    font-size: 0.84rem;
+  }
+
+  .hud-stat {
+    padding: 6px 7px;
+  }
+
+  .hud-value {
+    font-size: 0.92rem;
+  }
+
   .touch-toolbar {
     grid-template-columns: 1fr;
   }
@@ -1158,5 +1280,24 @@ input:focus-visible {
 
   .board-mini-chip small {
     display: none;
+  }
+}
+
+@media (max-height: 860px) {
+  .wrap {
+    gap: 8px;
+  }
+
+  .app-footer,
+  .status-row {
+    display: none;
+  }
+
+  .hud {
+    padding: 6px 8px;
+  }
+
+  .controls button {
+    min-height: 38px;
   }
 }

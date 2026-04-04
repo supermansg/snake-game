@@ -93,7 +93,7 @@ const DEFAULT_BOARD_BACKGROUND = "./defualt background.png";
 
 const DIFFICULTY_PRESETS = {
   easy: {
-    label: "׳§׳",
+    label: "קל",
     baseSpeedMs: 172,
     minSpeedMs: 84,
     speedScoreFactor: 3,
@@ -112,7 +112,7 @@ const DIFFICULTY_PRESETS = {
     portalLevelEvery: 3
   },
   medium: {
-    label: "׳‘׳™׳ ׳•׳ ׳™",
+    label: "בינוני",
     baseSpeedMs: 148,
     minSpeedMs: 64,
     speedScoreFactor: 4,
@@ -131,7 +131,7 @@ const DIFFICULTY_PRESETS = {
     portalLevelEvery: 3
   },
   hard: {
-    label: "׳§׳©׳”",
+    label: "קשה",
     baseSpeedMs: 126,
     minSpeedMs: 52,
     speedScoreFactor: 5,
@@ -214,22 +214,22 @@ const PICKUP_STYLES = {
 
 const GADGET_HELP = {
   shield: {
-    title: "׳׳™׳‘׳× ׳׳’׳",
+    title: "ליבת מגן",
     icon: "S",
     description:
-      "׳”׳׳’׳ ׳©׳•׳׳¨ ׳¢׳׳™׳ ׳׳₪׳’׳™׳¢׳” ׳׳—׳×. ׳׳ ׳×׳₪׳’׳¢ ׳‘׳§׳™׳¨, ׳‘׳׳›׳©׳•׳ ׳׳• ׳‘׳׳•׳™׳‘ ׳₪׳¢׳ ׳׳—׳×, ׳”׳¨׳™׳¦׳” ׳×׳™׳׳©׳ ׳•׳”׳׳’׳ ׳™׳™׳©׳‘׳¨ ׳‘׳׳§׳•׳ ׳©׳”׳׳©׳—׳§ ׳™׳¡׳×׳™׳™׳."
+      "המגן שומר עליך מפגיעה אחת. אם תפגע בקיר, במכשול או באויב פעם אחת, הריצה תימשך והמגן יישבר במקום שהמשחק יסתיים."
   },
   blaster: {
-    title: "׳×׳ ׳‘׳׳¡׳˜׳¨",
+    title: "תא בלסטר",
     icon: "B",
     description:
-      "׳”׳‘׳׳¡׳˜׳¨ ׳ ׳•׳×׳ ׳׳ ׳׳˜׳¢׳ ׳™׳ ׳׳›׳₪׳×׳•׳¨ ׳”׳™׳¨׳™. ׳׳₪׳©׳¨ ׳׳”׳©׳×׳׳© ׳‘׳• ׳›׳“׳™ ׳׳—׳¡׳ ׳׳× ׳”׳׳•׳™׳‘ ׳”׳§׳¨׳•׳‘ ׳‘׳™׳•׳×׳¨ ׳•׳׳₪׳ ׳•׳× ׳׳§׳•׳ ׳›׳©׳”׳׳•׳— ׳ ׳”׳™׳” ׳¦׳₪׳•׳£."
+      "הבלסטר נותן לך מטענים לכפתור הירי. אפשר להשתמש בו כדי לחסל את האויב הקרוב ביותר ולפנות מקום כשהלוח נהיה צפוף."
   },
   slow: {
-    title: "׳©׳“׳” ׳–׳׳",
+    title: "שדה זמן",
     icon: "T",
     description:
-      "׳©׳“׳” ׳”׳–׳׳ ׳׳׳˜ ׳׳× ׳×׳ ׳•׳¢׳× ׳”׳׳•׳™׳‘׳™׳ ׳׳›׳׳” ׳©׳ ׳™׳•׳×. ׳”׳›׳™ ׳˜׳•׳‘ ׳׳”׳©׳×׳׳© ׳‘׳• ׳›׳©׳›׳׳•׳× ׳”׳׳™׳•׳׳™׳ ׳’׳“׳׳” ׳•׳׳×׳” ׳¦׳¨׳™׳ ׳ ׳×׳™׳‘ ׳‘׳˜׳•׳— ׳™׳•׳×׳¨ ׳׳₪׳¨׳™ ׳”׳‘׳."
+      "שדה הזמן מאט את תנועת האויבים לכמה שניות. הכי טוב להשתמש בו כשכמות האיומים גדלה ואתה צריך נתיב בטוח יותר לפרי הבא."
   }
 };
 
@@ -350,12 +350,12 @@ let laserShot = null;
 let personalRecords = loadPersonalRecords();
 let communityRecords = [];
 let communityStatus = {
-  mode: COMMUNITY_LEADERBOARD_ENDPOINT ? "׳׳×׳—׳‘׳¨" : "׳“׳׳• ׳׳ ׳׳§׳•׳•׳",
+  mode: COMMUNITY_LEADERBOARD_ENDPOINT ? "מתחבר" : "דמו לא מקוון",
   detail: COMMUNITY_LEADERBOARD_ENDPOINT
-    ? "׳׳×׳—׳‘׳¨ ׳׳׳•׳— ׳”׳§׳”׳™׳׳×׳™..."
-    : "׳׳•׳— ׳§׳”׳™׳׳×׳™: ׳¦׳“ ׳”׳©׳¨׳× ׳¢׳“׳™׳™׳ ׳׳ ׳׳—׳•׳‘׳¨"
+    ? "מתחבר ללוח הקהילתי..."
+    : "לוח קהילתי: צד השרת עדיין לא מחובר"
 };
-let playerName = localStorage.getItem(STORAGE_KEYS.playerName) || "׳©׳—׳§׳";
+let playerName = localStorage.getItem(STORAGE_KEYS.playerName) || "שחקן";
 let boardBackgroundSource = localStorage.getItem(STORAGE_KEYS.boardBackground) || "";
 let boardBackgroundImage = null;
 let boardBackgroundLoaded = false;
@@ -459,8 +459,7 @@ function pauseGame() {
   running = false;
   stopLoop();
   clearStatusTimer();
-  statusEl.textContent = "׳”׳׳©׳—׳§ ׳׳•׳©׳”׳”";
-  updatePlayLayoutState();
+  statusEl.textContent = "המשחק מושהה";
   updatePlayLayoutState();
   updateActionButtons();
 }
@@ -503,23 +502,23 @@ function tick() {
   const willEat = isFoodCell(newHead);
 
   if (isWallCollision(newHead)) {
-    if (!tryUseShield("׳”׳׳’׳ ׳¡׳₪׳’ ׳׳× ׳”׳₪׳’׳™׳¢׳”")) gameOver("׳”׳×׳ ׳’׳©׳•׳× ׳‘׳§׳™׳¨");
+    if (!tryUseShield("המגן ספג את הפגיעה")) gameOver("התנגשות בקיר");
     return;
   }
 
   if (isSelfCollision(newHead, willEat)) {
-    if (!tryUseShield("׳”׳׳’׳ ׳”׳¦׳™׳ ׳׳× ׳”׳¨׳™׳¦׳”")) gameOver("׳₪׳’׳¢׳× ׳‘׳¢׳¦׳׳");
+    if (!tryUseShield("המגן הציל את הריצה")) gameOver("פגעת בעצמך");
     return;
   }
 
   if (isObstacleCollision(newHead)) {
-    if (!tryUseShield("׳”׳׳’׳ ׳ ׳©׳‘׳¨ ׳׳”׳₪׳’׳™׳¢׳”")) gameOver("׳”׳×׳ ׳’׳©׳•׳× ׳‘׳׳›׳©׳•׳");
+    if (!tryUseShield("המגן נשבר מהפגיעה")) gameOver("התנגשות במכשול");
     return;
   }
 
   if (isEnemyCollision(newHead)) {
-    if (!tryUseShield("׳”׳׳’׳ ׳”׳“׳£ ׳׳× ׳”׳׳•׳™׳‘")) {
-      gameOver("׳”׳×׳ ׳’׳©׳•׳× ׳‘׳׳•׳™׳‘");
+    if (!tryUseShield("המגן הדף את האויב")) {
+      gameOver("התנגשות באויב");
     } else {
       enemies = enemies.filter((enemy) => !(enemy.x === newHead.x && enemy.y === newHead.y));
       updateHazardsLabel();
@@ -562,8 +561,8 @@ function tick() {
   moveEnemies();
 
   if (isEnemyTouchingSnake()) {
-    if (!tryUseShield("׳”׳׳’׳ ׳”׳“׳£ ׳׳× ׳”׳׳•׳™׳‘")) {
-      gameOver("׳׳•׳™׳‘ ׳×׳₪׳¡ ׳׳•׳×׳");
+    if (!tryUseShield("המגן הדף את האויב")) {
+      gameOver("אויב תפס אותך");
       return;
     }
     enemies = enemies.filter(
@@ -614,7 +613,7 @@ function gameOver(message) {
   clearStatusTimer();
   stopLoop();
   playSound("fail");
-  statusEl.textContent = `${message}. ׳׳—׳¥ ׳¢׳ ׳¨׳™׳¦׳” ׳—׳“׳©׳” ׳׳• ׳”׳×׳—׳ ׳׳—׳“׳©`;
+  statusEl.textContent = `${message}. לחץ על ריצה חדשה או התחל מחדש`;
   triggerBoardFlash("danger");
   boardShakeUntil = performance.now() + 280;
   saveRunToLeaderboards();
@@ -727,7 +726,7 @@ function resolvePortalTravel(pos) {
   }
   triggerBoardFlash("portal");
   playSound("portal");
-  addFloatingText("׳§׳₪׳™׳¦׳”", pos.x, pos.y, "#9cc7ff");
+  addFloatingText("קפיצה", pos.x, pos.y, "#9cc7ff");
   return { x: destination.x, y: destination.y };
 }
 
@@ -803,14 +802,14 @@ function updateLevel() {
 
   levelEl.textContent = String(level);
   stageBanner = {
-    title: `׳©׳׳‘ ${level}`,
-    subtitle: "׳›׳׳•׳× ׳”׳׳™׳•׳׳™׳ ׳¢׳׳×׳”",
+    title: `שלב ${level}`,
+    subtitle: "כמות האיומים עלתה",
     color: "rgba(120, 174, 255, 0.92)",
     start: performance.now(),
     duration: 1500
   };
   triggerBoardFlash("level");
-  setTemporaryStatus(`׳©׳׳‘ ${level}! ׳›׳׳•׳× ׳”׳׳™׳•׳׳™׳ ׳¢׳׳×׳”`, 1200);
+  setTemporaryStatus(`שלב ${level}! כמות האיומים עלתה`, 1200);
 }
 
 function applyLevelDifficulty(currentLevel) {
@@ -854,7 +853,7 @@ function maybeSpawnPickup() {
     y: cell.y,
     phase: Math.random() * Math.PI * 2
   };
-  setTemporaryStatus(`${formatPickupName(type)} ׳”׳•׳₪׳™׳¢ ׳¢׳ ׳”׳׳•׳—`, 900);
+  setTemporaryStatus(`${formatPickupName(type)} הופיע על הלוח`, 900);
   updateAbilityLabel();
 }
 
@@ -871,7 +870,7 @@ function maybeSpawnPortals() {
     { id: "A", x: first.x, y: first.y, phase: Math.random() * Math.PI * 2, charges: 3 },
     { id: "B", x: second.x, y: second.y, phase: Math.random() * Math.PI * 2, charges: 3 }
   ];
-  setTemporaryStatus("׳₪׳•׳¨׳˜׳׳™׳ ׳ ׳₪׳×׳—׳•", 900);
+  setTemporaryStatus("פורטלים נפתחו", 900);
 }
 
 function choosePickupType() {
@@ -913,18 +912,18 @@ function collectPickup(pickup) {
   switch (pickup.type) {
     case "shield":
       playerPowerState.shield += 1;
-      setTemporaryStatus("׳׳’׳ ׳׳•׳›׳", 1100);
-      addFloatingText("׳׳’׳", pickup.x, pickup.y, "#7de3ff");
+      setTemporaryStatus("מגן מוכן", 1100);
+      addFloatingText("מגן", pickup.x, pickup.y, "#7de3ff");
       break;
     case "blaster":
       playerPowerState.blasterCharges += 2;
-      setTemporaryStatus("2+ ׳׳˜׳¢׳ ׳™ ׳‘׳׳¡׳˜׳¨", 1100);
-      addFloatingText("׳‘׳׳¡׳˜׳¨", pickup.x, pickup.y, "#cfa8ff");
+      setTemporaryStatus("2+ מטעני בלסטר", 1100);
+      addFloatingText("בלסטר", pickup.x, pickup.y, "#cfa8ff");
       break;
     case "slow":
       playerPowerState.slowUntil = performance.now() + 7000;
-      setTemporaryStatus("׳©׳“׳” ׳”׳׳˜׳” ׳₪׳¢׳™׳", 1100);
-      addFloatingText("׳”׳׳˜׳”", pickup.x, pickup.y, "#9ff3c8");
+      setTemporaryStatus("שדה האטה פעיל", 1100);
+      addFloatingText("האטה", pickup.x, pickup.y, "#9ff3c8");
       break;
     default:
       break;
@@ -944,7 +943,7 @@ function tryUseShield(message) {
   if (playerPowerState.shield <= 0) return false;
   playerPowerState.shield -= 1;
   triggerBoardFlash("shield");
-  addFloatingText("׳׳’׳", snake[0].x, snake[0].y, "#7de3ff");
+  addFloatingText("מגן", snake[0].x, snake[0].y, "#7de3ff");
   setTemporaryStatus(message, 900);
   updateAbilityLabel();
   updateActionButtons();
@@ -993,9 +992,9 @@ function draw(nowMs) {
   if (gameOverAt > 0) {
     drawGameOverOverlay(nowMs);
   } else if (!started) {
-    drawStateOverlay("׳׳•׳›׳ ׳׳©׳—׳§", "׳׳—׳¥ ׳¢׳ ׳”׳×׳—׳, ׳”׳—׳׳™׳§ ׳¢׳ ׳”׳׳•׳— ׳׳• ׳”׳©׳×׳׳© ׳‘׳׳§׳©׳™ ׳”׳—׳¦׳™׳");
+    drawStateOverlay("מוכן לשחק", "לחץ על התחל, החליק על הלוח או השתמש במקשי החצים");
   } else if (!running) {
-    drawStateOverlay("׳”׳׳©׳—׳§ ׳׳•׳©׳”׳”", "׳׳—׳¥ ׳¢׳ ׳”׳׳©׳ ׳׳• ׳‘׳—׳¨ ׳›׳™׳•׳•׳ ׳›׳“׳™ ׳׳”׳׳©׳™׳");
+    drawStateOverlay("המשחק מושהה", "לחץ על המשך או בחר כיוון כדי להמשיך");
   }
 
   ctx.restore();
@@ -1504,7 +1503,7 @@ function drawGameOverOverlay(nowMs) {
   const alpha = Math.min(0.68, ((nowMs - gameOverAt) / 280) * 0.68);
   ctx.fillStyle = `rgba(${theme.overlayRGB}, ${alpha})`;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  drawStateOverlay("׳”׳׳©׳—׳§ ׳ ׳’׳׳¨", `${gameOverMessage} | ׳ ׳™׳§׳•׳“ ${score}`);
+  drawStateOverlay("המשחק נגמר", `${gameOverMessage} | ניקוד ${score}`);
 }
 
 function drawStateOverlay(title, subtitle) {
@@ -1756,7 +1755,7 @@ function onGlobalGestureStart(event) {
 
 function setPlayingStatus() {
   const config = getDifficultyConfig();
-  statusEl.textContent = `׳׳©׳—׳§ ׳₪׳¢׳™׳ - ${config.label} - ׳©׳׳‘ ${level}`;
+  statusEl.textContent = `משחק פעיל - ${config.label} - שלב ${level}`;
 }
 
 function setTemporaryStatus(message, durationMs) {
@@ -1791,7 +1790,7 @@ function setDifficulty(nextDifficulty) {
   updateDifficultyButtons();
 
   initGame();
-  setTemporaryStatus(`׳¨׳׳× ׳”׳§׳•׳©׳™ ׳”׳•׳’׳“׳¨׳” ׳ײ¾${DIFFICULTY_PRESETS[difficulty].label}`, 1500);
+  setTemporaryStatus(`רמת הקושי הוגדרה ל־${DIFFICULTY_PRESETS[difficulty].label}`, 1500);
 }
 
 function updateDifficultyButtons() {
@@ -1879,7 +1878,7 @@ function updateTouchControlSettingsUI() {
 function updateMiniHud() {
   if (miniScoreEl) miniScoreEl.textContent = String(score ?? 0);
   if (miniLevelEl) miniLevelEl.textContent = String(level ?? 1);
-  if (miniAbilityEl) miniAbilityEl.textContent = abilityLabelEl?.textContent || "׳׳™׳ ׳‘׳•׳¡׳˜";
+  if (miniAbilityEl) miniAbilityEl.textContent = abilityLabelEl?.textContent || "אין בוסט";
 }
 
 function updatePlayLayoutState() {
@@ -1930,23 +1929,23 @@ function updateCustomizationUI() {
   if (backgroundStatusEl) {
     if (boardBackgroundLoaded) {
       backgroundStatusEl.textContent = boardBackgroundSessionOnly
-        ? "׳×׳׳•׳ ׳” ׳₪׳¢׳™׳׳” ׳׳¡׳©׳ ׳”׳–׳”"
+        ? "תמונה פעילה לסשן הזה"
         : !boardBackgroundSource
-        ? "׳׳•׳’׳• ׳‘׳¨׳™׳¨׳× ׳”׳׳—׳“׳ ׳₪׳¢׳™׳"
+        ? "לוגו ברירת המחדל פעיל"
         : boardBackgroundSource.startsWith("data:")
-        ? "׳×׳׳•׳ ׳” ׳׳”׳׳›׳©׳™׳¨ ׳₪׳¢׳™׳׳”"
-        : "׳×׳׳•׳ ׳” ׳׳§׳™׳©׳•׳¨ ׳₪׳¢׳™׳׳”";
+        ? "תמונה מהמכשיר פעילה"
+        : "תמונה מקישור פעילה";
     } else if (boardBackgroundError) {
       backgroundStatusEl.textContent = boardBackgroundError;
     } else {
-      backgroundStatusEl.textContent = "׳¨׳§׳¢ ׳‘׳¨׳™׳¨׳× ׳׳—׳“׳";
+      backgroundStatusEl.textContent = "רקע ברירת מחדל";
     }
   }
 }
 
 function loadBoardBackground(source) {
   const resolvedSource = source || DEFAULT_BOARD_BACKGROUND;
-  boardBackgroundError = "׳˜׳•׳¢׳ ׳×׳׳•׳ ׳”...";
+  boardBackgroundError = "טוען תמונה...";
   boardBackgroundLoaded = false;
   boardBackgroundResolvedSource = resolvedSource;
   updateCustomizationUI();
@@ -1962,8 +1961,8 @@ function loadBoardBackground(source) {
     boardBackgroundLoaded = false;
     boardBackgroundImage = null;
     boardBackgroundError = resolvedSource === DEFAULT_BOARD_BACKGROUND
-      ? "׳˜׳¢׳™׳ ׳× ׳¨׳§׳¢ ׳‘׳¨׳™׳¨׳× ׳”׳׳—׳“׳ ׳ ׳›׳©׳׳”"
-      : "׳˜׳¢׳™׳ ׳× ׳”׳×׳׳•׳ ׳” ׳ ׳›׳©׳׳”";
+      ? "טעינת רקע ברירת המחדל נכשלה"
+      : "טעינת התמונה נכשלה";
     updateCustomizationUI();
   };
   image.src = resolvedSource;
@@ -2011,7 +2010,7 @@ function openGadgetHelp(type) {
 
   gadgetHelpPanel.hidden = false;
   updatePlayLayoutState();
-  statusEl.textContent = `׳”׳¡׳‘׳¨ ׳¢׳ ${help.title}`;
+  statusEl.textContent = `הסבר על ${help.title}`;
   updateActionButtons();
 }
 
@@ -2113,32 +2112,32 @@ function updateAbilityLabel() {
   if (!abilityLabelEl) return;
 
   if (playerPowerState.blasterCharges > 0) {
-    abilityLabelEl.textContent = `׳‘׳׳¡׳˜׳¨ x${playerPowerState.blasterCharges}`;
+    abilityLabelEl.textContent = `בלסטר x${playerPowerState.blasterCharges}`;
     updateMiniHud();
     return;
   }
 
   if (playerPowerState.shield > 0) {
-    abilityLabelEl.textContent = `׳׳’׳ x${playerPowerState.shield}`;
+    abilityLabelEl.textContent = `מגן x${playerPowerState.shield}`;
     updateMiniHud();
     return;
   }
 
   if (performance.now() < playerPowerState.slowUntil) {
-    abilityLabelEl.textContent = "׳©׳“׳” ׳”׳׳˜׳”";
+    abilityLabelEl.textContent = "שדה האטה";
     updateMiniHud();
     return;
   }
 
-  abilityLabelEl.textContent = activePickup ? `׳׳™׳¡׳•׳£: ${formatPickupName(activePickup.type)}` : "׳׳™׳ ׳‘׳•׳¡׳˜";
+  abilityLabelEl.textContent = activePickup ? `איסוף: ${formatPickupName(activePickup.type)}` : "אין בוסט";
   updateMiniHud();
 }
 
 function updateActionButtons() {
-  startBtn.textContent = running ? "׳׳©׳—׳§" : gameOverAt > 0 ? "׳¨׳™׳¦׳” ׳—׳“׳©׳”" : started ? "׳”׳׳©׳" : "׳”׳×׳—׳";
+  startBtn.textContent = running ? "משחק" : gameOverAt > 0 ? "ריצה חדשה" : started ? "המשך" : "התחל";
   startBtn.disabled = running || gadgetHelpOpen;
 
-  pauseBtn.textContent = running ? "׳¢׳¦׳•׳¨" : started && gameOverAt === 0 ? "׳”׳׳©׳" : "׳¢׳¦׳•׳¨";
+  pauseBtn.textContent = running ? "עצור" : started && gameOverAt === 0 ? "המשך" : "עצור";
   pauseBtn.disabled = !started || gameOverAt > 0 || gadgetHelpOpen;
 
   restartBtn.disabled = (!started && gameOverAt === 0) || gadgetHelpOpen;
@@ -2150,8 +2149,8 @@ function updateActionButtons() {
 
   if (miniPauseBtn) {
     miniPauseBtn.disabled = !started || gameOverAt > 0 || gadgetHelpOpen;
-    miniPauseBtn.textContent = running ? "גג" : "ג–¶";
-    miniPauseBtn.setAttribute("aria-label", running ? "׳”׳©׳”׳” ׳׳©׳—׳§" : "׳”׳׳©׳ ׳׳©׳—׳§");
+    miniPauseBtn.textContent = running ? "❚❚" : "▶";
+    miniPauseBtn.setAttribute("aria-label", running ? "השהה משחק" : "המשך משחק");
   }
 }
 
@@ -2161,7 +2160,7 @@ function setTouchSettingsOpen(isOpen) {
   touchSettingsToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
   touchSettingsToggle.setAttribute(
     "aria-label",
-    isOpen ? "׳¡׳’׳•׳¨ ׳”׳’׳“׳¨׳•׳× ׳׳’׳¢" : "׳₪׳×׳— ׳”׳’׳“׳¨׳•׳× ׳׳’׳¢"
+    isOpen ? "סגור הגדרות מגע" : "פתח הגדרות מגע"
   );
 }
 
@@ -2203,17 +2202,17 @@ function fireWeapon() {
   triggerBoardFlash("weapon");
   playSound("weapon");
   addFloatingText("+2", bestTarget.enemy.x, bestTarget.enemy.y, "#d9b3ff");
-  setTemporaryStatus("׳”׳‘׳׳¡׳˜׳¨ ׳ ׳•׳¨׳”", 700);
+  setTemporaryStatus("הבלסטר נורה", 700);
 }
 
 function formatPickupName(type) {
   switch (type) {
     case "shield":
-      return "׳׳’׳";
+      return "מגן";
     case "blaster":
-      return "׳‘׳׳¡׳˜׳¨";
+      return "בלסטר";
     case "slow":
-      return "׳”׳׳˜׳”";
+      return "האטה";
     default:
       return type;
   }
@@ -2240,8 +2239,8 @@ function normalizeKey(value, source, fallback) {
 
 function getIdleStatus() {
   return isTouchDevice
-    ? "׳׳—׳¥ ׳¢׳ ׳”׳×׳—׳, ׳”׳—׳׳™׳§ ׳¢׳ ׳”׳׳•׳— ׳׳• ׳”׳©׳×׳׳© ׳‘׳‘׳§׳¨׳™׳"
-    : "׳׳—׳¥ ׳¢׳ ׳”׳×׳—׳ ׳׳• ׳¢׳ ׳׳§׳©׳™ ׳”׳—׳¦׳™׳";
+    ? "לחץ על התחל, החליק על הלוח או השתמש בבקרים"
+    : "לחץ על התחל או על מקשי החצים";
 }
 
 function loadPersonalRecords() {
@@ -2280,7 +2279,7 @@ function renderLeaderboards() {
 
   const personalBest = personalRecords[0]?.score || 0;
   if (personalBestSummaryEl) {
-    personalBestSummaryEl.textContent = `${personalBest} ׳ ׳§'`;
+    personalBestSummaryEl.textContent = `${personalBest} נק'`;
   }
 
   if (communityStatusEl) {
@@ -2296,7 +2295,7 @@ function renderLeaderboardList(target, entries, includeMeta) {
   if (!target) return;
 
   if (!entries || entries.length === 0) {
-    target.innerHTML = "<li><span>׳¢׳“׳™׳™׳ ׳׳™׳ ׳©׳™׳׳™׳</span><span>׳©׳—׳§ ׳¨׳™׳¦׳” ׳׳—׳×</span></li>";
+    target.innerHTML = "<li><span>עדיין אין שיאים</span><span>שחק ריצה אחת</span></li>";
     return;
   }
 
@@ -2304,10 +2303,10 @@ function renderLeaderboardList(target, entries, includeMeta) {
     .slice(0, includeMeta ? MAX_PERSONAL_RECORDS : MAX_COMMUNITY_RECORDS)
     .map((entry) => {
       const rightLabel = includeMeta
-        ? `׳©׳׳‘ ${entry.level} | ${entry.difficulty}`
-        : `${entry.score} ׳ ׳§'`;
+        ? `שלב ${entry.level} | ${entry.difficulty}`
+        : `${entry.score} נק'`;
       const leftLabel = includeMeta
-        ? `${entry.score} ׳ ׳§'`
+        ? `${entry.score} נק'`
         : `${entry.player}`;
       const primary = includeMeta ? entry.player : leftLabel;
       return `<li><span>${escapeHtml(primary)}</span><span>${escapeHtml(includeMeta ? leftLabel + " | " + rightLabel : rightLabel)}</span></li>`;
@@ -2319,16 +2318,16 @@ async function loadCommunityLeaderboard() {
   if (!COMMUNITY_LEADERBOARD_ENDPOINT) {
     communityRecords = getDemoCommunityRecords();
     communityStatus = {
-      mode: "׳“׳׳• ׳׳ ׳׳§׳•׳•׳",
-      detail: "׳›׳“׳™ ׳׳”׳₪׳¢׳™׳ ׳׳•׳— ׳§׳”׳™׳׳×׳™ ׳׳׳™׳×׳™ ׳¦׳¨׳™׳ ׳׳—׳‘׳¨ ׳¦׳“ ׳©׳¨׳×"
+      mode: "דמו לא מקוון",
+      detail: "כדי להפעיל לוח קהילתי אמיתי צריך לחבר צד שרת"
     };
     renderLeaderboards();
     return;
   }
 
   communityStatus = {
-    mode: "׳׳—׳•׳‘׳¨",
-    detail: "׳˜׳•׳¢׳ ׳׳× ׳”׳׳•׳— ׳”׳§׳”׳™׳׳×׳™..."
+    mode: "מחובר",
+    detail: "טוען את הלוח הקהילתי..."
   };
   renderLeaderboards();
 
@@ -2346,14 +2345,14 @@ async function loadCommunityLeaderboard() {
     const payload = await response.json();
     communityRecords = Array.isArray(payload) ? payload.slice(0, MAX_COMMUNITY_RECORDS) : getDemoCommunityRecords();
     communityStatus = {
-      mode: "׳—׳™",
-      detail: "׳”׳׳•׳— ׳”׳§׳”׳™׳׳×׳™ ׳׳—׳•׳‘׳¨"
+      mode: "חי",
+      detail: "הלוח הקהילתי מחובר"
     };
   } catch {
     communityRecords = getDemoCommunityRecords();
     communityStatus = {
-      mode: "׳“׳׳• ׳׳ ׳׳§׳•׳•׳",
-      detail: "׳”׳׳•׳— ׳”׳§׳”׳™׳׳×׳™ ׳—׳–׳¨ ׳׳׳¦׳‘ ׳’׳™׳‘׳•׳™ ׳›׳™ ׳”׳©׳¨׳× ׳׳ ׳–׳׳™׳"
+      mode: "דמו לא מקוון",
+      detail: "הלוח הקהילתי חזר למצב גיבוי כי השרת לא זמין"
     };
   }
 
@@ -2374,8 +2373,8 @@ async function submitCommunityScore(entry) {
     await loadCommunityLeaderboard();
   } catch {
     communityStatus = {
-      mode: "׳“׳׳• ׳׳ ׳׳§׳•׳•׳",
-      detail: "׳©׳׳™׳—׳× ׳”׳©׳™׳ ׳ ׳›׳©׳׳”, ׳׳•׳¦׳’ ׳׳•׳— ׳’׳™׳‘׳•׳™"
+      mode: "דמו לא מקוון",
+      detail: "שליחת השיא נכשלה, מוצג לוח גיבוי"
     };
     renderLeaderboards();
   }
@@ -2383,17 +2382,17 @@ async function submitCommunityScore(entry) {
 
 function getDemoCommunityRecords() {
   return [
-    { player: "׳¨׳¥ײ¾׳‘׳™׳™׳˜", score: 92, level: 14, difficulty: "׳§׳©׳”" },
-    { player: "׳©׳•׳¢׳ײ¾׳’׳¨׳™׳“", score: 71, level: 11, difficulty: "׳‘׳™׳ ׳•׳ ׳™" },
-    { player: "׳¦׳׳•׳₪׳—ײ¾׳׳™׳™׳–׳¨", score: 58, level: 9, difficulty: "׳§׳©׳”" },
-    { player: "׳–׳ ׳‘ײ¾׳ ׳•׳‘׳”", score: 43, level: 8, difficulty: "׳‘׳™׳ ׳•׳ ׳™" },
-    { player: "׳˜׳™׳™׳¡ײ¾׳׳¨׳§׳™׳™׳“", score: 30, level: 6, difficulty: "׳§׳" }
+    { player: "רץ־בייט", score: 92, level: 14, difficulty: "קשה" },
+    { player: "שועל־גריד", score: 71, level: 11, difficulty: "בינוני" },
+    { player: "צלופח־לייזר", score: 58, level: 9, difficulty: "קשה" },
+    { player: "זנב־נובה", score: 43, level: 8, difficulty: "בינוני" },
+    { player: "טייס־ארקייד", score: 30, level: 6, difficulty: "קל" }
   ];
 }
 
 function sanitizePlayerName(value) {
   const trimmed = (value || "").trim().slice(0, 14);
-  return trimmed || "׳©׳—׳§׳";
+  return trimmed || "שחקן";
 }
 
 function escapeHtml(value) {
@@ -2433,6 +2432,9 @@ function syncViewportLayout() {
   document.documentElement.style.setProperty("--app-height", `${window.innerHeight}px`);
   if (!appWrapEl || !boardShellEl) return;
 
+  const compactViewport = window.innerWidth <= 820 || window.innerHeight <= 920;
+  appWrapEl.classList.toggle("compact-viewport", compactViewport);
+
   const bodyStyle = window.getComputedStyle(document.body);
   const bodyTop = parseFloat(bodyStyle.paddingTop) || 0;
   const bodyBottom = parseFloat(bodyStyle.paddingBottom) || 0;
@@ -2447,10 +2449,12 @@ function syncViewportLayout() {
   );
   const sectionsHeight = visibleSections.reduce((sum, el) => sum + el.offsetHeight, 0);
   const gapsHeight = Math.max(0, visibleSections.length - 1) * rowGap;
-  const chrome = bodyTop + bodyBottom + wrapPaddingTop + wrapPaddingBottom + sectionsHeight + gapsHeight + 18;
+  const chrome = bodyTop + bodyBottom + wrapPaddingTop + wrapPaddingBottom + sectionsHeight + gapsHeight + (compactViewport ? 8 : 18);
   const availableHeight = Math.max(220, window.innerHeight - chrome);
   const availableWidth = Math.max(220, appWrapEl.clientWidth - wrapPaddingInline - 6);
-  const maxBoard = isTouchDevice ? 620 : 760;
+  const maxBoard = isTouchDevice
+    ? (compactViewport ? 560 : 620)
+    : (compactViewport ? 780 : 860);
   const size = Math.min(maxBoard, availableHeight, availableWidth);
 
   document.documentElement.style.setProperty("--mobile-board-size", `${Math.floor(size)}px`);
@@ -2717,7 +2721,7 @@ if (backgroundFileInput) {
     const file = backgroundFileInput.files?.[0];
     if (!file) return;
     if (file.size > 8_000_000) {
-      boardBackgroundError = "׳‘׳—׳¨ ׳×׳׳•׳ ׳” ׳¢׳“ 8MB";
+      boardBackgroundError = "בחר תמונה עד 8MB";
       updateCustomizationUI();
       backgroundFileInput.value = "";
       return;
@@ -2732,7 +2736,7 @@ if (backgroundFileInput) {
       backgroundFileInput.value = "";
     };
     reader.onerror = () => {
-      boardBackgroundError = "׳”׳¢׳׳׳× ׳”׳×׳׳•׳ ׳” ׳ ׳›׳©׳׳”";
+      boardBackgroundError = "העלאת התמונה נכשלה";
       updateCustomizationUI();
       backgroundFileInput.value = "";
     };
