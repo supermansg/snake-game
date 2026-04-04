@@ -599,6 +599,10 @@ input:focus-visible {
   width: 100%;
 }
 
+.menu-touch-toolbar {
+  margin-top: 2px;
+}
+
 .touch-setting {
   display: grid;
   gap: 4px;
@@ -630,14 +634,17 @@ input:focus-visible {
 
 .touch-controls[data-size="small"] {
   --touch-btn-size: 56px;
+  --touch-btn-width: 74px;
 }
 
 .touch-controls[data-size="medium"] {
   --touch-btn-size: 68px;
+  --touch-btn-width: 88px;
 }
 
 .touch-controls[data-size="large"] {
   --touch-btn-size: 80px;
+  --touch-btn-width: 102px;
 }
 
 .touch-controls[data-side="left"] {
@@ -656,7 +663,7 @@ input:focus-visible {
   display: grid;
   width: max-content;
   max-width: 100%;
-  grid-template-columns: repeat(3, minmax(var(--touch-btn-size), var(--touch-btn-size)));
+  grid-template-columns: repeat(3, minmax(var(--touch-btn-width, var(--touch-btn-size)), var(--touch-btn-width, var(--touch-btn-size))));
   grid-template-areas:
     ". up ."
     "left down right";
@@ -664,7 +671,9 @@ input:focus-visible {
 }
 
 .touch-btn {
+  min-width: var(--touch-btn-width, var(--touch-btn-size));
   min-height: var(--touch-btn-size);
+  padding: 0 10px;
   border-radius: var(--touch-radius);
   background:
     linear-gradient(180deg, #6d9cff, #4d79e8 68%, #3f66ca),
@@ -675,6 +684,8 @@ input:focus-visible {
     inset 0 1px 0 rgba(220, 234, 255, 0.22),
     inset 0 -8px 14px rgba(35, 58, 128, 0.2),
     0 8px 20px rgba(25, 53, 119, 0.34);
+  font-size: 0.95rem;
+  white-space: nowrap;
 }
 
 .touch-btn.up {
@@ -1174,14 +1185,17 @@ input:focus-visible {
 
   .touch-controls[data-size="small"] {
     --touch-btn-size: 48px;
+    --touch-btn-width: 72px;
   }
 
   .touch-controls[data-size="medium"] {
     --touch-btn-size: 54px;
+    --touch-btn-width: 80px;
   }
 
   .touch-controls[data-size="large"] {
     --touch-btn-size: 60px;
+    --touch-btn-width: 92px;
   }
 
   .board-shell {
@@ -1224,6 +1238,10 @@ input:focus-visible {
   }
 
   .menu-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .menu-touch-toolbar {
     grid-template-columns: 1fr;
   }
 
@@ -1292,6 +1310,10 @@ input:focus-visible {
     grid-template-columns: 1fr;
   }
 
+  .touch-btn {
+    font-size: 0.88rem;
+  }
+
   .leaderboard-grid {
     grid-template-columns: 1fr;
   }
@@ -1324,6 +1346,13 @@ input:focus-visible {
   .board-shell {
     padding: 6px;
   }
+}
+
+.menu-help-text {
+  margin: 0;
+  color: #a9bcdf;
+  font-size: 0.82rem;
+  line-height: 1.45;
 }
 
 @media (max-height: 860px) {

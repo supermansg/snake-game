@@ -35,6 +35,9 @@ const touchFireBtn = document.getElementById("touchFireBtn");
 const controlLayoutSelect = document.getElementById("controlLayoutSelect");
 const controlSizeSelect = document.getElementById("controlSizeSelect");
 const controlSideSelect = document.getElementById("controlSideSelect");
+const menuControlLayoutSelect = document.getElementById("menuControlLayoutSelect");
+const menuControlSizeSelect = document.getElementById("menuControlSizeSelect");
+const menuControlSideSelect = document.getElementById("menuControlSideSelect");
 const menuPanel = document.getElementById("menuPanel");
 const closeMenuBtn = document.getElementById("closeMenuBtn");
 const profileNameInput = document.getElementById("profileNameInput");
@@ -2037,6 +2040,9 @@ function updateTouchControlSettingsUI() {
   if (controlLayoutSelect) controlLayoutSelect.value = preferredControlLayout;
   if (controlSizeSelect) controlSizeSelect.value = preferredControlSize;
   if (controlSideSelect) controlSideSelect.value = preferredControlSide;
+  if (menuControlLayoutSelect) menuControlLayoutSelect.value = preferredControlLayout;
+  if (menuControlSizeSelect) menuControlSizeSelect.value = preferredControlSize;
+  if (menuControlSideSelect) menuControlSideSelect.value = preferredControlSide;
 }
 
 function updateMiniHud() {
@@ -2852,12 +2858,24 @@ if (controlLayoutSelect) {
   controlLayoutSelect.addEventListener("change", () => setControlLayout(controlLayoutSelect.value));
 }
 
+if (menuControlLayoutSelect) {
+  menuControlLayoutSelect.addEventListener("change", () => setControlLayout(menuControlLayoutSelect.value));
+}
+
 if (controlSizeSelect) {
   controlSizeSelect.addEventListener("change", () => setControlSize(controlSizeSelect.value));
 }
 
+if (menuControlSizeSelect) {
+  menuControlSizeSelect.addEventListener("change", () => setControlSize(menuControlSizeSelect.value));
+}
+
 if (controlSideSelect) {
   controlSideSelect.addEventListener("change", () => setControlSide(controlSideSelect.value));
+}
+
+if (menuControlSideSelect) {
+  menuControlSideSelect.addEventListener("change", () => setControlSide(menuControlSideSelect.value));
 }
 
 if (touchSettingsToggle) {
