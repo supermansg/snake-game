@@ -341,12 +341,15 @@ let gameOverMessage = "";
 let stageBanner = null;
 let activePickup = null;
 let activePortals = [];
+let activeExplosionBursts = [];
 let playerPowerState = {
   shield: 0,
   blasterCharges: 0,
   slowUntil: 0
 };
 let laserShot = null;
+let aimingShot = false;
+let targetCursor = null;
 let personalRecords = loadPersonalRecords();
 let communityRecords = [];
 let communityStatus = {
@@ -405,12 +408,15 @@ function initGame() {
   stageBanner = null;
   activePickup = null;
   activePortals = [];
+  activeExplosionBursts = [];
   playerPowerState = {
     shield: 0,
     blasterCharges: 0,
     slowUntil: 0
   };
   laserShot = null;
+  aimingShot = false;
+  targetCursor = null;
 
   clearStatusTimer();
   updateDifficultyButtons();
@@ -983,7 +989,9 @@ function draw(nowMs) {
   drawFood(t);
   drawPickup(t);
   drawEnemies(t);
+  drawTargetCursor(nowMs);
   drawLaserShot(nowMs);
+  drawExplosionBursts(nowMs);
   drawSnake(t);
   drawFoodBurst(nowMs);
   drawFloatingTexts(nowMs);
@@ -1477,6 +1485,76 @@ function drawLaserShot(nowMs) {
   ctx.stroke();
 }
 
+function drawTargetCursor(nowMs) {
+  if (!aimingShot || !targetCursor) return;
+
+  const cx = (targetCursor.x + 0.5) * CELL;
+  const cy = (targetCursor.y + 0.5) * CELL;
+  const pulse = 1 + Math.sin(nowMs * 0.012) * 0.08;
+  const radius = CELL * 0.42 * pulse;
+  const color = targetCursor.kind === "enemy" ? "255, 148, 106" : "120, 214, 255";
+
+  ctx.save();
+  ctx.strokeStyle = `rgba(${color}, 0.95)`;
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.strokeStyle = `rgba(${color}, 0.55)`;
+  ctx.lineWidth = 1.3;
+  ctx.beginPath();
+  ctx.moveTo(cx - radius - 6, cy);
+  ctx.lineTo(cx - radius + 4, cy);
+  ctx.moveTo(cx + radius - 4, cy);
+  ctx.lineTo(cx + radius + 6, cy);
+  ctx.moveTo(cx, cy - radius - 6);
+  ctx.lineTo(cx, cy - radius + 4);
+  ctx.moveTo(cx, cy + radius - 4);
+  ctx.lineTo(cx, cy + radius + 6);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawExplosionBursts(nowMs) {
+  if (activeExplosionBursts.length === 0) return;
+
+  activeExplosionBursts = activeExplosionBursts.filter((burst) => nowMs - burst.start < burst.duration);
+
+  activeExplosionBursts.forEach((burst) => {
+    const progress = (nowMs - burst.start) / burst.duration;
+    const cx = (burst.x + 0.5) * CELL;
+    const cy = (burst.y + 0.5) * CELL;
+    const outer = CELL * (0.28 + progress * 0.95);
+    const inner = CELL * (0.12 + progress * 0.45);
+
+    ctx.save();
+    ctx.strokeStyle = `rgba(255, 186, 110, ${0.82 - progress * 0.66})`;
+    ctx.lineWidth = 3 - progress * 1.8;
+    ctx.beginPath();
+    ctx.arc(cx, cy, outer, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = `rgba(255, 122, 96, ${0.36 - progress * 0.3})`;
+    ctx.beginPath();
+    ctx.arc(cx, cy, inner, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = `rgba(255, 223, 153, ${0.9 - progress * 0.78})`;
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 6; i += 1) {
+      const angle = (Math.PI * 2 * i) / 6 + progress * 0.8;
+      const from = CELL * 0.12;
+      const to = CELL * (0.45 + progress * 0.48);
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(angle) * from, cy + Math.sin(angle) * from);
+      ctx.lineTo(cx + Math.cos(angle) * to, cy + Math.sin(angle) * to);
+      ctx.stroke();
+    }
+    ctx.restore();
+  });
+}
+
 function drawFoodBurst(nowMs) {
   if (!foodBurst) return;
 
@@ -1686,6 +1764,12 @@ function onKeyDown(event) {
 }
 
 function onCanvasPointerDown(event) {
+  if (aimingShot) {
+    swipeStart = null;
+    event.preventDefault();
+    return;
+  }
+
   if (event.pointerType === "mouse") return;
 
   swipeStart = {
@@ -1705,6 +1789,17 @@ function onCanvasPointerDown(event) {
 }
 
 function onCanvasPointerUp(event) {
+  if (aimingShot) {
+    const cell = getCellFromPointerEvent(event);
+    const tappedTarget = getTargetAtCell(cell);
+    if (tappedTarget) {
+      targetCursor = tappedTarget;
+    }
+    fireWeapon();
+    event.preventDefault();
+    return;
+  }
+
   if (!swipeStart) return;
 
   const dx = event.clientX - swipeStart.x;
@@ -1773,6 +1868,75 @@ function setTemporaryStatus(message, durationMs) {
       statusEl.textContent = getIdleStatus();
     }
   }, durationMs);
+}
+
+function getWeaponTargets() {
+  return [
+    ...enemies.map((enemy, index) => ({ kind: "enemy", x: enemy.x, y: enemy.y, index })),
+    ...obstacles.map((obstacle, index) => ({ kind: "obstacle", x: obstacle.x, y: obstacle.y, index }))
+  ];
+}
+
+function findNearestWeaponTarget(from = snake?.[0]) {
+  if (!from) return null;
+  const targets = getWeaponTargets();
+  if (targets.length === 0) return null;
+
+  let bestTarget = null;
+  let bestDistance = Infinity;
+
+  targets.forEach((target) => {
+    const distance = Math.abs(target.x - from.x) + Math.abs(target.y - from.y);
+    const enemyBias = target.kind === "enemy" ? -0.35 : 0;
+    const weightedDistance = distance + enemyBias;
+    if (weightedDistance < bestDistance) {
+      bestDistance = weightedDistance;
+      bestTarget = target;
+    }
+  });
+
+  return bestTarget;
+}
+
+function setAimingShot(isActive, nextTarget = null) {
+  aimingShot = isActive;
+  targetCursor = isActive ? (nextTarget || findNearestWeaponTarget()) : null;
+
+  if (aimingShot && targetCursor) {
+    setTemporaryStatus(
+      targetCursor.kind === "enemy"
+        ? "כוונת נעולה על אויב. לחץ שוב או גע במטרה כדי לירות"
+        : "כוונת נעולה על מכשול. לחץ שוב או גע במטרה כדי לפוצץ",
+      900
+    );
+  } else if (!aimingShot && running) {
+    setPlayingStatus();
+  }
+}
+
+function getCellFromPointerEvent(event) {
+  const rect = canvas.getBoundingClientRect();
+  const x = Math.floor(((event.clientX - rect.left) / rect.width) * GRID_SIZE);
+  const y = Math.floor(((event.clientY - rect.top) / rect.height) * GRID_SIZE);
+
+  if (x < 0 || x >= GRID_SIZE || y < 0 || y >= GRID_SIZE) return null;
+  return { x, y };
+}
+
+function getTargetAtCell(cell) {
+  if (!cell) return null;
+
+  const enemyIndex = enemies.findIndex((enemy) => enemy.x === cell.x && enemy.y === cell.y);
+  if (enemyIndex >= 0) {
+    return { kind: "enemy", x: cell.x, y: cell.y, index: enemyIndex };
+  }
+
+  const obstacleIndex = obstacles.findIndex((obstacle) => obstacle.x === cell.x && obstacle.y === cell.y);
+  if (obstacleIndex >= 0) {
+    return { kind: "obstacle", x: cell.x, y: cell.y, index: obstacleIndex };
+  }
+
+  return null;
 }
 
 function clearStatusTimer() {
@@ -1881,6 +2045,17 @@ function updateMiniHud() {
   if (miniAbilityEl) miniAbilityEl.textContent = abilityLabelEl?.textContent || "אין בוסט";
 }
 
+function updateTouchControlsVisibility() {
+  if (!touchControlsEl) return;
+  if (!isTouchDevice) {
+    touchControlsEl.hidden = false;
+    return;
+  }
+
+  const shouldShow = started && gameOverAt === 0;
+  touchControlsEl.hidden = !shouldShow;
+}
+
 function updatePlayLayoutState() {
   if (!appWrapEl) return;
   const overlayOpen = !menuPanel?.hidden || !leaderboardPanel?.hidden || gadgetHelpOpen;
@@ -1888,6 +2063,7 @@ function updatePlayLayoutState() {
   const isBoardOnly = running && !overlayOpen;
   appWrapEl.classList.toggle("is-play-focused", isPlayFocused);
   appWrapEl.classList.toggle("is-board-only", isBoardOnly);
+  updateTouchControlsVisibility();
   requestAnimationFrame(syncViewportLayout);
 }
 
@@ -2134,6 +2310,17 @@ function updateAbilityLabel() {
 }
 
 function updateActionButtons() {
+  const hasWeaponTargets = getWeaponTargets().length > 0;
+  const canFire = playerPowerState.blasterCharges > 0 && hasWeaponTargets && started && gameOverAt === 0 && !gadgetHelpOpen;
+
+  if (aimingShot) {
+    targetCursor = targetCursor ? getTargetAtCell(targetCursor) || findNearestWeaponTarget() : findNearestWeaponTarget();
+    if (!canFire || !targetCursor) {
+      aimingShot = false;
+      targetCursor = null;
+    }
+  }
+
   startBtn.textContent = running ? "משחק" : gameOverAt > 0 ? "ריצה חדשה" : started ? "המשך" : "התחל";
   startBtn.disabled = running || gadgetHelpOpen;
 
@@ -2141,11 +2328,23 @@ function updateActionButtons() {
   pauseBtn.disabled = !started || gameOverAt > 0 || gadgetHelpOpen;
 
   restartBtn.disabled = (!started && gameOverAt === 0) || gadgetHelpOpen;
-
-  const canFire = playerPowerState.blasterCharges > 0 && enemies.length > 0 && started && gameOverAt === 0 && !gadgetHelpOpen;
+  if (controlsEl) controlsEl.dataset.hasAction = canFire ? "true" : "false";
   fireBtn.disabled = !canFire;
   touchFireBtn.disabled = !canFire;
   if (miniFireBtn) miniFireBtn.disabled = !canFire;
+  fireBtn.hidden = !canFire;
+  touchFireBtn.hidden = !canFire;
+  if (miniFireBtn) miniFireBtn.hidden = !canFire;
+
+  if (canFire) {
+    const actionText = aimingShot ? "שגר" : `כוון x${playerPowerState.blasterCharges}`;
+    fireBtn.textContent = actionText;
+    touchFireBtn.textContent = actionText;
+    if (miniFireBtn) {
+      miniFireBtn.textContent = aimingShot ? "◎" : "✦";
+      miniFireBtn.setAttribute("aria-label", aimingShot ? "שגר בלסטר" : "הפעל כוונת בלסטר");
+    }
+  }
 
   if (miniPauseBtn) {
     miniPauseBtn.disabled = !started || gameOverAt > 0 || gadgetHelpOpen;
@@ -2171,38 +2370,56 @@ function toggleTouchSettings() {
 }
 
 function fireWeapon() {
-  if (playerPowerState.blasterCharges <= 0 || enemies.length === 0) return;
+  if (playerPowerState.blasterCharges <= 0 || !started || gameOverAt > 0 || gadgetHelpOpen) return;
 
   const head = snake[0];
-  let bestTarget = null;
-  let bestDistance = Infinity;
+  const target = targetCursor || findNearestWeaponTarget(head);
+  if (!target) return;
 
-  enemies.forEach((enemy, index) => {
-    const distance = Math.abs(enemy.x - head.x) + Math.abs(enemy.y - head.y);
-    if (distance < bestDistance) {
-      bestDistance = distance;
-      bestTarget = { enemy, index };
-    }
-  });
-
-  if (!bestTarget) return;
+  if (!aimingShot) {
+    setAimingShot(true, target);
+    updateActionButtons();
+    return;
+  }
 
   playerPowerState.blasterCharges -= 1;
   laserShot = {
     from: { ...head },
-    to: { x: bestTarget.enemy.x, y: bestTarget.enemy.y },
+    to: { x: target.x, y: target.y },
     start: performance.now()
   };
-  enemies.splice(bestTarget.index, 1);
-  score += 2;
+  activeExplosionBursts.push({
+    x: target.x,
+    y: target.y,
+    start: performance.now(),
+    duration: 320
+  });
+
+  let pointsEarned = 1;
+  if (target.kind === "enemy") {
+    enemies.splice(target.index, 1);
+    pointsEarned = 2;
+    addFloatingText("+2", target.x, target.y, "#d9b3ff");
+  } else {
+    obstacles.splice(target.index, 1);
+    addFloatingText("פיצוץ", target.x, target.y, "#9fd8ff");
+  }
+
+  score += pointsEarned;
   scoreEl.textContent = String(score);
+  if (score > bestScore) {
+    bestScore = score;
+    bestEl.textContent = String(bestScore);
+    localStorage.setItem(STORAGE_KEYS.bestScore, String(bestScore));
+  }
+
+  triggerBoardFlash("weapon");
+  playSound("weapon");
+  setTemporaryStatus(target.kind === "enemy" ? "הבלסטר חיסל אויב" : "המכשול התפוצץ", 850);
+  setAimingShot(false);
   updateHazardsLabel();
   updateAbilityLabel();
   updateActionButtons();
-  triggerBoardFlash("weapon");
-  playSound("weapon");
-  addFloatingText("+2", bestTarget.enemy.x, bestTarget.enemy.y, "#d9b3ff");
-  setTemporaryStatus("הבלסטר נורה", 700);
 }
 
 function formatPickupName(type) {
@@ -2429,10 +2646,12 @@ function setMenuOpen(isOpen) {
 }
 
 function syncViewportLayout() {
-  document.documentElement.style.setProperty("--app-height", `${window.innerHeight}px`);
+  const viewportHeight = Math.round(window.visualViewport?.height || window.innerHeight);
+  const viewportWidth = Math.round(window.visualViewport?.width || window.innerWidth);
+  document.documentElement.style.setProperty("--app-height", `${viewportHeight}px`);
   if (!appWrapEl || !boardShellEl) return;
 
-  const compactViewport = window.innerWidth <= 820 || window.innerHeight <= 920;
+  const compactViewport = viewportWidth <= 820 || viewportHeight <= 920;
   appWrapEl.classList.toggle("compact-viewport", compactViewport);
 
   const bodyStyle = window.getComputedStyle(document.body);
@@ -2450,10 +2669,10 @@ function syncViewportLayout() {
   const sectionsHeight = visibleSections.reduce((sum, el) => sum + el.offsetHeight, 0);
   const gapsHeight = Math.max(0, visibleSections.length - 1) * rowGap;
   const chrome = bodyTop + bodyBottom + wrapPaddingTop + wrapPaddingBottom + sectionsHeight + gapsHeight + (compactViewport ? 8 : 18);
-  const availableHeight = Math.max(220, window.innerHeight - chrome);
-  const availableWidth = Math.max(220, appWrapEl.clientWidth - wrapPaddingInline - 6);
+  const availableHeight = Math.max(200, viewportHeight - chrome);
+  const availableWidth = Math.max(220, Math.min(appWrapEl.clientWidth, viewportWidth) - wrapPaddingInline - 6);
   const maxBoard = isTouchDevice
-    ? (compactViewport ? 560 : 620)
+    ? (compactViewport ? 460 : 620)
     : (compactViewport ? 780 : 860);
   const size = Math.min(maxBoard, availableHeight, availableWidth);
 
@@ -2609,6 +2828,10 @@ function startRenderLoop() {
 
 window.addEventListener("resize", applyControlLayout);
 window.addEventListener("resize", syncViewportLayout);
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", syncViewportLayout);
+  window.visualViewport.addEventListener("scroll", syncViewportLayout);
+}
 document.addEventListener("keydown", onKeyDown);
 startBtn.addEventListener("click", startGame);
 pauseBtn.addEventListener("click", togglePause);

@@ -160,6 +160,18 @@ body {
   min-height: 34px;
 }
 
+.wrap.compact-viewport .touch-controls[data-size="small"] {
+  --touch-btn-size: 44px;
+}
+
+.wrap.compact-viewport .touch-controls[data-size="medium"] {
+  --touch-btn-size: 50px;
+}
+
+.wrap.compact-viewport .touch-controls[data-size="large"] {
+  --touch-btn-size: 56px;
+}
+
 .wrap.compact-viewport .touch-hint {
   display: none;
 }
@@ -420,13 +432,18 @@ canvas {
 }
 
 .controls {
+  --control-cols: 4;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--control-cols), minmax(0, 1fr));
   gap: 8px;
   user-select: none;
   padding: 2px;
   border-radius: 14px;
   background: rgba(10, 17, 31, 0.3);
+}
+
+.controls[data-has-action="false"] {
+  --control-cols: 3;
 }
 
 .fire-btn,
@@ -550,6 +567,11 @@ input:focus-visible {
   min-height: 36px;
   padding: 0 12px;
   border-radius: 10px;
+}
+
+.touch-fire-btn[hidden],
+.icon-btn[hidden] {
+  display: none !important;
 }
 
 .gear-btn[aria-expanded="true"] {
@@ -1034,7 +1056,7 @@ input:focus-visible {
 
 .wrap.is-play-focused .controls {
   width: min(100%, var(--board-size));
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  --control-cols: 3;
   gap: 8px;
   background: transparent;
   padding: 0;
@@ -1074,6 +1096,10 @@ input:focus-visible {
 .wrap.is-board-only .touch-controls {
   width: min(100%, var(--board-size));
   margin-top: 0;
+}
+
+.wrap.is-board-only .touch-controls .touch-header {
+  justify-content: center;
 }
 
 @media (max-width: 779px) {
@@ -1179,6 +1205,10 @@ input:focus-visible {
     font-size: 0.78rem;
   }
 
+  .board-mini-chip--wide {
+    max-width: 120px;
+  }
+
   .overlay-card {
     width: min(96vw, 760px);
     max-height: calc(var(--app-height) - 16px);
@@ -1280,6 +1310,10 @@ input:focus-visible {
 
   .board-mini-chip small {
     display: none;
+  }
+
+  .board-shell {
+    padding: 6px;
   }
 }
 
