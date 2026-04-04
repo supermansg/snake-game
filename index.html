@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Snake Me</title>
   <link rel="stylesheet" href="./style.css">
 </head>
@@ -53,6 +53,26 @@
     </section>
 
     <section id="boardShell" class="board-shell" aria-label="מסגרת לוח המשחק">
+      <div class="board-ui" aria-label="לוח מידע קומפקטי">
+        <div class="board-mini-bar">
+          <div class="board-mini-stats">
+            <span class="board-mini-chip">
+              <strong id="miniScore">0</strong>
+              <small>ניקוד</small>
+            </span>
+            <span class="board-mini-chip">
+              <strong id="miniLevel">1</strong>
+              <small>שלב</small>
+            </span>
+            <span id="miniAbility" class="board-mini-chip board-mini-chip--wide">אין בוסט</span>
+          </div>
+          <div class="board-icon-actions">
+            <button id="miniFireBtn" class="icon-btn" type="button" aria-label="ירי">✦</button>
+            <button id="miniPauseBtn" class="icon-btn" type="button" aria-label="השהה או המשך">❚❚</button>
+            <button id="miniMenuBtn" class="icon-btn" type="button" aria-label="פתח תפריט">☰</button>
+          </div>
+        </div>
+      </div>
       <canvas id="game" width="420" height="420" aria-label="לוח משחק סנייק"></canvas>
     </section>
 

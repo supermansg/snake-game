@@ -1,4 +1,4 @@
-const canvas = document.getElementById("game");
+﻿const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 const appWrapEl = document.querySelector(".wrap");
 const topbarEl = document.querySelector(".topbar");
@@ -6,6 +6,12 @@ const hudEl = document.querySelector(".hud");
 const controlsEl = document.querySelector(".controls");
 const boardShellEl = document.getElementById("boardShell");
 const footerEl = document.querySelector(".app-footer");
+const miniScoreEl = document.getElementById("miniScore");
+const miniLevelEl = document.getElementById("miniLevel");
+const miniAbilityEl = document.getElementById("miniAbility");
+const miniFireBtn = document.getElementById("miniFireBtn");
+const miniPauseBtn = document.getElementById("miniPauseBtn");
+const miniMenuBtn = document.getElementById("miniMenuBtn");
 
 const scoreEl = document.getElementById("score");
 const bestEl = document.getElementById("best");
@@ -87,7 +93,7 @@ const DEFAULT_BOARD_BACKGROUND = "./defualt background.png";
 
 const DIFFICULTY_PRESETS = {
   easy: {
-    label: "קל",
+    label: "׳§׳",
     baseSpeedMs: 172,
     minSpeedMs: 84,
     speedScoreFactor: 3,
@@ -106,7 +112,7 @@ const DIFFICULTY_PRESETS = {
     portalLevelEvery: 3
   },
   medium: {
-    label: "בינוני",
+    label: "׳‘׳™׳ ׳•׳ ׳™",
     baseSpeedMs: 148,
     minSpeedMs: 64,
     speedScoreFactor: 4,
@@ -125,7 +131,7 @@ const DIFFICULTY_PRESETS = {
     portalLevelEvery: 3
   },
   hard: {
-    label: "קשה",
+    label: "׳§׳©׳”",
     baseSpeedMs: 126,
     minSpeedMs: 52,
     speedScoreFactor: 5,
@@ -208,22 +214,22 @@ const PICKUP_STYLES = {
 
 const GADGET_HELP = {
   shield: {
-    title: "ליבת מגן",
+    title: "׳׳™׳‘׳× ׳׳’׳",
     icon: "S",
     description:
-      "המגן שומר עליך מפגיעה אחת. אם תפגע בקיר, במכשול או באויב פעם אחת, הריצה תימשך והמגן יישבר במקום שהמשחק יסתיים."
+      "׳”׳׳’׳ ׳©׳•׳׳¨ ׳¢׳׳™׳ ׳׳₪׳’׳™׳¢׳” ׳׳—׳×. ׳׳ ׳×׳₪׳’׳¢ ׳‘׳§׳™׳¨, ׳‘׳׳›׳©׳•׳ ׳׳• ׳‘׳׳•׳™׳‘ ׳₪׳¢׳ ׳׳—׳×, ׳”׳¨׳™׳¦׳” ׳×׳™׳׳©׳ ׳•׳”׳׳’׳ ׳™׳™׳©׳‘׳¨ ׳‘׳׳§׳•׳ ׳©׳”׳׳©׳—׳§ ׳™׳¡׳×׳™׳™׳."
   },
   blaster: {
-    title: "תא בלסטר",
+    title: "׳×׳ ׳‘׳׳¡׳˜׳¨",
     icon: "B",
     description:
-      "הבלסטר נותן לך מטענים לכפתור הירי. אפשר להשתמש בו כדי לחסל את האויב הקרוב ביותר ולפנות מקום כשהלוח נהיה צפוף."
+      "׳”׳‘׳׳¡׳˜׳¨ ׳ ׳•׳×׳ ׳׳ ׳׳˜׳¢׳ ׳™׳ ׳׳›׳₪׳×׳•׳¨ ׳”׳™׳¨׳™. ׳׳₪׳©׳¨ ׳׳”׳©׳×׳׳© ׳‘׳• ׳›׳“׳™ ׳׳—׳¡׳ ׳׳× ׳”׳׳•׳™׳‘ ׳”׳§׳¨׳•׳‘ ׳‘׳™׳•׳×׳¨ ׳•׳׳₪׳ ׳•׳× ׳׳§׳•׳ ׳›׳©׳”׳׳•׳— ׳ ׳”׳™׳” ׳¦׳₪׳•׳£."
   },
   slow: {
-    title: "שדה זמן",
+    title: "׳©׳“׳” ׳–׳׳",
     icon: "T",
     description:
-      "שדה הזמן מאט את תנועת האויבים לכמה שניות. הכי טוב להשתמש בו כשכמות האיומים גדלה ואתה צריך נתיב בטוח יותר לפרי הבא."
+      "׳©׳“׳” ׳”׳–׳׳ ׳׳׳˜ ׳׳× ׳×׳ ׳•׳¢׳× ׳”׳׳•׳™׳‘׳™׳ ׳׳›׳׳” ׳©׳ ׳™׳•׳×. ׳”׳›׳™ ׳˜׳•׳‘ ׳׳”׳©׳×׳׳© ׳‘׳• ׳›׳©׳›׳׳•׳× ׳”׳׳™׳•׳׳™׳ ׳’׳“׳׳” ׳•׳׳×׳” ׳¦׳¨׳™׳ ׳ ׳×׳™׳‘ ׳‘׳˜׳•׳— ׳™׳•׳×׳¨ ׳׳₪׳¨׳™ ׳”׳‘׳."
   }
 };
 
@@ -344,12 +350,12 @@ let laserShot = null;
 let personalRecords = loadPersonalRecords();
 let communityRecords = [];
 let communityStatus = {
-  mode: COMMUNITY_LEADERBOARD_ENDPOINT ? "מתחבר" : "דמו לא מקוון",
+  mode: COMMUNITY_LEADERBOARD_ENDPOINT ? "׳׳×׳—׳‘׳¨" : "׳“׳׳• ׳׳ ׳׳§׳•׳•׳",
   detail: COMMUNITY_LEADERBOARD_ENDPOINT
-    ? "מתחבר ללוח הקהילתי..."
-    : "לוח קהילתי: צד השרת עדיין לא מחובר"
+    ? "׳׳×׳—׳‘׳¨ ׳׳׳•׳— ׳”׳§׳”׳™׳׳×׳™..."
+    : "׳׳•׳— ׳§׳”׳™׳׳×׳™: ׳¦׳“ ׳”׳©׳¨׳× ׳¢׳“׳™׳™׳ ׳׳ ׳׳—׳•׳‘׳¨"
 };
-let playerName = localStorage.getItem(STORAGE_KEYS.playerName) || "שחקן";
+let playerName = localStorage.getItem(STORAGE_KEYS.playerName) || "׳©׳—׳§׳";
 let boardBackgroundSource = localStorage.getItem(STORAGE_KEYS.boardBackground) || "";
 let boardBackgroundImage = null;
 let boardBackgroundLoaded = false;
@@ -413,6 +419,7 @@ function initGame() {
   updateCustomizationUI();
   updateModeLabel();
   updateAbilityLabel();
+  updatePlayLayoutState();
   renderLeaderboards();
   syncViewportLayout();
 
@@ -420,6 +427,7 @@ function initGame() {
   levelEl.textContent = String(level);
   updateHazardsLabel();
   statusEl.textContent = getIdleStatus();
+  updateMiniHud();
 
   updateActionButtons();
   stopLoop();
@@ -440,6 +448,7 @@ function startGame() {
   gameOverAt = 0;
   running = true;
   setPlayingStatus();
+  updatePlayLayoutState();
   updateActionButtons();
   runLoop();
 }
@@ -450,7 +459,9 @@ function pauseGame() {
   running = false;
   stopLoop();
   clearStatusTimer();
-  statusEl.textContent = "המשחק מושהה";
+  statusEl.textContent = "׳”׳׳©׳—׳§ ׳׳•׳©׳”׳”";
+  updatePlayLayoutState();
+  updatePlayLayoutState();
   updateActionButtons();
 }
 
@@ -492,23 +503,23 @@ function tick() {
   const willEat = isFoodCell(newHead);
 
   if (isWallCollision(newHead)) {
-    if (!tryUseShield("המגן ספג את הפגיעה")) gameOver("התנגשות בקיר");
+    if (!tryUseShield("׳”׳׳’׳ ׳¡׳₪׳’ ׳׳× ׳”׳₪׳’׳™׳¢׳”")) gameOver("׳”׳×׳ ׳’׳©׳•׳× ׳‘׳§׳™׳¨");
     return;
   }
 
   if (isSelfCollision(newHead, willEat)) {
-    if (!tryUseShield("המגן הציל את הריצה")) gameOver("פגעת בעצמך");
+    if (!tryUseShield("׳”׳׳’׳ ׳”׳¦׳™׳ ׳׳× ׳”׳¨׳™׳¦׳”")) gameOver("׳₪׳’׳¢׳× ׳‘׳¢׳¦׳׳");
     return;
   }
 
   if (isObstacleCollision(newHead)) {
-    if (!tryUseShield("המגן נשבר מהפגיעה")) gameOver("התנגשות במכשול");
+    if (!tryUseShield("׳”׳׳’׳ ׳ ׳©׳‘׳¨ ׳׳”׳₪׳’׳™׳¢׳”")) gameOver("׳”׳×׳ ׳’׳©׳•׳× ׳‘׳׳›׳©׳•׳");
     return;
   }
 
   if (isEnemyCollision(newHead)) {
-    if (!tryUseShield("המגן הדף את האויב")) {
-      gameOver("התנגשות באויב");
+    if (!tryUseShield("׳”׳׳’׳ ׳”׳“׳£ ׳׳× ׳”׳׳•׳™׳‘")) {
+      gameOver("׳”׳×׳ ׳’׳©׳•׳× ׳‘׳׳•׳™׳‘");
     } else {
       enemies = enemies.filter((enemy) => !(enemy.x === newHead.x && enemy.y === newHead.y));
       updateHazardsLabel();
@@ -551,8 +562,8 @@ function tick() {
   moveEnemies();
 
   if (isEnemyTouchingSnake()) {
-    if (!tryUseShield("המגן הדף את האויב")) {
-      gameOver("אויב תפס אותך");
+    if (!tryUseShield("׳”׳׳’׳ ׳”׳“׳£ ׳׳× ׳”׳׳•׳™׳‘")) {
+      gameOver("׳׳•׳™׳‘ ׳×׳₪׳¡ ׳׳•׳×׳");
       return;
     }
     enemies = enemies.filter(
@@ -603,10 +614,11 @@ function gameOver(message) {
   clearStatusTimer();
   stopLoop();
   playSound("fail");
-  statusEl.textContent = `${message}. לחץ על ריצה חדשה או התחל מחדש`;
+  statusEl.textContent = `${message}. ׳׳—׳¥ ׳¢׳ ׳¨׳™׳¦׳” ׳—׳“׳©׳” ׳׳• ׳”׳×׳—׳ ׳׳—׳“׳©`;
   triggerBoardFlash("danger");
   boardShakeUntil = performance.now() + 280;
   saveRunToLeaderboards();
+  updatePlayLayoutState();
   updateActionButtons();
 }
 
@@ -715,7 +727,7 @@ function resolvePortalTravel(pos) {
   }
   triggerBoardFlash("portal");
   playSound("portal");
-  addFloatingText("קפיצה", pos.x, pos.y, "#9cc7ff");
+  addFloatingText("׳§׳₪׳™׳¦׳”", pos.x, pos.y, "#9cc7ff");
   return { x: destination.x, y: destination.y };
 }
 
@@ -791,14 +803,14 @@ function updateLevel() {
 
   levelEl.textContent = String(level);
   stageBanner = {
-    title: `שלב ${level}`,
-    subtitle: "כמות האיומים עלתה",
+    title: `׳©׳׳‘ ${level}`,
+    subtitle: "׳›׳׳•׳× ׳”׳׳™׳•׳׳™׳ ׳¢׳׳×׳”",
     color: "rgba(120, 174, 255, 0.92)",
     start: performance.now(),
     duration: 1500
   };
   triggerBoardFlash("level");
-  setTemporaryStatus(`שלב ${level}! כמות האיומים עלתה`, 1200);
+  setTemporaryStatus(`׳©׳׳‘ ${level}! ׳›׳׳•׳× ׳”׳׳™׳•׳׳™׳ ׳¢׳׳×׳”`, 1200);
 }
 
 function applyLevelDifficulty(currentLevel) {
@@ -842,7 +854,7 @@ function maybeSpawnPickup() {
     y: cell.y,
     phase: Math.random() * Math.PI * 2
   };
-  setTemporaryStatus(`${formatPickupName(type)} הופיע על הלוח`, 900);
+  setTemporaryStatus(`${formatPickupName(type)} ׳”׳•׳₪׳™׳¢ ׳¢׳ ׳”׳׳•׳—`, 900);
   updateAbilityLabel();
 }
 
@@ -859,7 +871,7 @@ function maybeSpawnPortals() {
     { id: "A", x: first.x, y: first.y, phase: Math.random() * Math.PI * 2, charges: 3 },
     { id: "B", x: second.x, y: second.y, phase: Math.random() * Math.PI * 2, charges: 3 }
   ];
-  setTemporaryStatus("פורטלים נפתחו", 900);
+  setTemporaryStatus("׳₪׳•׳¨׳˜׳׳™׳ ׳ ׳₪׳×׳—׳•", 900);
 }
 
 function choosePickupType() {
@@ -901,18 +913,18 @@ function collectPickup(pickup) {
   switch (pickup.type) {
     case "shield":
       playerPowerState.shield += 1;
-      setTemporaryStatus("מגן מוכן", 1100);
-      addFloatingText("מגן", pickup.x, pickup.y, "#7de3ff");
+      setTemporaryStatus("׳׳’׳ ׳׳•׳›׳", 1100);
+      addFloatingText("׳׳’׳", pickup.x, pickup.y, "#7de3ff");
       break;
     case "blaster":
       playerPowerState.blasterCharges += 2;
-      setTemporaryStatus("2+ מטעני בלסטר", 1100);
-      addFloatingText("בלסטר", pickup.x, pickup.y, "#cfa8ff");
+      setTemporaryStatus("2+ ׳׳˜׳¢׳ ׳™ ׳‘׳׳¡׳˜׳¨", 1100);
+      addFloatingText("׳‘׳׳¡׳˜׳¨", pickup.x, pickup.y, "#cfa8ff");
       break;
     case "slow":
       playerPowerState.slowUntil = performance.now() + 7000;
-      setTemporaryStatus("שדה האטה פעיל", 1100);
-      addFloatingText("האטה", pickup.x, pickup.y, "#9ff3c8");
+      setTemporaryStatus("׳©׳“׳” ׳”׳׳˜׳” ׳₪׳¢׳™׳", 1100);
+      addFloatingText("׳”׳׳˜׳”", pickup.x, pickup.y, "#9ff3c8");
       break;
     default:
       break;
@@ -932,7 +944,7 @@ function tryUseShield(message) {
   if (playerPowerState.shield <= 0) return false;
   playerPowerState.shield -= 1;
   triggerBoardFlash("shield");
-  addFloatingText("מגן", snake[0].x, snake[0].y, "#7de3ff");
+  addFloatingText("׳׳’׳", snake[0].x, snake[0].y, "#7de3ff");
   setTemporaryStatus(message, 900);
   updateAbilityLabel();
   updateActionButtons();
@@ -981,9 +993,9 @@ function draw(nowMs) {
   if (gameOverAt > 0) {
     drawGameOverOverlay(nowMs);
   } else if (!started) {
-    drawStateOverlay("מוכן לשחק", "לחץ על התחל, החליק על הלוח או השתמש במקשי החצים");
+    drawStateOverlay("׳׳•׳›׳ ׳׳©׳—׳§", "׳׳—׳¥ ׳¢׳ ׳”׳×׳—׳, ׳”׳—׳׳™׳§ ׳¢׳ ׳”׳׳•׳— ׳׳• ׳”׳©׳×׳׳© ׳‘׳׳§׳©׳™ ׳”׳—׳¦׳™׳");
   } else if (!running) {
-    drawStateOverlay("המשחק מושהה", "לחץ על המשך או בחר כיוון כדי להמשיך");
+    drawStateOverlay("׳”׳׳©׳—׳§ ׳׳•׳©׳”׳”", "׳׳—׳¥ ׳¢׳ ׳”׳׳©׳ ׳׳• ׳‘׳—׳¨ ׳›׳™׳•׳•׳ ׳›׳“׳™ ׳׳”׳׳©׳™׳");
   }
 
   ctx.restore();
@@ -1492,7 +1504,7 @@ function drawGameOverOverlay(nowMs) {
   const alpha = Math.min(0.68, ((nowMs - gameOverAt) / 280) * 0.68);
   ctx.fillStyle = `rgba(${theme.overlayRGB}, ${alpha})`;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  drawStateOverlay("המשחק נגמר", `${gameOverMessage} | ניקוד ${score}`);
+  drawStateOverlay("׳”׳׳©׳—׳§ ׳ ׳’׳׳¨", `${gameOverMessage} | ׳ ׳™׳§׳•׳“ ${score}`);
 }
 
 function drawStateOverlay(title, subtitle) {
@@ -1744,7 +1756,7 @@ function onGlobalGestureStart(event) {
 
 function setPlayingStatus() {
   const config = getDifficultyConfig();
-  statusEl.textContent = `משחק פעיל - ${config.label} - שלב ${level}`;
+  statusEl.textContent = `׳׳©׳—׳§ ׳₪׳¢׳™׳ - ${config.label} - ׳©׳׳‘ ${level}`;
 }
 
 function setTemporaryStatus(message, durationMs) {
@@ -1779,7 +1791,7 @@ function setDifficulty(nextDifficulty) {
   updateDifficultyButtons();
 
   initGame();
-  setTemporaryStatus(`רמת הקושי הוגדרה ל־${DIFFICULTY_PRESETS[difficulty].label}`, 1500);
+  setTemporaryStatus(`׳¨׳׳× ׳”׳§׳•׳©׳™ ׳”׳•׳’׳“׳¨׳” ׳ײ¾${DIFFICULTY_PRESETS[difficulty].label}`, 1500);
 }
 
 function updateDifficultyButtons() {
@@ -1864,6 +1876,22 @@ function updateTouchControlSettingsUI() {
   if (controlSideSelect) controlSideSelect.value = preferredControlSide;
 }
 
+function updateMiniHud() {
+  if (miniScoreEl) miniScoreEl.textContent = String(score ?? 0);
+  if (miniLevelEl) miniLevelEl.textContent = String(level ?? 1);
+  if (miniAbilityEl) miniAbilityEl.textContent = abilityLabelEl?.textContent || "׳׳™׳ ׳‘׳•׳¡׳˜";
+}
+
+function updatePlayLayoutState() {
+  if (!appWrapEl) return;
+  const overlayOpen = !menuPanel?.hidden || !leaderboardPanel?.hidden || gadgetHelpOpen;
+  const isPlayFocused = started || gameOverAt > 0;
+  const isBoardOnly = running && !overlayOpen;
+  appWrapEl.classList.toggle("is-play-focused", isPlayFocused);
+  appWrapEl.classList.toggle("is-board-only", isBoardOnly);
+  requestAnimationFrame(syncViewportLayout);
+}
+
 function loadSeenGadgetTips() {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.gadgetTipsSeen);
@@ -1902,23 +1930,23 @@ function updateCustomizationUI() {
   if (backgroundStatusEl) {
     if (boardBackgroundLoaded) {
       backgroundStatusEl.textContent = boardBackgroundSessionOnly
-        ? "תמונה פעילה לסשן הזה"
+        ? "׳×׳׳•׳ ׳” ׳₪׳¢׳™׳׳” ׳׳¡׳©׳ ׳”׳–׳”"
         : !boardBackgroundSource
-        ? "לוגו ברירת המחדל פעיל"
+        ? "׳׳•׳’׳• ׳‘׳¨׳™׳¨׳× ׳”׳׳—׳“׳ ׳₪׳¢׳™׳"
         : boardBackgroundSource.startsWith("data:")
-        ? "תמונה מהמכשיר פעילה"
-        : "תמונה מקישור פעילה";
+        ? "׳×׳׳•׳ ׳” ׳׳”׳׳›׳©׳™׳¨ ׳₪׳¢׳™׳׳”"
+        : "׳×׳׳•׳ ׳” ׳׳§׳™׳©׳•׳¨ ׳₪׳¢׳™׳׳”";
     } else if (boardBackgroundError) {
       backgroundStatusEl.textContent = boardBackgroundError;
     } else {
-      backgroundStatusEl.textContent = "רקע ברירת מחדל";
+      backgroundStatusEl.textContent = "׳¨׳§׳¢ ׳‘׳¨׳™׳¨׳× ׳׳—׳“׳";
     }
   }
 }
 
 function loadBoardBackground(source) {
   const resolvedSource = source || DEFAULT_BOARD_BACKGROUND;
-  boardBackgroundError = "טוען תמונה...";
+  boardBackgroundError = "׳˜׳•׳¢׳ ׳×׳׳•׳ ׳”...";
   boardBackgroundLoaded = false;
   boardBackgroundResolvedSource = resolvedSource;
   updateCustomizationUI();
@@ -1934,8 +1962,8 @@ function loadBoardBackground(source) {
     boardBackgroundLoaded = false;
     boardBackgroundImage = null;
     boardBackgroundError = resolvedSource === DEFAULT_BOARD_BACKGROUND
-      ? "טעינת רקע ברירת המחדל נכשלה"
-      : "טעינת התמונה נכשלה";
+      ? "׳˜׳¢׳™׳ ׳× ׳¨׳§׳¢ ׳‘׳¨׳™׳¨׳× ׳”׳׳—׳“׳ ׳ ׳›׳©׳׳”"
+      : "׳˜׳¢׳™׳ ׳× ׳”׳×׳׳•׳ ׳” ׳ ׳›׳©׳׳”";
     updateCustomizationUI();
   };
   image.src = resolvedSource;
@@ -1982,7 +2010,8 @@ function openGadgetHelp(type) {
   if (gadgetHelpSkipToggle) gadgetHelpSkipToggle.checked = gadgetTipsDisabled;
 
   gadgetHelpPanel.hidden = false;
-  statusEl.textContent = `הסבר על ${help.title}`;
+  updatePlayLayoutState();
+  statusEl.textContent = `׳”׳¡׳‘׳¨ ׳¢׳ ${help.title}`;
   updateActionButtons();
 }
 
@@ -2005,6 +2034,7 @@ function closeGadgetHelp() {
   }
 
   gadgetHelpResumeAfterClose = false;
+  updatePlayLayoutState();
   updateActionButtons();
 }
 
@@ -2083,28 +2113,32 @@ function updateAbilityLabel() {
   if (!abilityLabelEl) return;
 
   if (playerPowerState.blasterCharges > 0) {
-    abilityLabelEl.textContent = `בלסטר x${playerPowerState.blasterCharges}`;
+    abilityLabelEl.textContent = `׳‘׳׳¡׳˜׳¨ x${playerPowerState.blasterCharges}`;
+    updateMiniHud();
     return;
   }
 
   if (playerPowerState.shield > 0) {
-    abilityLabelEl.textContent = `מגן x${playerPowerState.shield}`;
+    abilityLabelEl.textContent = `׳׳’׳ x${playerPowerState.shield}`;
+    updateMiniHud();
     return;
   }
 
   if (performance.now() < playerPowerState.slowUntil) {
-    abilityLabelEl.textContent = "שדה האטה";
+    abilityLabelEl.textContent = "׳©׳“׳” ׳”׳׳˜׳”";
+    updateMiniHud();
     return;
   }
 
-  abilityLabelEl.textContent = activePickup ? `איסוף: ${formatPickupName(activePickup.type)}` : "אין בוסט";
+  abilityLabelEl.textContent = activePickup ? `׳׳™׳¡׳•׳£: ${formatPickupName(activePickup.type)}` : "׳׳™׳ ׳‘׳•׳¡׳˜";
+  updateMiniHud();
 }
 
 function updateActionButtons() {
-  startBtn.textContent = running ? "משחק" : gameOverAt > 0 ? "ריצה חדשה" : started ? "המשך" : "התחל";
+  startBtn.textContent = running ? "׳׳©׳—׳§" : gameOverAt > 0 ? "׳¨׳™׳¦׳” ׳—׳“׳©׳”" : started ? "׳”׳׳©׳" : "׳”׳×׳—׳";
   startBtn.disabled = running || gadgetHelpOpen;
 
-  pauseBtn.textContent = running ? "עצור" : started && gameOverAt === 0 ? "המשך" : "עצור";
+  pauseBtn.textContent = running ? "׳¢׳¦׳•׳¨" : started && gameOverAt === 0 ? "׳”׳׳©׳" : "׳¢׳¦׳•׳¨";
   pauseBtn.disabled = !started || gameOverAt > 0 || gadgetHelpOpen;
 
   restartBtn.disabled = (!started && gameOverAt === 0) || gadgetHelpOpen;
@@ -2112,6 +2146,13 @@ function updateActionButtons() {
   const canFire = playerPowerState.blasterCharges > 0 && enemies.length > 0 && started && gameOverAt === 0 && !gadgetHelpOpen;
   fireBtn.disabled = !canFire;
   touchFireBtn.disabled = !canFire;
+  if (miniFireBtn) miniFireBtn.disabled = !canFire;
+
+  if (miniPauseBtn) {
+    miniPauseBtn.disabled = !started || gameOverAt > 0 || gadgetHelpOpen;
+    miniPauseBtn.textContent = running ? "גג" : "ג–¶";
+    miniPauseBtn.setAttribute("aria-label", running ? "׳”׳©׳”׳” ׳׳©׳—׳§" : "׳”׳׳©׳ ׳׳©׳—׳§");
+  }
 }
 
 function setTouchSettingsOpen(isOpen) {
@@ -2120,7 +2161,7 @@ function setTouchSettingsOpen(isOpen) {
   touchSettingsToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
   touchSettingsToggle.setAttribute(
     "aria-label",
-    isOpen ? "סגור הגדרות מגע" : "פתח הגדרות מגע"
+    isOpen ? "׳¡׳’׳•׳¨ ׳”׳’׳“׳¨׳•׳× ׳׳’׳¢" : "׳₪׳×׳— ׳”׳’׳“׳¨׳•׳× ׳׳’׳¢"
   );
 }
 
@@ -2162,17 +2203,17 @@ function fireWeapon() {
   triggerBoardFlash("weapon");
   playSound("weapon");
   addFloatingText("+2", bestTarget.enemy.x, bestTarget.enemy.y, "#d9b3ff");
-  setTemporaryStatus("הבלסטר נורה", 700);
+  setTemporaryStatus("׳”׳‘׳׳¡׳˜׳¨ ׳ ׳•׳¨׳”", 700);
 }
 
 function formatPickupName(type) {
   switch (type) {
     case "shield":
-      return "מגן";
+      return "׳׳’׳";
     case "blaster":
-      return "בלסטר";
+      return "׳‘׳׳¡׳˜׳¨";
     case "slow":
-      return "האטה";
+      return "׳”׳׳˜׳”";
     default:
       return type;
   }
@@ -2199,8 +2240,8 @@ function normalizeKey(value, source, fallback) {
 
 function getIdleStatus() {
   return isTouchDevice
-    ? "לחץ על התחל, החליק על הלוח או השתמש בבקרים"
-    : "לחץ על התחל או על מקשי החצים";
+    ? "׳׳—׳¥ ׳¢׳ ׳”׳×׳—׳, ׳”׳—׳׳™׳§ ׳¢׳ ׳”׳׳•׳— ׳׳• ׳”׳©׳×׳׳© ׳‘׳‘׳§׳¨׳™׳"
+    : "׳׳—׳¥ ׳¢׳ ׳”׳×׳—׳ ׳׳• ׳¢׳ ׳׳§׳©׳™ ׳”׳—׳¦׳™׳";
 }
 
 function loadPersonalRecords() {
@@ -2239,7 +2280,7 @@ function renderLeaderboards() {
 
   const personalBest = personalRecords[0]?.score || 0;
   if (personalBestSummaryEl) {
-    personalBestSummaryEl.textContent = `${personalBest} נק'`;
+    personalBestSummaryEl.textContent = `${personalBest} ׳ ׳§'`;
   }
 
   if (communityStatusEl) {
@@ -2255,7 +2296,7 @@ function renderLeaderboardList(target, entries, includeMeta) {
   if (!target) return;
 
   if (!entries || entries.length === 0) {
-    target.innerHTML = "<li><span>עדיין אין שיאים</span><span>שחק ריצה אחת</span></li>";
+    target.innerHTML = "<li><span>׳¢׳“׳™׳™׳ ׳׳™׳ ׳©׳™׳׳™׳</span><span>׳©׳—׳§ ׳¨׳™׳¦׳” ׳׳—׳×</span></li>";
     return;
   }
 
@@ -2263,10 +2304,10 @@ function renderLeaderboardList(target, entries, includeMeta) {
     .slice(0, includeMeta ? MAX_PERSONAL_RECORDS : MAX_COMMUNITY_RECORDS)
     .map((entry) => {
       const rightLabel = includeMeta
-        ? `שלב ${entry.level} | ${entry.difficulty}`
-        : `${entry.score} נק'`;
+        ? `׳©׳׳‘ ${entry.level} | ${entry.difficulty}`
+        : `${entry.score} ׳ ׳§'`;
       const leftLabel = includeMeta
-        ? `${entry.score} נק'`
+        ? `${entry.score} ׳ ׳§'`
         : `${entry.player}`;
       const primary = includeMeta ? entry.player : leftLabel;
       return `<li><span>${escapeHtml(primary)}</span><span>${escapeHtml(includeMeta ? leftLabel + " | " + rightLabel : rightLabel)}</span></li>`;
@@ -2278,16 +2319,16 @@ async function loadCommunityLeaderboard() {
   if (!COMMUNITY_LEADERBOARD_ENDPOINT) {
     communityRecords = getDemoCommunityRecords();
     communityStatus = {
-      mode: "דמו לא מקוון",
-      detail: "כדי להפעיל לוח קהילתי אמיתי צריך לחבר צד שרת"
+      mode: "׳“׳׳• ׳׳ ׳׳§׳•׳•׳",
+      detail: "׳›׳“׳™ ׳׳”׳₪׳¢׳™׳ ׳׳•׳— ׳§׳”׳™׳׳×׳™ ׳׳׳™׳×׳™ ׳¦׳¨׳™׳ ׳׳—׳‘׳¨ ׳¦׳“ ׳©׳¨׳×"
     };
     renderLeaderboards();
     return;
   }
 
   communityStatus = {
-    mode: "מחובר",
-    detail: "טוען את הלוח הקהילתי..."
+    mode: "׳׳—׳•׳‘׳¨",
+    detail: "׳˜׳•׳¢׳ ׳׳× ׳”׳׳•׳— ׳”׳§׳”׳™׳׳×׳™..."
   };
   renderLeaderboards();
 
@@ -2305,14 +2346,14 @@ async function loadCommunityLeaderboard() {
     const payload = await response.json();
     communityRecords = Array.isArray(payload) ? payload.slice(0, MAX_COMMUNITY_RECORDS) : getDemoCommunityRecords();
     communityStatus = {
-      mode: "חי",
-      detail: "הלוח הקהילתי מחובר"
+      mode: "׳—׳™",
+      detail: "׳”׳׳•׳— ׳”׳§׳”׳™׳׳×׳™ ׳׳—׳•׳‘׳¨"
     };
   } catch {
     communityRecords = getDemoCommunityRecords();
     communityStatus = {
-      mode: "דמו לא מקוון",
-      detail: "הלוח הקהילתי חזר למצב גיבוי כי השרת לא זמין"
+      mode: "׳“׳׳• ׳׳ ׳׳§׳•׳•׳",
+      detail: "׳”׳׳•׳— ׳”׳§׳”׳™׳׳×׳™ ׳—׳–׳¨ ׳׳׳¦׳‘ ׳’׳™׳‘׳•׳™ ׳›׳™ ׳”׳©׳¨׳× ׳׳ ׳–׳׳™׳"
     };
   }
 
@@ -2333,8 +2374,8 @@ async function submitCommunityScore(entry) {
     await loadCommunityLeaderboard();
   } catch {
     communityStatus = {
-      mode: "דמו לא מקוון",
-      detail: "שליחת השיא נכשלה, מוצג לוח גיבוי"
+      mode: "׳“׳׳• ׳׳ ׳׳§׳•׳•׳",
+      detail: "׳©׳׳™׳—׳× ׳”׳©׳™׳ ׳ ׳›׳©׳׳”, ׳׳•׳¦׳’ ׳׳•׳— ׳’׳™׳‘׳•׳™"
     };
     renderLeaderboards();
   }
@@ -2342,17 +2383,17 @@ async function submitCommunityScore(entry) {
 
 function getDemoCommunityRecords() {
   return [
-    { player: "רץ־בייט", score: 92, level: 14, difficulty: "קשה" },
-    { player: "שועל־גריד", score: 71, level: 11, difficulty: "בינוני" },
-    { player: "צלופח־לייזר", score: 58, level: 9, difficulty: "קשה" },
-    { player: "זנב־נובה", score: 43, level: 8, difficulty: "בינוני" },
-    { player: "טייס־ארקייד", score: 30, level: 6, difficulty: "קל" }
+    { player: "׳¨׳¥ײ¾׳‘׳™׳™׳˜", score: 92, level: 14, difficulty: "׳§׳©׳”" },
+    { player: "׳©׳•׳¢׳ײ¾׳’׳¨׳™׳“", score: 71, level: 11, difficulty: "׳‘׳™׳ ׳•׳ ׳™" },
+    { player: "׳¦׳׳•׳₪׳—ײ¾׳׳™׳™׳–׳¨", score: 58, level: 9, difficulty: "׳§׳©׳”" },
+    { player: "׳–׳ ׳‘ײ¾׳ ׳•׳‘׳”", score: 43, level: 8, difficulty: "׳‘׳™׳ ׳•׳ ׳™" },
+    { player: "׳˜׳™׳™׳¡ײ¾׳׳¨׳§׳™׳™׳“", score: 30, level: 6, difficulty: "׳§׳" }
   ];
 }
 
 function sanitizePlayerName(value) {
   const trimmed = (value || "").trim().slice(0, 14);
-  return trimmed || "שחקן";
+  return trimmed || "׳©׳—׳§׳";
 }
 
 function escapeHtml(value) {
@@ -2373,7 +2414,7 @@ function setLeaderboardOpen(isOpen) {
     gadgetHelpPanel.hidden = true;
   }
   leaderboardPanel.hidden = !isOpen;
-  requestAnimationFrame(syncViewportLayout);
+  updatePlayLayoutState();
 }
 
 function setMenuOpen(isOpen) {
@@ -2385,12 +2426,12 @@ function setMenuOpen(isOpen) {
     gadgetHelpPanel.hidden = true;
   }
   menuPanel.hidden = !isOpen;
+  updatePlayLayoutState();
 }
 
 function syncViewportLayout() {
   document.documentElement.style.setProperty("--app-height", `${window.innerHeight}px`);
-
-  if (!isTouchDevice || !appWrapEl || !boardShellEl) return;
+  if (!appWrapEl || !boardShellEl) return;
 
   const bodyStyle = window.getComputedStyle(document.body);
   const bodyTop = parseFloat(bodyStyle.paddingTop) || 0;
@@ -2398,6 +2439,7 @@ function syncViewportLayout() {
   const wrapStyle = window.getComputedStyle(appWrapEl);
   const wrapPaddingTop = parseFloat(wrapStyle.paddingTop) || 0;
   const wrapPaddingBottom = parseFloat(wrapStyle.paddingBottom) || 0;
+  const wrapPaddingInline = (parseFloat(wrapStyle.paddingLeft) || 0) + (parseFloat(wrapStyle.paddingRight) || 0);
   const rowGap = parseFloat(wrapStyle.rowGap || wrapStyle.gap) || 0;
 
   const visibleSections = [topbarEl, hudEl, controlsEl, touchControlsEl, footerEl].filter(
@@ -2406,10 +2448,13 @@ function syncViewportLayout() {
   const sectionsHeight = visibleSections.reduce((sum, el) => sum + el.offsetHeight, 0);
   const gapsHeight = Math.max(0, visibleSections.length - 1) * rowGap;
   const chrome = bodyTop + bodyBottom + wrapPaddingTop + wrapPaddingBottom + sectionsHeight + gapsHeight + 18;
-  const available = Math.max(180, window.innerHeight - chrome);
-  const size = Math.min(420, available);
+  const availableHeight = Math.max(220, window.innerHeight - chrome);
+  const availableWidth = Math.max(220, appWrapEl.clientWidth - wrapPaddingInline - 6);
+  const maxBoard = isTouchDevice ? 620 : 760;
+  const size = Math.min(maxBoard, availableHeight, availableWidth);
 
   document.documentElement.style.setProperty("--mobile-board-size", `${Math.floor(size)}px`);
+  document.documentElement.style.setProperty("--board-size", `${Math.floor(size)}px`);
 }
 
 function triggerBoardFlash(kind) {
@@ -2568,6 +2613,9 @@ fireBtn.addEventListener("click", fireWeapon);
 menuBtn.addEventListener("click", () => setMenuOpen(true));
 recordsBtn.addEventListener("click", () => setLeaderboardOpen(true));
 touchFireBtn.addEventListener("click", fireWeapon);
+if (miniPauseBtn) miniPauseBtn.addEventListener("click", togglePause);
+if (miniFireBtn) miniFireBtn.addEventListener("click", fireWeapon);
+if (miniMenuBtn) miniMenuBtn.addEventListener("click", () => setMenuOpen(true));
 
 difficultyButtons.forEach((button) => {
   button.addEventListener("click", () => setDifficulty(button.dataset.difficulty));
@@ -2669,7 +2717,7 @@ if (backgroundFileInput) {
     const file = backgroundFileInput.files?.[0];
     if (!file) return;
     if (file.size > 8_000_000) {
-      boardBackgroundError = "בחר תמונה עד 8MB";
+      boardBackgroundError = "׳‘׳—׳¨ ׳×׳׳•׳ ׳” ׳¢׳“ 8MB";
       updateCustomizationUI();
       backgroundFileInput.value = "";
       return;
@@ -2684,7 +2732,7 @@ if (backgroundFileInput) {
       backgroundFileInput.value = "";
     };
     reader.onerror = () => {
-      boardBackgroundError = "העלאת התמונה נכשלה";
+      boardBackgroundError = "׳”׳¢׳׳׳× ׳”׳×׳׳•׳ ׳” ׳ ׳›׳©׳׳”";
       updateCustomizationUI();
       backgroundFileInput.value = "";
     };
