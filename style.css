@@ -55,6 +55,7 @@ body {
 .wrap {
   width: min(96vw, 1080px);
   max-width: 1080px;
+  margin: 0 auto;
   min-height: 0;
   height: min(calc(var(--app-height) - 24px), 980px);
   display: grid;
@@ -78,6 +79,7 @@ body {
   height: var(--app-height);
   gap: 8px;
   padding: 10px;
+  align-content: start;
 }
 
 .wrap.compact-viewport .topbar {
@@ -1091,11 +1093,13 @@ input:focus-visible {
 
 .wrap.is-board-only .board-shell {
   width: min(100%, var(--board-size));
+  align-self: start;
 }
 
 .wrap.is-board-only .touch-controls {
   width: min(100%, var(--board-size));
   margin-top: 0;
+  align-self: end;
 }
 
 .wrap.is-board-only .touch-controls .touch-header {
@@ -1104,22 +1108,26 @@ input:focus-visible {
 
 @media (max-width: 779px) {
   body {
-    padding:
-      max(6px, env(safe-area-inset-top))
-      0
-      max(8px, env(safe-area-inset-bottom))
-      0;
+    display: block;
+    padding: 0;
   }
 
   .wrap {
     width: 100vw;
     max-width: none;
     height: var(--app-height);
+    min-height: var(--app-height);
     gap: 8px;
     padding: 8px;
     border-radius: 0;
     border-left: 0;
     border-right: 0;
+    box-shadow: none;
+  }
+
+  .wrap.is-board-only {
+    grid-template-rows: minmax(0, 1fr) auto;
+    align-content: start;
   }
 
   h1 {
@@ -1230,7 +1238,8 @@ input:focus-visible {
 
 @media (max-width: 420px) {
   .wrap {
-    width: calc(100vw - 8px);
+    width: 100vw;
+    min-height: var(--app-height);
     padding: 6px;
   }
 
