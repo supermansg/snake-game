@@ -209,10 +209,10 @@
           </div>
         </section>
 
-        <section class="menu-panel-block" aria-label="התאמת בקרי מגע">
+        <section class="menu-panel-block mobile-only-settings" aria-label="התאמת בקרי מגע">
           <div class="leaderboard-title-row">
             <h3>בקרי מגע</h3>
-            <span class="mini-pill">התאמה אישית</span>
+            <span class="mini-pill">תצוגה מקדימה</span>
           </div>
 
           <div class="touch-toolbar menu-touch-toolbar" aria-label="התאמת כפתורי מגע">
@@ -242,7 +242,16 @@
             </label>
           </div>
 
-          <p class="menu-help-text">ההגדרות נשמרות עבורך מקומית ומשפיעות מייד על ה־D-pad במשחק.</p>
+          <div id="menuTouchPreview" class="touch-preview" aria-hidden="true">
+            <div class="touch-pad">
+              <button class="touch-btn up" type="button" tabindex="-1">למעלה</button>
+              <button class="touch-btn left" type="button" tabindex="-1">שמאלה</button>
+              <button class="touch-btn down" type="button" tabindex="-1">למטה</button>
+              <button class="touch-btn right" type="button" tabindex="-1">ימינה</button>
+            </div>
+          </div>
+
+          <p class="menu-help-text">השינוי נשמר מקומית ומוצג כאן מיד, כדי שכל שחקן יוכל לכוון את הבקרים בדיוק לאחיזה שנוחה לו.</p>
         </section>
 
         <section class="menu-panel-block menu-panel-wide" aria-label="רקע הלוח">
@@ -329,7 +338,7 @@
         <section class="leaderboard-column" aria-label="השיאים שלך">
           <div class="leaderboard-title-row">
             <h3>הריצות הטובות שלך</h3>
-            <span id="personalBestSummary" class="mini-pill">0 pts</span>
+            <span id="personalBestSummary" class="mini-pill">0 נק'</span>
           </div>
           <ol id="localLeaderboardList" class="leaderboard-list"></ol>
         </section>
@@ -344,7 +353,49 @@
       </div>
     </div>
   </section>
+  <section id="recordScorePanel" class="overlay-panel" hidden aria-label="תיעוד שיא">
+    <div class="overlay-backdrop" data-close-overlay="record-score"></div>
+    <div class="overlay-card record-card">
+      <div class="overlay-header">
+        <div>
+          <p class="overlay-kicker">סוף ריצה</p>
+          <h2>תיעוד שיא</h2>
+        </div>
+        <button id="closeRecordScoreBtn" class="utility-btn close-btn" type="button" aria-label="דלג וחזור לתפריט">דלג</button>
+      </div>
 
+      <p id="recordScoreSummary" class="record-summary">ריצה אחת טובה שווה תיעוד טוב.</p>
+
+      <label class="name-field" for="recordPlayerNameInput">
+        <span>איזה שם יופיע</span>
+        <input id="recordPlayerNameInput" type="text" maxlength="14" placeholder="שחקן">
+      </label>
+
+      <div class="record-destination-group" role="radiogroup" aria-label="לאן לשמור את השיא">
+        <label class="choice-card">
+          <input type="radio" name="recordDestination" value="personal" checked>
+          <span class="choice-card-title">לוח אישי</span>
+          <small>ישמר רק אצלך במכשיר</small>
+        </label>
+        <label class="choice-card">
+          <input type="radio" name="recordDestination" value="community">
+          <span class="choice-card-title">לוח משותף</span>
+          <small>ישלח ללוח הקהילה או לדמו המקומי</small>
+        </label>
+        <label class="choice-card">
+          <input type="radio" name="recordDestination" value="both">
+          <span class="choice-card-title">גם וגם</span>
+          <small>גם לרשימה האישית וגם ללוח המשותף</small>
+        </label>
+      </div>
+
+      <div class="overlay-actions">
+        <button id="skipRecordBtn" class="utility-btn close-btn" type="button">דלג ולתפריט</button>
+        <button id="submitRecordBtn" type="button">שמור שיא</button>
+      </div>
+    </div>
+  </section>
   <script src="./game.js"></script>
 </body>
 </html>
+

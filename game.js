@@ -1,4 +1,4 @@
-﻿const canvas = document.getElementById("game");
+const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 const appWrapEl = document.querySelector(".wrap");
 const topbarEl = document.querySelector(".topbar");
@@ -38,6 +38,7 @@ const controlSideSelect = document.getElementById("controlSideSelect");
 const menuControlLayoutSelect = document.getElementById("menuControlLayoutSelect");
 const menuControlSizeSelect = document.getElementById("menuControlSizeSelect");
 const menuControlSideSelect = document.getElementById("menuControlSideSelect");
+const menuTouchPreview = document.getElementById("menuTouchPreview");
 const menuPanel = document.getElementById("menuPanel");
 const closeMenuBtn = document.getElementById("closeMenuBtn");
 const profileNameInput = document.getElementById("profileNameInput");
@@ -65,6 +66,13 @@ const localLeaderboardListEl = document.getElementById("localLeaderboardList");
 const globalLeaderboardListEl = document.getElementById("globalLeaderboardList");
 const personalBestSummaryEl = document.getElementById("personalBestSummary");
 const communityModeBadgeEl = document.getElementById("communityModeBadge");
+const recordScorePanel = document.getElementById("recordScorePanel");
+const recordScoreSummaryEl = document.getElementById("recordScoreSummary");
+const recordPlayerNameInput = document.getElementById("recordPlayerNameInput");
+const closeRecordScoreBtn = document.getElementById("closeRecordScoreBtn");
+const skipRecordBtn = document.getElementById("skipRecordBtn");
+const submitRecordBtn = document.getElementById("submitRecordBtn");
+const recordDestinationInputs = document.querySelectorAll('input[name="recordDestination"]');
 const touchButtons = document.querySelectorAll("[data-dir]");
 const isTouchDevice = window.matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
 
@@ -86,6 +94,7 @@ const STORAGE_KEYS = {
   controlSide: "snake_control_side",
   playerName: "snake_player_name",
   personalRecords: "snake_personal_records",
+  communityFallbackRecords: "snake_community_fallback_records",
   boardBackground: "snake_board_background",
   audioMuted: "snake_audio_muted",
   gadgetTipsDisabled: "snake_gadget_tips_disabled",
@@ -354,6 +363,7 @@ let laserShot = null;
 let aimingShot = false;
 let targetCursor = null;
 let personalRecords = loadPersonalRecords();
+let communityFallbackRecords = loadCommunityFallbackRecords();
 let communityRecords = [];
 let communityStatus = {
   mode: COMMUNITY_LEADERBOARD_ENDPOINT ? "מתחבר" : "דמו לא מקוון",
@@ -375,6 +385,7 @@ let audioContext = null;
 let gadgetHelpOpen = false;
 let gadgetHelpResumeAfterClose = false;
 let activeGadgetHelpType = "";
+let pendingScoreEntry = null;
 
 bestEl.textContent = String(bestScore);
 
@@ -420,6 +431,7 @@ function initGame() {
   laserShot = null;
   aimingShot = false;
   targetCursor = null;
+  pendingScoreEntry = null;
 
   clearStatusTimer();
   updateDifficultyButtons();
@@ -460,6 +472,29 @@ function startGame() {
   updatePlayLayoutState();
   updateActionButtons();
   runLoop();
+}
+
+function startFreshRun() {
+  initGame();
+  startGame();
+}
+
+function handlePrimaryButtonClick() {
+  if (gameOverAt > 0) {
+    if (pendingScoreEntry) {
+      setRecordScoreOpen(true);
+    } else {
+      skipPendingScoreRecord();
+    }
+    return;
+  }
+
+  startGame();
+}
+
+function handleRestartButtonClick() {
+  if (gadgetHelpOpen) return;
+  startFreshRun();
 }
 
 function pauseGame() {
@@ -619,13 +654,15 @@ function gameOver(message) {
   running = false;
   gameOverAt = performance.now();
   gameOverMessage = message;
+  pendingScoreEntry = score > 0 ? buildScoreEntry() : null;
   clearStatusTimer();
   stopLoop();
   playSound("fail");
-  statusEl.textContent = `${message}. לחץ על ריצה חדשה או התחל מחדש`;
+  statusEl.textContent = pendingScoreEntry
+    ? `${message}. אפשר לבחור ריצה חדשה או לתעד את השיא`
+    : `${message}. אפשר לבחור ריצה חדשה או לחזור לתפריט`;
   triggerBoardFlash("danger");
   boardShakeUntil = performance.now() + 280;
-  saveRunToLeaderboards();
   updatePlayLayoutState();
   updateActionButtons();
 }
@@ -1702,6 +1739,15 @@ function setDirection(dir) {
 }
 
 function onKeyDown(event) {
+  if (recordScorePanel && !recordScorePanel.hidden) {
+    if (event.key === "Escape") {
+      skipPendingScoreRecord();
+    } else if (event.key === "Enter") {
+      void submitPendingScoreRecord();
+    }
+    return;
+  }
+
   if (gadgetHelpOpen && event.key !== "Escape" && event.key !== "Enter" && event.key !== " ") {
     return;
   }
@@ -1759,6 +1805,9 @@ function onKeyDown(event) {
       }
       if (leaderboardPanel && !leaderboardPanel.hidden) {
         setLeaderboardOpen(false);
+      }
+      if (recordScorePanel && !recordScorePanel.hidden) {
+        skipPendingScoreRecord();
       }
       break;
     default:
@@ -2030,10 +2079,21 @@ function setControlSide(nextSide) {
 }
 
 function applyControlLayout() {
-  if (!touchControlsEl) return;
-  touchControlsEl.dataset.layout = CONTROL_LAYOUT_PRESETS[preferredControlLayout].layout;
-  touchControlsEl.dataset.size = CONTROL_SIZE_PRESETS[preferredControlSize].size;
-  touchControlsEl.dataset.side = CONTROL_SIDE_PRESETS[preferredControlSide].side;
+  const layout = CONTROL_LAYOUT_PRESETS[preferredControlLayout].layout;
+  const size = CONTROL_SIZE_PRESETS[preferredControlSize].size;
+  const side = CONTROL_SIDE_PRESETS[preferredControlSide].side;
+
+  if (touchControlsEl) {
+    touchControlsEl.dataset.layout = layout;
+    touchControlsEl.dataset.size = size;
+    touchControlsEl.dataset.side = side;
+  }
+
+  if (menuTouchPreview) {
+    menuTouchPreview.dataset.layout = layout;
+    menuTouchPreview.dataset.size = size;
+    menuTouchPreview.dataset.side = side;
+  }
 }
 
 function updateTouchControlSettingsUI() {
@@ -2064,7 +2124,8 @@ function updateTouchControlsVisibility() {
 
 function updatePlayLayoutState() {
   if (!appWrapEl) return;
-  const overlayOpen = !menuPanel?.hidden || !leaderboardPanel?.hidden || gadgetHelpOpen;
+  const overlayOpen =
+    !menuPanel?.hidden || !leaderboardPanel?.hidden || !recordScorePanel?.hidden || gadgetHelpOpen;
   const isPlayFocused = started || gameOverAt > 0;
   const isBoardOnly = running && !overlayOpen;
   appWrapEl.classList.toggle("is-play-focused", isPlayFocused);
@@ -2090,6 +2151,7 @@ function saveSeenGadgetTips() {
 function updateCustomizationUI() {
   if (playerNameInput) playerNameInput.value = playerName;
   if (profileNameInput) profileNameInput.value = playerName;
+  if (recordPlayerNameInput) recordPlayerNameInput.value = playerName;
   if (themeSelect) themeSelect.value = activeTheme;
   if (snakeSkinSelect) snakeSkinSelect.value = activeSkin;
   if (soundToggle) soundToggle.checked = !audioMuted;
@@ -2318,6 +2380,10 @@ function updateAbilityLabel() {
 function updateActionButtons() {
   const hasWeaponTargets = getWeaponTargets().length > 0;
   const canFire = playerPowerState.blasterCharges > 0 && hasWeaponTargets && started && gameOverAt === 0 && !gadgetHelpOpen;
+  const isIdle = !started && gameOverAt === 0;
+  const isPaused = started && !running && gameOverAt === 0;
+  const isGameOver = gameOverAt > 0;
+  const hasRecordableScore = Boolean(pendingScoreEntry);
 
   if (aimingShot) {
     targetCursor = targetCursor ? getTargetAtCell(targetCursor) || findNearestWeaponTarget() : findNearestWeaponTarget();
@@ -2327,14 +2393,41 @@ function updateActionButtons() {
     }
   }
 
-  startBtn.textContent = running ? "משחק" : gameOverAt > 0 ? "ריצה חדשה" : started ? "המשך" : "התחל";
-  startBtn.disabled = running || gadgetHelpOpen;
+  startBtn.hidden = false;
+  pauseBtn.hidden = false;
+  restartBtn.hidden = false;
 
-  pauseBtn.textContent = running ? "עצור" : started && gameOverAt === 0 ? "המשך" : "עצור";
-  pauseBtn.disabled = !started || gameOverAt > 0 || gadgetHelpOpen;
+  if (isIdle) {
+    startBtn.textContent = "התחל";
+    startBtn.disabled = gadgetHelpOpen;
+    pauseBtn.hidden = true;
+    restartBtn.hidden = true;
+  } else if (running) {
+    startBtn.hidden = true;
+    pauseBtn.textContent = "עצור";
+    pauseBtn.disabled = gadgetHelpOpen;
+    restartBtn.textContent = "ריצה חדשה";
+    restartBtn.disabled = gadgetHelpOpen;
+  } else if (isPaused) {
+    startBtn.textContent = "המשך";
+    startBtn.disabled = gadgetHelpOpen;
+    pauseBtn.hidden = true;
+    restartBtn.textContent = "ריצה חדשה";
+    restartBtn.disabled = gadgetHelpOpen;
+  } else if (isGameOver) {
+    startBtn.textContent = hasRecordableScore ? "תעד שיא" : "לתפריט";
+    startBtn.disabled = gadgetHelpOpen;
+    pauseBtn.hidden = true;
+    restartBtn.textContent = "ריצה חדשה";
+    restartBtn.disabled = gadgetHelpOpen;
+  }
 
-  restartBtn.disabled = (!started && gameOverAt === 0) || gadgetHelpOpen;
-  if (controlsEl) controlsEl.dataset.hasAction = canFire ? "true" : "false";
+  const visibleButtons = [startBtn, pauseBtn, restartBtn].filter((button) => !button.hidden).length;
+  if (controlsEl) {
+    controlsEl.dataset.hasAction = canFire ? "true" : "false";
+    controlsEl.style.setProperty("--control-cols", String(Math.max(visibleButtons + (canFire ? 1 : 0), 1)));
+  }
+
   fireBtn.disabled = !canFire;
   touchFireBtn.disabled = !canFire;
   if (miniFireBtn) miniFireBtn.disabled = !canFire;
@@ -2476,23 +2569,49 @@ function loadPersonalRecords() {
   }
 }
 
-function saveRunToLeaderboards() {
-  if (score <= 0) return;
+function loadCommunityFallbackRecords() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.communityFallbackRecords);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
 
-  const entry = {
-    player: sanitizePlayerName(playerName),
+function persistCommunityFallbackRecords() {
+  localStorage.setItem(
+    STORAGE_KEYS.communityFallbackRecords,
+    JSON.stringify(communityFallbackRecords.slice(0, MAX_COMMUNITY_RECORDS))
+  );
+}
+
+function sortScoreEntries(entries, limit) {
+  return [...entries]
+    .sort((a, b) => b.score - a.score || b.level - a.level)
+    .slice(0, limit);
+}
+
+function buildScoreEntry(overrideName = playerName) {
+  return {
+    player: sanitizePlayerName(overrideName),
     score,
     level,
     difficulty: getDifficultyConfig().label,
     recordedAt: new Date().toISOString()
   };
+}
 
-  personalRecords = [entry, ...personalRecords]
-    .sort((a, b) => b.score - a.score || b.level - a.level)
-    .slice(0, MAX_PERSONAL_RECORDS);
+function savePersonalScore(entry) {
+  personalRecords = sortScoreEntries([entry, ...personalRecords], MAX_PERSONAL_RECORDS);
   localStorage.setItem(STORAGE_KEYS.personalRecords, JSON.stringify(personalRecords));
-  renderLeaderboards();
-  void submitCommunityScore(entry);
+}
+
+function getOfflineCommunityRecords() {
+  return sortScoreEntries(
+    [...communityFallbackRecords, ...getDemoCommunityRecords()],
+    MAX_COMMUNITY_RECORDS
+  );
 }
 
 function renderLeaderboards() {
@@ -2539,10 +2658,12 @@ function renderLeaderboardList(target, entries, includeMeta) {
 
 async function loadCommunityLeaderboard() {
   if (!COMMUNITY_LEADERBOARD_ENDPOINT) {
-    communityRecords = getDemoCommunityRecords();
+    communityRecords = getOfflineCommunityRecords();
     communityStatus = {
-      mode: "דמו לא מקוון",
-      detail: "כדי להפעיל לוח קהילתי אמיתי צריך לחבר צד שרת"
+      mode: communityFallbackRecords.length > 0 ? "דמו מקומי" : "דמו לא מקוון",
+      detail: communityFallbackRecords.length > 0
+        ? "השיאים המשותפים נשמרים כרגע בדמו המקומי של המכשיר"
+        : "כדי להפעיל לוח קהילתי אמיתי צריך לחבר צד שרת"
     };
     renderLeaderboards();
     return;
@@ -2566,16 +2687,20 @@ async function loadCommunityLeaderboard() {
 
     if (!response.ok) throw new Error(`Leaderboard request failed (${response.status})`);
     const payload = await response.json();
-    communityRecords = Array.isArray(payload) ? payload.slice(0, MAX_COMMUNITY_RECORDS) : getDemoCommunityRecords();
+    communityRecords = Array.isArray(payload)
+      ? payload.slice(0, MAX_COMMUNITY_RECORDS)
+      : getOfflineCommunityRecords();
     communityStatus = {
       mode: "חי",
       detail: "הלוח הקהילתי מחובר"
     };
   } catch {
-    communityRecords = getDemoCommunityRecords();
+    communityRecords = getOfflineCommunityRecords();
     communityStatus = {
-      mode: "דמו לא מקוון",
-      detail: "הלוח הקהילתי חזר למצב גיבוי כי השרת לא זמין"
+      mode: communityFallbackRecords.length > 0 ? "דמו מקומי" : "דמו לא מקוון",
+      detail: communityFallbackRecords.length > 0
+        ? "השרת לא זמין, לכן מוצג כרגע הלוח המשותף המקומי"
+        : "הלוח הקהילתי חזר למצב גיבוי כי השרת לא זמין"
     };
   }
 
@@ -2583,7 +2708,20 @@ async function loadCommunityLeaderboard() {
 }
 
 async function submitCommunityScore(entry) {
-  if (!COMMUNITY_LEADERBOARD_ENDPOINT) return;
+  if (!COMMUNITY_LEADERBOARD_ENDPOINT) {
+    communityFallbackRecords = sortScoreEntries(
+      [entry, ...communityFallbackRecords],
+      MAX_COMMUNITY_RECORDS
+    );
+    persistCommunityFallbackRecords();
+    communityRecords = getOfflineCommunityRecords();
+    communityStatus = {
+      mode: "דמו מקומי",
+      detail: "השיא נשמר בלוח הקהילה המקומי עד שיחובר שרת אמיתי"
+    };
+    renderLeaderboards();
+    return;
+  }
 
   try {
     await fetch(COMMUNITY_LEADERBOARD_ENDPOINT, {
@@ -2596,9 +2734,15 @@ async function submitCommunityScore(entry) {
     await loadCommunityLeaderboard();
   } catch {
     communityStatus = {
-      mode: "דמו לא מקוון",
-      detail: "שליחת השיא נכשלה, מוצג לוח גיבוי"
+      mode: "דמו מקומי",
+      detail: "שליחת השיא נכשלה, לכן הוא נשמר כרגע בלוח הקהילה המקומי"
     };
+    communityFallbackRecords = sortScoreEntries(
+      [entry, ...communityFallbackRecords],
+      MAX_COMMUNITY_RECORDS
+    );
+    persistCommunityFallbackRecords();
+    communityRecords = getOfflineCommunityRecords();
     renderLeaderboards();
   }
 }
@@ -2627,6 +2771,90 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
+function getSelectedRecordDestination() {
+  const selected = [...recordDestinationInputs].find((input) => input.checked);
+  return selected?.value || "personal";
+}
+
+function setRecordDestination(value) {
+  const normalized = ["personal", "community", "both"].includes(value) ? value : "personal";
+  recordDestinationInputs.forEach((input) => {
+    input.checked = input.value === normalized;
+  });
+}
+
+function updateRecordScoreSummary() {
+  if (!recordScoreSummaryEl) return;
+
+  if (!pendingScoreEntry) {
+    recordScoreSummaryEl.textContent = "אין כרגע שיא זמין לתיעוד.";
+    return;
+  }
+
+  recordScoreSummaryEl.textContent =
+    `ניקוד ${pendingScoreEntry.score} | שלב ${pendingScoreEntry.level} | ` +
+    `קושי ${pendingScoreEntry.difficulty}. בחר איך לשמור את הריצה הזאת.`;
+}
+
+function setRecordScoreOpen(isOpen) {
+  if (!recordScorePanel) return;
+
+  if (isOpen && menuPanel) menuPanel.hidden = true;
+  if (isOpen && leaderboardPanel) leaderboardPanel.hidden = true;
+  if (isOpen && gadgetHelpPanel) gadgetHelpPanel.hidden = true;
+
+  recordScorePanel.hidden = !isOpen;
+  if (isOpen) {
+    setRecordDestination("both");
+    updateRecordScoreSummary();
+    if (recordPlayerNameInput) {
+      recordPlayerNameInput.value = pendingScoreEntry?.player || playerName;
+      recordPlayerNameInput.focus({ preventScroll: true });
+      recordPlayerNameInput.select();
+    }
+  }
+  updatePlayLayoutState();
+  updateActionButtons();
+}
+
+async function submitPendingScoreRecord() {
+  if (!pendingScoreEntry) return;
+
+  const finalName = sanitizePlayerName(recordPlayerNameInput?.value || playerName);
+  setPlayerName(finalName);
+
+  const entry = {
+    ...pendingScoreEntry,
+    player: finalName,
+    recordedAt: new Date().toISOString()
+  };
+  const destination = getSelectedRecordDestination();
+
+  if (destination === "personal" || destination === "both") {
+    savePersonalScore(entry);
+  }
+
+  if (destination === "community" || destination === "both") {
+    await submitCommunityScore(entry);
+  } else {
+    renderLeaderboards();
+  }
+
+  pendingScoreEntry = null;
+  setRecordScoreOpen(false);
+  initGame();
+  setMenuOpen(true);
+  statusEl.textContent = "השיא נשמר. אפשר לבחור קושי ולהתחיל ריצה חדשה";
+}
+
+function skipPendingScoreRecord() {
+  pendingScoreEntry = null;
+  setRecordScoreOpen(false);
+  initGame();
+  setMenuOpen(true);
+  statusEl.textContent = "חזרת לתפריט הראשי";
+}
+
 function setLeaderboardOpen(isOpen) {
   if (!leaderboardPanel) return;
   if (isOpen && menuPanel) {
@@ -2634,6 +2862,9 @@ function setLeaderboardOpen(isOpen) {
   }
   if (isOpen && gadgetHelpPanel) {
     gadgetHelpPanel.hidden = true;
+  }
+  if (isOpen && recordScorePanel) {
+    recordScorePanel.hidden = true;
   }
   leaderboardPanel.hidden = !isOpen;
   updatePlayLayoutState();
@@ -2646,6 +2877,9 @@ function setMenuOpen(isOpen) {
   }
   if (isOpen && gadgetHelpPanel) {
     gadgetHelpPanel.hidden = true;
+  }
+  if (isOpen && recordScorePanel) {
+    recordScorePanel.hidden = true;
   }
   menuPanel.hidden = !isOpen;
   updatePlayLayoutState();
@@ -2839,9 +3073,9 @@ if (window.visualViewport) {
   window.visualViewport.addEventListener("scroll", syncViewportLayout);
 }
 document.addEventListener("keydown", onKeyDown);
-startBtn.addEventListener("click", startGame);
+startBtn.addEventListener("click", handlePrimaryButtonClick);
 pauseBtn.addEventListener("click", togglePause);
-restartBtn.addEventListener("click", initGame);
+restartBtn.addEventListener("click", handleRestartButtonClick);
 fireBtn.addEventListener("click", fireWeapon);
 menuBtn.addEventListener("click", () => setMenuOpen(true));
 recordsBtn.addEventListener("click", () => setLeaderboardOpen(true));
@@ -2908,10 +3142,40 @@ if (leaderboardPanel) {
   });
 }
 
+if (recordScorePanel) {
+  recordScorePanel.addEventListener("click", (event) => {
+    const target = event.target;
+    if (target instanceof Element && target.hasAttribute("data-close-overlay")) {
+      skipPendingScoreRecord();
+    }
+  });
+}
+
+if (closeRecordScoreBtn) {
+  closeRecordScoreBtn.addEventListener("click", skipPendingScoreRecord);
+}
+
+if (skipRecordBtn) {
+  skipRecordBtn.addEventListener("click", skipPendingScoreRecord);
+}
+
+if (submitRecordBtn) {
+  submitRecordBtn.addEventListener("click", () => {
+    void submitPendingScoreRecord();
+  });
+}
+
 if (playerNameInput) {
   playerNameInput.value = playerName;
   playerNameInput.addEventListener("change", () => {
     setPlayerName(playerNameInput.value);
+  });
+}
+
+if (recordPlayerNameInput) {
+  recordPlayerNameInput.value = playerName;
+  recordPlayerNameInput.addEventListener("change", () => {
+    recordPlayerNameInput.value = sanitizePlayerName(recordPlayerNameInput.value);
   });
 }
 

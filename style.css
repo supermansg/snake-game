@@ -603,6 +603,21 @@ input:focus-visible {
   margin-top: 2px;
 }
 
+.touch-preview {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(120, 146, 200, 0.2);
+  background:
+    linear-gradient(180deg, rgba(14, 23, 40, 0.9), rgba(10, 16, 28, 0.88)),
+    radial-gradient(circle at top, rgba(89, 126, 226, 0.16), transparent 54%);
+  box-shadow:
+    inset 0 1px 0 rgba(220, 232, 255, 0.06),
+    0 10px 22px rgba(4, 9, 20, 0.22);
+}
+
 .touch-setting {
   display: grid;
   gap: 4px;
@@ -620,42 +635,51 @@ input:focus-visible {
   font-size: 0.84rem;
 }
 
-.touch-controls[data-layout="classic"] {
+.touch-controls[data-layout="classic"],
+.touch-preview[data-layout="classic"] {
   --touch-gap: 12px;
 }
 
-.touch-controls[data-layout="compact"] {
+.touch-controls[data-layout="compact"],
+.touch-preview[data-layout="compact"] {
   --touch-gap: 8px;
 }
 
-.touch-controls[data-layout="wide"] {
+.touch-controls[data-layout="wide"],
+.touch-preview[data-layout="wide"] {
   --touch-gap: 14px;
 }
 
-.touch-controls[data-size="small"] {
+.touch-controls[data-size="small"],
+.touch-preview[data-size="small"] {
   --touch-btn-size: 56px;
   --touch-btn-width: 74px;
 }
 
-.touch-controls[data-size="medium"] {
+.touch-controls[data-size="medium"],
+.touch-preview[data-size="medium"] {
   --touch-btn-size: 68px;
   --touch-btn-width: 88px;
 }
 
-.touch-controls[data-size="large"] {
+.touch-controls[data-size="large"],
+.touch-preview[data-size="large"] {
   --touch-btn-size: 80px;
   --touch-btn-width: 102px;
 }
 
-.touch-controls[data-side="left"] {
+.touch-controls[data-side="left"],
+.touch-preview[data-side="left"] {
   justify-items: start;
 }
 
-.touch-controls[data-side="center"] {
+.touch-controls[data-side="center"],
+.touch-preview[data-side="center"] {
   justify-items: center;
 }
 
-.touch-controls[data-side="right"] {
+.touch-controls[data-side="right"],
+.touch-preview[data-side="right"] {
   justify-items: end;
 }
 
@@ -686,6 +710,11 @@ input:focus-visible {
     0 8px 20px rgba(25, 53, 119, 0.34);
   font-size: 0.95rem;
   white-space: nowrap;
+}
+
+.touch-preview .touch-btn {
+  cursor: default;
+  pointer-events: none;
 }
 
 .touch-btn.up {
@@ -1002,6 +1031,76 @@ input:focus-visible {
   gap: 14px;
 }
 
+.record-card {
+  width: min(92vw, 560px);
+}
+
+.record-summary {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(14, 22, 38, 0.72);
+  border: 1px solid rgba(120, 146, 200, 0.18);
+  color: #dbe7ff;
+  line-height: 1.55;
+}
+
+.record-destination-group {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.choice-card {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  min-height: 118px;
+  padding: 14px 12px;
+  border-radius: 16px;
+  background: rgba(13, 21, 38, 0.72);
+  border: 1px solid rgba(120, 146, 200, 0.16);
+  color: #dce8ff;
+  cursor: pointer;
+}
+
+.choice-card input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.choice-card-title {
+  font-size: 0.96rem;
+  font-weight: 800;
+}
+
+.choice-card small {
+  color: #9fb2dc;
+  line-height: 1.45;
+}
+
+.choice-card:has(input:checked) {
+  border-color: rgba(155, 184, 255, 0.52);
+  background:
+    linear-gradient(180deg, rgba(54, 89, 178, 0.28), rgba(17, 27, 46, 0.88)),
+    rgba(13, 21, 38, 0.9);
+  box-shadow: 0 10px 22px rgba(40, 78, 170, 0.18);
+}
+
+.choice-card:has(input:focus-visible) {
+  outline: 2px solid rgba(125, 164, 255, 0.9);
+  outline-offset: 2px;
+}
+
+.overlay-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .leaderboard-column {
   display: grid;
   gap: 10px;
@@ -1045,6 +1144,10 @@ input:focus-visible {
 
 @media (min-width: 780px) {
   .touch-controls {
+    display: none;
+  }
+
+  .mobile-only-settings {
     display: none;
   }
 }
@@ -1183,17 +1286,20 @@ input:focus-visible {
     padding: 8px;
   }
 
-  .touch-controls[data-size="small"] {
+  .touch-controls[data-size="small"],
+  .touch-preview[data-size="small"] {
     --touch-btn-size: 48px;
     --touch-btn-width: 72px;
   }
 
-  .touch-controls[data-size="medium"] {
+  .touch-controls[data-size="medium"],
+  .touch-preview[data-size="medium"] {
     --touch-btn-size: 54px;
     --touch-btn-width: 80px;
   }
 
-  .touch-controls[data-size="large"] {
+  .touch-controls[data-size="large"],
+  .touch-preview[data-size="large"] {
     --touch-btn-size: 60px;
     --touch-btn-width: 92px;
   }
@@ -1242,6 +1348,10 @@ input:focus-visible {
   }
 
   .menu-touch-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .record-destination-group {
     grid-template-columns: 1fr;
   }
 
@@ -1312,6 +1422,15 @@ input:focus-visible {
 
   .touch-btn {
     font-size: 0.88rem;
+  }
+
+  .touch-preview[data-size="small"] {
+    --touch-btn-size: 48px;
+    --touch-btn-width: 72px;
+  }
+
+  .choice-card {
+    min-height: 96px;
   }
 
   .leaderboard-grid {
