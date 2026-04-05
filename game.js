@@ -2432,8 +2432,8 @@ function updateActionButtons() {
   touchFireBtn.disabled = !canFire;
   if (miniFireBtn) miniFireBtn.disabled = !canFire;
   fireBtn.hidden = !canFire;
-  touchFireBtn.hidden = !canFire;
-  if (miniFireBtn) miniFireBtn.hidden = !canFire;
+  touchFireBtn.hidden = false;
+  if (miniFireBtn) miniFireBtn.hidden = false;
 
   if (canFire) {
     const actionText = aimingShot ? "שגר" : `כוון x${playerPowerState.blasterCharges}`;
@@ -2442,6 +2442,13 @@ function updateActionButtons() {
     if (miniFireBtn) {
       miniFireBtn.textContent = aimingShot ? "◎" : "✦";
       miniFireBtn.setAttribute("aria-label", aimingShot ? "שגר בלסטר" : "הפעל כוונת בלסטר");
+    }
+  } else {
+    touchFireBtn.textContent = "ירי";
+    touchFireBtn.setAttribute("aria-label", "ירי לא זמין");
+    if (miniFireBtn) {
+      miniFireBtn.textContent = "✦";
+      miniFireBtn.setAttribute("aria-label", "ירי לא זמין");
     }
   }
 

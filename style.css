@@ -685,6 +685,7 @@ input:focus-visible {
 
 .touch-pad {
   display: grid;
+  direction: ltr;
   width: max-content;
   max-width: 100%;
   grid-template-columns: repeat(3, minmax(var(--touch-btn-width, var(--touch-btn-size)), var(--touch-btn-width, var(--touch-btn-size))));
@@ -708,7 +709,9 @@ input:focus-visible {
     inset 0 1px 0 rgba(220, 234, 255, 0.22),
     inset 0 -8px 14px rgba(35, 58, 128, 0.2),
     0 8px 20px rgba(25, 53, 119, 0.34);
-  font-size: 0.95rem;
+  font-size: 1.18rem;
+  font-weight: 800;
+  line-height: 1;
   white-space: nowrap;
 }
 
