@@ -1216,7 +1216,7 @@ input:focus-visible {
 .wrap.is-board-only .touch-controls {
   width: min(100%, var(--board-size));
   margin-top: 0;
-  align-self: end;
+  align-self: start;
 }
 
 .wrap.is-board-only .touch-controls .touch-header {
@@ -1243,8 +1243,10 @@ input:focus-visible {
   }
 
   .wrap.is-board-only {
-    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
     align-content: start;
+    justify-content: start;
+    gap: 10px;
   }
 
   h1 {
@@ -1307,8 +1309,37 @@ input:focus-visible {
     --touch-btn-width: 92px;
   }
 
+  .wrap.is-board-only .touch-controls[data-size="small"] {
+    --touch-btn-size: 56px;
+    --touch-btn-width: 84px;
+  }
+
+  .wrap.is-board-only .touch-controls[data-size="medium"] {
+    --touch-btn-size: 64px;
+    --touch-btn-width: 96px;
+  }
+
+  .wrap.is-board-only .touch-controls[data-size="large"] {
+    --touch-btn-size: 72px;
+    --touch-btn-width: 108px;
+  }
+
   .board-shell {
     width: min(100%, var(--mobile-board-size));
+  }
+
+  .wrap.is-board-only .board-shell,
+  .wrap.is-board-only .touch-controls {
+    width: 100%;
+    max-width: min(100%, calc(100vw - 12px));
+  }
+
+  .wrap.is-board-only .touch-controls {
+    padding-top: 0;
+  }
+
+  .wrap.is-board-only .touch-pad {
+    justify-self: center;
   }
 
   .board-ui {
