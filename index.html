@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="he" dir="rtl">
 <head>
   <meta charset="utf-8">
@@ -12,89 +12,89 @@
       <div class="brand-row">
         <h1>Snake Me</h1>
         <div class="utility-actions">
-          <button id="menuBtn" class="utility-btn" type="button" aria-label="פתח תפריט">תפריט</button>
-          <button id="recordsBtn" class="utility-btn" type="button" aria-label="פתח טבלאות שיאים">שיאים</button>
+          <button id="menuBtn" class="utility-btn" type="button" aria-label="׳₪׳×׳— ׳×׳₪׳¨׳™׳˜">׳×׳₪׳¨׳™׳˜</button>
+          <button id="recordsBtn" class="utility-btn" type="button" aria-label="׳₪׳×׳— ׳˜׳‘׳׳׳•׳× ׳©׳™׳׳™׳">׳©׳™׳׳™׳</button>
         </div>
       </div>
-      <section class="difficulty" aria-label="בחירת רמת קושי">
-        <p class="difficulty-label">רמת קושי</p>
-        <div class="difficulty-buttons" role="group" aria-label="בחר רמת קושי">
-          <button id="difficultyEasy" class="difficulty-btn" data-difficulty="easy" type="button">קל</button>
-          <button id="difficultyMedium" class="difficulty-btn" data-difficulty="medium" type="button">בינוני</button>
-          <button id="difficultyHard" class="difficulty-btn" data-difficulty="hard" type="button">קשה</button>
+      <section class="difficulty" aria-label="׳‘׳—׳™׳¨׳× ׳¨׳׳× ׳§׳•׳©׳™">
+        <p class="difficulty-label">׳¨׳׳× ׳§׳•׳©׳™</p>
+        <div class="difficulty-buttons" role="group" aria-label="׳‘׳—׳¨ ׳¨׳׳× ׳§׳•׳©׳™">
+          <button id="difficultyEasy" class="difficulty-btn" data-difficulty="easy" type="button">׳§׳</button>
+          <button id="difficultyMedium" class="difficulty-btn" data-difficulty="medium" type="button">׳‘׳™׳ ׳•׳ ׳™</button>
+          <button id="difficultyHard" class="difficulty-btn" data-difficulty="hard" type="button">׳§׳©׳”</button>
         </div>
       </section>
     </header>
 
-    <section class="hud" aria-label="מצב המשחק">
+    <section class="hud" aria-label="׳׳¦׳‘ ׳”׳׳©׳—׳§">
       <div class="hud-stat">
-        <span class="hud-label">ניקוד</span>
+        <span class="hud-label">׳ ׳™׳§׳•׳“</span>
         <strong id="score" class="hud-value">0</strong>
       </div>
       <div class="hud-stat">
-        <span class="hud-label">שיא</span>
+        <span class="hud-label">׳©׳™׳</span>
         <strong id="best" class="hud-value">0</strong>
       </div>
       <div class="hud-stat">
-        <span class="hud-label">שלב</span>
+        <span class="hud-label">׳©׳׳‘</span>
         <strong id="level" class="hud-value">1</strong>
       </div>
       <div class="hud-stat">
-        <span class="hud-label">איומים</span>
+        <span class="hud-label">׳׳™׳•׳׳™׳</span>
         <strong id="hazards" class="hud-value">0</strong>
       </div>
       <div class="status-row">
-        <p id="status" class="status-text">לחץ על התחל או על מקשי החצים</p>
+        <p id="status" class="status-text">׳׳—׳¥ ׳¢׳ ׳”׳×׳—׳ ׳׳• ׳¢׳ ׳׳§׳©׳™ ׳”׳—׳¦׳™׳</p>
         <div class="status-badges">
-          <span id="modeLabel" class="mode-pill">בינוני</span>
-          <span id="abilityLabel" class="info-pill">אין בוסט</span>
+          <span id="modeLabel" class="mode-pill">׳‘׳™׳ ׳•׳ ׳™</span>
+          <span id="abilityLabel" class="info-pill">׳׳™׳ ׳‘׳•׳¡׳˜</span>
         </div>
       </div>
     </section>
 
-    <section id="boardShell" class="board-shell" aria-label="מסגרת לוח המשחק">
-      <div class="board-ui" aria-label="לוח מידע קומפקטי">
+    <section id="boardShell" class="board-shell" aria-label="׳׳¡׳’׳¨׳× ׳׳•׳— ׳”׳׳©׳—׳§">
+      <div class="board-ui" aria-label="׳׳•׳— ׳׳™׳“׳¢ ׳§׳•׳׳₪׳§׳˜׳™">
         <div class="board-mini-bar">
           <div class="board-mini-stats">
             <span class="board-mini-chip">
               <strong id="miniScore">0</strong>
-              <small>ניקוד</small>
+              <small>׳ ׳™׳§׳•׳“</small>
             </span>
             <span class="board-mini-chip">
               <strong id="miniLevel">1</strong>
-              <small>שלב</small>
+              <small>׳©׳׳‘</small>
             </span>
-            <span id="miniAbility" class="board-mini-chip board-mini-chip--wide">אין בוסט</span>
+            <span id="miniAbility" class="board-mini-chip board-mini-chip--wide">׳׳™׳ ׳‘׳•׳¡׳˜</span>
           </div>
           <div class="board-icon-actions">
-            <button id="miniFireBtn" class="icon-btn" type="button" aria-label="ירי">✦</button>
-            <button id="miniPauseBtn" class="icon-btn" type="button" aria-label="השהה או המשך">❚❚</button>
-            <button id="miniMenuBtn" class="icon-btn" type="button" aria-label="פתח תפריט">☰</button>
+            <button id="miniFireBtn" class="icon-btn" type="button" aria-label="׳™׳¨׳™">ג¦</button>
+            <button id="miniPauseBtn" class="icon-btn" type="button" aria-label="׳”׳©׳”׳” ׳׳• ׳”׳׳©׳">גג</button>
+            <button id="miniMenuBtn" class="icon-btn" type="button" aria-label="׳₪׳×׳— ׳×׳₪׳¨׳™׳˜">ג˜°</button>
           </div>
         </div>
       </div>
-      <canvas id="game" width="420" height="420" aria-label="לוח משחק סנייק"></canvas>
+      <canvas id="game" width="420" height="420" aria-label="׳׳•׳— ׳׳©׳—׳§ ׳¡׳ ׳™׳™׳§"></canvas>
     </section>
 
-    <section class="controls" aria-label="כפתורי משחק">
-      <button id="startBtn" type="button">התחל</button>
-      <button id="pauseBtn" type="button">עצור</button>
-      <button id="restartBtn" type="button">התחל מחדש</button>
-      <button id="fireBtn" class="fire-btn" type="button">ירי</button>
+    <section class="controls" aria-label="׳›׳₪׳×׳•׳¨׳™ ׳׳©׳—׳§">
+      <button id="startBtn" type="button">׳”׳×׳—׳</button>
+      <button id="pauseBtn" type="button">׳¢׳¦׳•׳¨</button>
+      <button id="restartBtn" type="button">׳”׳×׳—׳ ׳׳—׳“׳©</button>
+      <button id="fireBtn" class="fire-btn" type="button">׳™׳¨׳™</button>
     </section>
 
-    <section id="touchControls" class="touch-controls" aria-label="בקרי מגע">
+    <section id="touchControls" class="touch-controls" aria-label="׳‘׳§׳¨׳™ ׳׳’׳¢">
       <div class="touch-header">
-        <p class="touch-title">בקרי מגע</p>
+        <p class="touch-title">׳‘׳§׳¨׳™ ׳׳’׳¢</p>
         <div class="touch-header-actions">
-          <button id="touchFireBtn" class="touch-fire-btn" type="button">ירי</button>
+          <button id="touchFireBtn" class="touch-fire-btn" type="button">׳™׳¨׳™</button>
           <button
             id="touchSettingsToggle"
             class="gear-btn"
             type="button"
             aria-expanded="false"
             aria-controls="touchSettingsPanel"
-            aria-label="פתח הגדרות מגע"
+            aria-label="׳₪׳×׳— ׳”׳’׳“׳¨׳•׳× ׳׳’׳¢"
           >
             &#9881;
           </button>
@@ -102,201 +102,253 @@
       </div>
 
       <div id="touchSettingsPanel" class="touch-settings" hidden>
-        <div class="touch-toolbar" aria-label="הגדרות מגע">
+        <div class="touch-toolbar" aria-label="׳”׳’׳“׳¨׳•׳× ׳׳’׳¢">
           <label class="touch-setting" for="controlLayoutSelect">
-            <span>פריסה</span>
+            <span>׳₪׳¨׳™׳¡׳”</span>
             <select id="controlLayoutSelect">
-              <option value="classic">קלאסית</option>
-              <option value="compact">קומפקטית</option>
-              <option value="wide">רחבה</option>
+              <option value="classic">׳§׳׳׳¡׳™׳×</option>
+              <option value="compact">׳§׳•׳׳₪׳§׳˜׳™׳×</option>
+              <option value="wide">׳¨׳—׳‘׳”</option>
             </select>
           </label>
           <label class="touch-setting" for="controlSizeSelect">
-            <span>גודל</span>
+            <span>׳’׳•׳“׳</span>
             <select id="controlSizeSelect">
-              <option value="small">קטן</option>
-              <option value="medium">בינוני</option>
-              <option value="large">גדול</option>
+              <option value="small">׳§׳˜׳</option>
+              <option value="medium">׳‘׳™׳ ׳•׳ ׳™</option>
+              <option value="large">׳’׳“׳•׳</option>
             </select>
           </label>
           <label class="touch-setting" for="controlSideSelect">
-            <span>צד</span>
+            <span>׳¦׳“</span>
             <select id="controlSideSelect">
-              <option value="left">שמאל</option>
-              <option value="center">מרכז</option>
-              <option value="right">ימין</option>
+              <option value="left">׳©׳׳׳</option>
+              <option value="center">׳׳¨׳›׳–</option>
+              <option value="right">׳™׳׳™׳</option>
             </select>
           </label>
         </div>
       </div>
 
       <div class="touch-pad">
-        <button class="touch-btn up" data-dir="up" type="button" aria-label="למעלה">↑</button>
-        <button class="touch-btn left" data-dir="left" type="button" aria-label="שמאלה">←</button>
-        <button class="touch-btn down" data-dir="down" type="button" aria-label="למטה">↓</button>
-        <button class="touch-btn right" data-dir="right" type="button" aria-label="ימינה">→</button>
+        <button class="touch-btn up" data-dir="up" type="button" aria-label="׳׳׳¢׳׳”">ג†‘</button>
+        <button class="touch-btn left" data-dir="left" type="button" aria-label="׳©׳׳׳׳”">ג†</button>
+        <button class="touch-btn down" data-dir="down" type="button" aria-label="׳׳׳˜׳”">ג†“</button>
+        <button class="touch-btn right" data-dir="right" type="button" aria-label="׳™׳׳™׳ ׳”">ג†’</button>
       </div>
-      <p class="touch-hint">טיפ: אפשר להחליק על הלוח או להשתמש ב־D-pad</p>
+      <p class="touch-hint">׳˜׳™׳₪: ׳׳₪׳©׳¨ ׳׳”׳—׳׳™׳§ ׳¢׳ ׳”׳׳•׳— ׳׳• ׳׳”׳©׳×׳׳© ׳‘ײ¾D-pad</p>
     </section>
 
     <footer class="app-footer">C Dudi Sgulam 2026</footer>
   </main>
 
-  <section id="menuPanel" class="overlay-panel" hidden aria-label="תפריט המשחק">
+  <section id="menuPanel" class="overlay-panel" hidden aria-label="׳×׳₪׳¨׳™׳˜ ׳”׳׳©׳—׳§">
     <div class="overlay-backdrop" data-close-overlay="menu"></div>
     <div class="overlay-card menu-card">
       <div class="overlay-header">
         <div>
-          <p class="overlay-kicker">פרופיל ועיצוב</p>
-          <h2>תפריט Snake Me</h2>
+          <p class="overlay-kicker">׳₪׳¨׳•׳₪׳™׳ ׳•׳¢׳™׳¦׳•׳‘</p>
+          <h2>׳×׳₪׳¨׳™׳˜ Snake Me</h2>
         </div>
-        <button id="closeMenuBtn" class="utility-btn close-btn" type="button" aria-label="סגור תפריט">סגור</button>
+        <button id="closeMenuBtn" class="utility-btn close-btn" type="button" aria-label="׳¡׳’׳•׳¨ ׳×׳₪׳¨׳™׳˜">׳¡׳’׳•׳¨</button>
       </div>
 
       <div class="menu-grid">
-        <section class="menu-panel-block" aria-label="פרופיל שחקן">
+        <section class="menu-panel-block" aria-label="׳₪׳¨׳•׳₪׳™׳ ׳©׳—׳§׳">
           <div class="leaderboard-title-row">
-            <h3>פרופיל</h3>
-            <span class="mini-pill">נשמר מקומית</span>
+            <h3>׳₪׳¨׳•׳₪׳™׳</h3>
+            <span class="mini-pill">׳ ׳©׳׳¨ ׳׳§׳•׳׳™׳×</span>
           </div>
 
           <label class="name-field" for="profileNameInput">
-            <span>שם פרטי / כינוי</span>
-            <input id="profileNameInput" type="text" maxlength="14" placeholder="שחקן">
+            <span>׳©׳ ׳₪׳¨׳˜׳™ / ׳›׳™׳ ׳•׳™</span>
+            <input id="profileNameInput" type="text" maxlength="14" placeholder="׳©׳—׳§׳">
           </label>
         </section>
 
-        <section class="menu-panel-block" aria-label="עיצוב חזותי">
+        <section class="menu-panel-block" aria-label="׳¢׳™׳¦׳•׳‘ ׳—׳–׳•׳×׳™">
           <div class="leaderboard-title-row">
-            <h3>עיצוב חזותי</h3>
-            <span class="mini-pill">תצוגה חיה</span>
+            <h3>׳¢׳™׳¦׳•׳‘ ׳—׳–׳•׳×׳™</h3>
+            <span class="mini-pill">׳×׳¦׳•׳’׳” ׳—׳™׳”</span>
           </div>
 
           <div class="menu-form-grid">
             <label class="touch-setting" for="themeSelect">
-              <span>ערכת לוח</span>
+              <span>׳¢׳¨׳›׳× ׳׳•׳—</span>
               <select id="themeSelect">
-                <option value="neon">גריד ניאון</option>
-                <option value="aurora">זוהר אורורה</option>
+                <option value="neon">׳’׳¨׳™׳“ ׳ ׳™׳׳•׳</option>
+                <option value="aurora">׳–׳•׳”׳¨ ׳׳•׳¨׳•׳¨׳”</option>
               </select>
             </label>
 
             <label class="touch-setting" for="snakeSkinSelect">
-              <span>סקין לנחש</span>
+              <span>׳¡׳§׳™׳ ׳׳ ׳—׳©</span>
               <select id="snakeSkinSelect">
-                <option value="classic">ירוק קלאסי</option>
-                <option value="cobalt">כחול קובלט</option>
+                <option value="classic">׳™׳¨׳•׳§ ׳§׳׳׳¡׳™</option>
+                <option value="cobalt">׳›׳—׳•׳ ׳§׳•׳‘׳׳˜</option>
               </select>
             </label>
           </div>
 
-          <div class="settings-stack" aria-label="הגדרות משחק">
+          <div class="settings-stack" aria-label="׳”׳’׳“׳¨׳•׳× ׳׳©׳—׳§">
             <label class="switch-row" for="soundToggle">
               <span>
-                <strong>אפקטים קוליים</strong>
-                <small>צלילי אכילה, גאדג'טים, פסילה וירי</small>
+                <strong>׳׳₪׳§׳˜׳™׳ ׳§׳•׳׳™׳™׳</strong>
+                <small>׳¦׳׳™׳׳™ ׳׳›׳™׳׳”, ׳’׳׳“׳’'׳˜׳™׳, ׳₪׳¡׳™׳׳” ׳•׳™׳¨׳™</small>
               </span>
               <input id="soundToggle" type="checkbox" role="switch">
             </label>
 
             <label class="switch-row" for="gadgetTipsToggle">
               <span>
-                <strong>הסברי גאדג'טים</strong>
-                <small>עוצר פעם אחת כדי להסביר גאדג'ט באיסוף הראשון</small>
+                <strong>׳”׳¡׳‘׳¨׳™ ׳’׳׳“׳’'׳˜׳™׳</strong>
+                <small>׳¢׳•׳¦׳¨ ׳₪׳¢׳ ׳׳—׳× ׳›׳“׳™ ׳׳”׳¡׳‘׳™׳¨ ׳’׳׳“׳’'׳˜ ׳‘׳׳™׳¡׳•׳£ ׳”׳¨׳׳©׳•׳</small>
               </span>
               <input id="gadgetTipsToggle" type="checkbox" role="switch">
             </label>
           </div>
         </section>
 
-        <section class="menu-panel-block mobile-only-settings" aria-label="התאמת בקרי מגע">
+        <section class="menu-panel-block mobile-only-settings" aria-label="׳”׳×׳׳׳× ׳‘׳§׳¨׳™ ׳׳’׳¢">
           <div class="leaderboard-title-row">
-            <h3>בקרי מגע</h3>
-            <span class="mini-pill">תצוגה מקדימה</span>
+            <h3>׳‘׳§׳¨׳™ ׳׳’׳¢</h3>
+            <span class="mini-pill">׳×׳¦׳•׳’׳” ׳׳§׳“׳™׳׳”</span>
           </div>
 
-          <div class="touch-toolbar menu-touch-toolbar" aria-label="התאמת כפתורי מגע">
+          <div class="touch-toolbar menu-touch-toolbar" aria-label="׳”׳×׳׳׳× ׳›׳₪׳×׳•׳¨׳™ ׳׳’׳¢">
             <label class="touch-setting" for="menuControlLayoutSelect">
-              <span>פריסה</span>
+              <span>׳₪׳¨׳™׳¡׳”</span>
               <select id="menuControlLayoutSelect">
-                <option value="classic">קלאסית</option>
-                <option value="compact">קומפקטית</option>
-                <option value="wide">רחבה</option>
+                <option value="classic">׳§׳׳׳¡׳™׳×</option>
+                <option value="compact">׳§׳•׳׳₪׳§׳˜׳™׳×</option>
+                <option value="wide">׳¨׳—׳‘׳”</option>
               </select>
             </label>
             <label class="touch-setting" for="menuControlSizeSelect">
-              <span>גודל</span>
+              <span>׳’׳•׳“׳</span>
               <select id="menuControlSizeSelect">
-                <option value="small">קטן</option>
-                <option value="medium">בינוני</option>
-                <option value="large">גדול</option>
+                <option value="small">׳§׳˜׳</option>
+                <option value="medium">׳‘׳™׳ ׳•׳ ׳™</option>
+                <option value="large">׳’׳“׳•׳</option>
               </select>
             </label>
             <label class="touch-setting" for="menuControlSideSelect">
-              <span>מיקום</span>
+              <span>׳׳™׳§׳•׳</span>
               <select id="menuControlSideSelect">
-                <option value="left">שמאל</option>
-                <option value="center">מרכז</option>
-                <option value="right">ימין</option>
+                <option value="left">׳©׳׳׳</option>
+                <option value="center">׳׳¨׳›׳–</option>
+                <option value="right">׳™׳׳™׳</option>
               </select>
             </label>
           </div>
 
           <div id="menuTouchPreview" class="touch-preview" aria-hidden="true">
             <div class="touch-pad">
-              <button class="touch-btn up" type="button" tabindex="-1" aria-label="למעלה">↑</button>
-              <button class="touch-btn left" type="button" tabindex="-1" aria-label="שמאלה">←</button>
-              <button class="touch-btn down" type="button" tabindex="-1" aria-label="למטה">↓</button>
-              <button class="touch-btn right" type="button" tabindex="-1" aria-label="ימינה">→</button>
+              <button class="touch-btn up" type="button" tabindex="-1" aria-label="׳׳׳¢׳׳”">ג†‘</button>
+              <button class="touch-btn left" type="button" tabindex="-1" aria-label="׳©׳׳׳׳”">ג†</button>
+              <button class="touch-btn down" type="button" tabindex="-1" aria-label="׳׳׳˜׳”">ג†“</button>
+              <button class="touch-btn right" type="button" tabindex="-1" aria-label="׳™׳׳™׳ ׳”">ג†’</button>
             </div>
           </div>
 
-          <p class="menu-help-text">השינוי נשמר מקומית ומוצג כאן מיד, כדי שכל שחקן יוכל לכוון את הבקרים בדיוק לאחיזה שנוחה לו.</p>
+          <p class="menu-help-text">׳”׳©׳™׳ ׳•׳™ ׳ ׳©׳׳¨ ׳׳§׳•׳׳™׳× ׳•׳׳•׳¦׳’ ׳›׳׳ ׳׳™׳“, ׳›׳“׳™ ׳©׳›׳ ׳©׳—׳§׳ ׳™׳•׳›׳ ׳׳›׳•׳•׳ ׳׳× ׳”׳‘׳§׳¨׳™׳ ׳‘׳“׳™׳•׳§ ׳׳׳—׳™׳–׳” ׳©׳ ׳•׳—׳” ׳׳•.</p>
         </section>
 
-        <section class="menu-panel-block menu-panel-wide" aria-label="רקע הלוח">
+        <section class="menu-panel-block" aria-label="??????? ????">
           <div class="leaderboard-title-row">
-            <h3>רקע הלוח</h3>
-            <span id="backgroundStatus" class="mini-pill">רקע ברירת מחדל</span>
+            <h3>???????</h3>
+            <span id="playerLevelBadge" class="mini-pill">??? 1</span>
+          </div>
+
+          <div class="progress-card">
+            <div class="progress-copy">
+              <strong id="playerXpLabel">0 / 100 XP</strong>
+              <small id="playerXpHint">??? 100 XP ???? ????</small>
+            </div>
+            <div class="progress-track" aria-hidden="true">
+              <div id="playerXpFill" class="progress-fill"></div>
+            </div>
+          </div>
+
+          <div class="meta-stats-grid">
+            <div class="meta-stat">
+              <small>?????</small>
+              <strong id="careerRunsValue">0</strong>
+            </div>
+            <div class="meta-stat">
+              <small>??? ???</small>
+              <strong id="careerBestLevelValue">1</strong>
+            </div>
+            <div class="meta-stat">
+              <small>???????</small>
+              <strong id="careerKillsValue">0</strong>
+            </div>
+            <div class="meta-stat">
+              <small>????'???</small>
+              <strong id="careerPickupsValue">0</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="menu-panel-block" aria-label="?????? ??????">
+          <div class="leaderboard-title-row">
+            <h3>?????? ????</h3>
+            <span id="dailyChallengeDate" class="mini-pill">????</span>
+          </div>
+          <div id="dailyChallengeList" class="challenge-list"></div>
+        </section>
+
+        <section class="menu-panel-block menu-panel-wide" aria-label="׳¨׳§׳¢ ׳”׳׳•׳—">
+          <div class="leaderboard-title-row">
+            <h3>׳¨׳§׳¢ ׳”׳׳•׳—</h3>
+            <span id="backgroundStatus" class="mini-pill">׳¨׳§׳¢ ׳‘׳¨׳™׳¨׳× ׳׳—׳“׳</span>
           </div>
 
           <div id="backgroundPreview" class="background-preview" aria-hidden="true"></div>
 
           <div class="menu-form-grid">
             <label class="name-field" for="backgroundUrlInput">
-              <span>קישור לתמונה</span>
+              <span>׳§׳™׳©׳•׳¨ ׳׳×׳׳•׳ ׳”</span>
               <input id="backgroundUrlInput" type="url" placeholder="https://example.com/board-bg.jpg">
             </label>
 
             <div class="background-actions">
-              <button id="applyBackgroundUrlBtn" class="utility-btn" type="button">החל קישור</button>
+              <button id="applyBackgroundUrlBtn" class="utility-btn" type="button">׳”׳—׳ ׳§׳™׳©׳•׳¨</button>
             </div>
           </div>
 
           <div class="menu-form-grid menu-form-grid-compact">
             <label class="name-field file-field" for="backgroundFileInput">
-              <span>העלה מהמכשיר</span>
+              <span>׳”׳¢׳׳” ׳׳”׳׳›׳©׳™׳¨</span>
               <input id="backgroundFileInput" type="file" accept="image/*">
             </label>
 
             <div class="background-actions">
-              <button id="clearBackgroundBtn" class="utility-btn danger-ghost-btn" type="button">נקה רקע</button>
+              <button id="clearBackgroundBtn" class="utility-btn danger-ghost-btn" type="button">׳ ׳§׳” ׳¨׳§׳¢</button>
             </div>
           </div>
         </section>
+        <section class="menu-panel-block menu-panel-wide" aria-label="??????">
+          <div class="leaderboard-title-row">
+            <h3>??????</h3>
+            <span id="achievementSummary" class="mini-pill">0 / 0</span>
+          </div>
+          <div id="achievementGrid" class="achievement-grid"></div>
+        </section>
+
       </div>
     </div>
   </section>
 
-  <section id="gadgetHelpPanel" class="overlay-panel" hidden aria-label="הסבר על גאדג'ט">
+  <section id="gadgetHelpPanel" class="overlay-panel" hidden aria-label="׳”׳¡׳‘׳¨ ׳¢׳ ׳’׳׳“׳’'׳˜">
     <div class="overlay-backdrop" data-close-overlay="gadget-help"></div>
     <div class="overlay-card tutorial-card">
       <div class="overlay-header">
         <div>
-          <p class="overlay-kicker">גאדג'ט חדש</p>
-          <h2 id="gadgetHelpTitle">מגן</h2>
+          <p class="overlay-kicker">׳’׳׳“׳’'׳˜ ׳—׳“׳©</p>
+          <h2 id="gadgetHelpTitle">׳׳’׳</h2>
         </div>
-        <button id="closeGadgetHelpBtn" class="utility-btn close-btn" type="button" aria-label="המשך למשחק">המשך</button>
+        <button id="closeGadgetHelpBtn" class="utility-btn close-btn" type="button" aria-label="׳”׳׳©׳ ׳׳׳©׳—׳§">׳”׳׳©׳</button>
       </div>
 
       <div class="tutorial-body">
@@ -305,8 +357,8 @@
           <p id="gadgetHelpDescription" class="tutorial-description"></p>
           <label class="switch-row compact-switch" for="gadgetHelpSkipToggle">
             <span>
-              <strong>אל תציג שוב חלונות הסבר</strong>
-              <small>מומלץ אם אתה כבר מכיר את הגאדג'טים והבוסטים</small>
+              <strong>׳׳ ׳×׳¦׳™׳’ ׳©׳•׳‘ ׳—׳׳•׳ ׳•׳× ׳”׳¡׳‘׳¨</strong>
+              <small>׳׳•׳׳׳¥ ׳׳ ׳׳×׳” ׳›׳‘׳¨ ׳׳›׳™׳¨ ׳׳× ׳”׳’׳׳“׳’'׳˜׳™׳ ׳•׳”׳‘׳•׳¡׳˜׳™׳</small>
             </span>
             <input id="gadgetHelpSkipToggle" type="checkbox" role="switch">
           </label>
@@ -315,83 +367,144 @@
     </div>
   </section>
 
-  <section id="leaderboardPanel" class="overlay-panel" hidden aria-label="טבלאות שיאים">
+  <section id="leaderboardPanel" class="overlay-panel" hidden aria-label="׳˜׳‘׳׳׳•׳× ׳©׳™׳׳™׳">
     <div class="overlay-backdrop" data-close-overlay="leaderboard"></div>
     <div class="overlay-card">
       <div class="overlay-header">
         <div>
-          <p class="overlay-kicker">טבלאות ניקוד</p>
-          <h2>שיאים</h2>
+          <p class="overlay-kicker">׳˜׳‘׳׳׳•׳× ׳ ׳™׳§׳•׳“</p>
+          <h2>׳©׳™׳׳™׳</h2>
         </div>
-        <button id="closeLeaderboardBtn" class="utility-btn close-btn" type="button" aria-label="סגור שיאים">סגור</button>
+        <button id="closeLeaderboardBtn" class="utility-btn close-btn" type="button" aria-label="׳¡׳’׳•׳¨ ׳©׳™׳׳™׳">׳¡׳’׳•׳¨</button>
       </div>
 
       <div class="leaderboard-controls">
         <label class="name-field" for="playerNameInput">
-          <span>שם שחקן</span>
-          <input id="playerNameInput" type="text" maxlength="14" placeholder="שחקן">
+          <span>׳©׳ ׳©׳—׳§׳</span>
+          <input id="playerNameInput" type="text" maxlength="14" placeholder="׳©׳—׳§׳">
         </label>
-        <p id="communityStatus" class="community-status">לוח קהילתי: צד השרת עדיין לא מחובר</p>
+        <p id="communityStatus" class="community-status">׳׳•׳— ׳§׳”׳™׳׳×׳™: ׳¦׳“ ׳”׳©׳¨׳× ׳¢׳“׳™׳™׳ ׳׳ ׳׳—׳•׳‘׳¨</p>
       </div>
 
       <div class="leaderboard-grid">
-        <section class="leaderboard-column" aria-label="השיאים שלך">
+        <section class="leaderboard-column" aria-label="׳”׳©׳™׳׳™׳ ׳©׳׳">
           <div class="leaderboard-title-row">
-            <h3>הריצות הטובות שלך</h3>
-            <span id="personalBestSummary" class="mini-pill">0 נק'</span>
+            <h3>׳”׳¨׳™׳¦׳•׳× ׳”׳˜׳•׳‘׳•׳× ׳©׳׳</h3>
+            <span id="personalBestSummary" class="mini-pill">0 ׳ ׳§'</span>
           </div>
           <ol id="localLeaderboardList" class="leaderboard-list"></ol>
         </section>
 
-        <section class="leaderboard-column" aria-label="שיאי הקהילה">
+        <section class="leaderboard-column" aria-label="׳©׳™׳׳™ ׳”׳§׳”׳™׳׳”">
           <div class="leaderboard-title-row">
-            <h3>קהילה</h3>
-            <span id="communityModeBadge" class="mini-pill">דמו לא מקוון</span>
+            <h3>׳§׳”׳™׳׳”</h3>
+            <span id="communityModeBadge" class="mini-pill">׳“׳׳• ׳׳ ׳׳§׳•׳•׳</span>
           </div>
           <ol id="globalLeaderboardList" class="leaderboard-list"></ol>
         </section>
       </div>
     </div>
   </section>
-  <section id="recordScorePanel" class="overlay-panel" hidden aria-label="תיעוד שיא">
+  <section id="recordScorePanel" class="overlay-panel" hidden aria-label="׳×׳™׳¢׳•׳“ ׳©׳™׳">
     <div class="overlay-backdrop" data-close-overlay="record-score"></div>
     <div class="overlay-card record-card">
       <div class="overlay-header">
         <div>
-          <p class="overlay-kicker">סוף ריצה</p>
-          <h2>תיעוד שיא</h2>
+          <p class="overlay-kicker">׳¡׳•׳£ ׳¨׳™׳¦׳”</p>
+          <h2>׳×׳™׳¢׳•׳“ ׳©׳™׳</h2>
         </div>
-        <button id="closeRecordScoreBtn" class="utility-btn close-btn" type="button" aria-label="דלג וחזור לתפריט">דלג</button>
+        <button id="closeRecordScoreBtn" class="utility-btn close-btn" type="button" aria-label="׳“׳׳’ ׳•׳—׳–׳•׳¨ ׳׳×׳₪׳¨׳™׳˜">׳“׳׳’</button>
       </div>
 
-      <p id="recordScoreSummary" class="record-summary">ריצה אחת טובה שווה תיעוד טוב.</p>
+      <p id="recordScoreSummary" class="record-summary">׳¨׳™׳¦׳” ׳׳—׳× ׳˜׳•׳‘׳” ׳©׳•׳•׳” ׳×׳™׳¢׳•׳“ ׳˜׳•׳‘.</p>
 
       <label class="name-field" for="recordPlayerNameInput">
-        <span>איזה שם יופיע</span>
-        <input id="recordPlayerNameInput" type="text" maxlength="14" placeholder="שחקן">
+        <span>׳׳™׳–׳” ׳©׳ ׳™׳•׳₪׳™׳¢</span>
+        <input id="recordPlayerNameInput" type="text" maxlength="14" placeholder="׳©׳—׳§׳">
       </label>
 
-      <div class="record-destination-group" role="radiogroup" aria-label="לאן לשמור את השיא">
+      <div class="record-destination-group" role="radiogroup" aria-label="׳׳׳ ׳׳©׳׳•׳¨ ׳׳× ׳”׳©׳™׳">
         <label class="choice-card">
           <input type="radio" name="recordDestination" value="personal" checked>
-          <span class="choice-card-title">לוח אישי</span>
-          <small>ישמר רק אצלך במכשיר</small>
+          <span class="choice-card-title">׳׳•׳— ׳׳™׳©׳™</span>
+          <small>׳™׳©׳׳¨ ׳¨׳§ ׳׳¦׳׳ ׳‘׳׳›׳©׳™׳¨</small>
         </label>
         <label class="choice-card">
           <input type="radio" name="recordDestination" value="community">
-          <span class="choice-card-title">לוח משותף</span>
-          <small>ישלח ללוח הקהילה או לדמו המקומי</small>
+          <span class="choice-card-title">׳׳•׳— ׳׳©׳•׳×׳£</span>
+          <small>׳™׳©׳׳— ׳׳׳•׳— ׳”׳§׳”׳™׳׳” ׳׳• ׳׳“׳׳• ׳”׳׳§׳•׳׳™</small>
         </label>
         <label class="choice-card">
           <input type="radio" name="recordDestination" value="both">
-          <span class="choice-card-title">גם וגם</span>
-          <small>גם לרשימה האישית וגם ללוח המשותף</small>
+          <span class="choice-card-title">׳’׳ ׳•׳’׳</span>
+          <small>׳’׳ ׳׳¨׳©׳™׳׳” ׳”׳׳™׳©׳™׳× ׳•׳’׳ ׳׳׳•׳— ׳”׳׳©׳•׳×׳£</small>
         </label>
       </div>
 
       <div class="overlay-actions">
-        <button id="skipRecordBtn" class="utility-btn close-btn" type="button">דלג ולתפריט</button>
-        <button id="submitRecordBtn" type="button">שמור שיא</button>
+        <button id="skipRecordBtn" class="utility-btn close-btn" type="button">׳“׳׳’ ׳•׳׳×׳₪׳¨׳™׳˜</button>
+        <button id="submitRecordBtn" type="button">׳©׳׳•׳¨ ׳©׳™׳</button>
+      </div>
+    </div>
+  </section>
+  <section id="runResultsPanel" class="overlay-panel" hidden aria-label="????? ????">
+    <div class="overlay-backdrop" data-close-overlay="run-results"></div>
+    <div class="overlay-card results-card">
+      <div class="overlay-header">
+        <div>
+          <p class="overlay-kicker">??? ????</p>
+          <h2 id="runResultsTitle">????? ?????</h2>
+        </div>
+        <span id="runResultsLevelBadge" class="mini-pill">??? 1</span>
+      </div>
+
+      <p id="runResultsSummary" class="record-summary">???? ???? ???? ???????.</p>
+
+      <div class="results-grid">
+        <section class="results-block" aria-label="????? ????">
+          <h3>????? ???</h3>
+          <div class="meta-stats-grid">
+            <div class="meta-stat">
+              <small>?????</small>
+              <strong id="runStatScore">0</strong>
+            </div>
+            <div class="meta-stat">
+              <small>???</small>
+              <strong id="runStatLevel">1</strong>
+            </div>
+            <div class="meta-stat">
+              <small>???</small>
+              <strong id="runStatTime">0:00</strong>
+            </div>
+            <div class="meta-stat">
+              <small>XP</small>
+              <strong id="runStatXp">0</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="results-block" aria-label="????? ?????">
+          <h3>????? ?????</h3>
+          <ul id="runBreakdownList" class="results-list"></ul>
+        </section>
+      </div>
+
+      <div class="results-grid">
+        <section class="results-block" aria-label="??????? ????">
+          <h3>??????? ????</h3>
+          <ul id="runUnlockList" class="results-list"></ul>
+        </section>
+
+        <section class="results-block" aria-label="?????? ???????">
+          <h3>?????? ???????</h3>
+          <ul id="runMilestoneList" class="results-list"></ul>
+        </section>
+      </div>
+
+      <div class="overlay-actions">
+        <button id="runResultsMenuBtn" class="utility-btn close-btn" type="button">??????</button>
+        <button id="runResultsRecordBtn" class="utility-btn" type="button">??? ???</button>
+        <button id="runResultsRestartBtn" type="button">???? ????</button>
       </div>
     </div>
   </section>

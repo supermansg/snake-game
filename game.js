@@ -1,4 +1,4 @@
-const canvas = document.getElementById("game");
+﻿const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 const appWrapEl = document.querySelector(".wrap");
 const topbarEl = document.querySelector(".topbar");
@@ -73,6 +73,32 @@ const closeRecordScoreBtn = document.getElementById("closeRecordScoreBtn");
 const skipRecordBtn = document.getElementById("skipRecordBtn");
 const submitRecordBtn = document.getElementById("submitRecordBtn");
 const recordDestinationInputs = document.querySelectorAll('input[name="recordDestination"]');
+const playerLevelBadgeEl = document.getElementById("playerLevelBadge");
+const playerXpLabelEl = document.getElementById("playerXpLabel");
+const playerXpHintEl = document.getElementById("playerXpHint");
+const playerXpFillEl = document.getElementById("playerXpFill");
+const careerRunsValueEl = document.getElementById("careerRunsValue");
+const careerBestLevelValueEl = document.getElementById("careerBestLevelValue");
+const careerKillsValueEl = document.getElementById("careerKillsValue");
+const careerPickupsValueEl = document.getElementById("careerPickupsValue");
+const dailyChallengeDateEl = document.getElementById("dailyChallengeDate");
+const dailyChallengeListEl = document.getElementById("dailyChallengeList");
+const achievementSummaryEl = document.getElementById("achievementSummary");
+const achievementGridEl = document.getElementById("achievementGrid");
+const runResultsPanel = document.getElementById("runResultsPanel");
+const runResultsTitleEl = document.getElementById("runResultsTitle");
+const runResultsLevelBadgeEl = document.getElementById("runResultsLevelBadge");
+const runResultsSummaryEl = document.getElementById("runResultsSummary");
+const runStatScoreEl = document.getElementById("runStatScore");
+const runStatLevelEl = document.getElementById("runStatLevel");
+const runStatTimeEl = document.getElementById("runStatTime");
+const runStatXpEl = document.getElementById("runStatXp");
+const runBreakdownListEl = document.getElementById("runBreakdownList");
+const runUnlockListEl = document.getElementById("runUnlockList");
+const runMilestoneListEl = document.getElementById("runMilestoneList");
+const runResultsMenuBtn = document.getElementById("runResultsMenuBtn");
+const runResultsRecordBtn = document.getElementById("runResultsRecordBtn");
+const runResultsRestartBtn = document.getElementById("runResultsRestartBtn");
 const touchButtons = document.querySelectorAll("[data-dir]");
 const isTouchDevice = window.matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
 
@@ -98,14 +124,16 @@ const STORAGE_KEYS = {
   boardBackground: "snake_board_background",
   audioMuted: "snake_audio_muted",
   gadgetTipsDisabled: "snake_gadget_tips_disabled",
-  gadgetTipsSeen: "snake_gadget_tips_seen"
+  gadgetTipsSeen: "snake_gadget_tips_seen",
+  progressionProfile: "snake_progression_profile",
+  dailyChallenges: "snake_daily_challenges"
 };
 
 const DEFAULT_BOARD_BACKGROUND = "./defualt background.png";
 
 const DIFFICULTY_PRESETS = {
   easy: {
-    label: "קל",
+    label: "׳§׳",
     baseSpeedMs: 172,
     minSpeedMs: 84,
     speedScoreFactor: 3,
@@ -124,7 +152,7 @@ const DIFFICULTY_PRESETS = {
     portalLevelEvery: 3
   },
   medium: {
-    label: "בינוני",
+    label: "׳‘׳™׳ ׳•׳ ׳™",
     baseSpeedMs: 148,
     minSpeedMs: 64,
     speedScoreFactor: 4,
@@ -143,7 +171,7 @@ const DIFFICULTY_PRESETS = {
     portalLevelEvery: 3
   },
   hard: {
-    label: "קשה",
+    label: "׳§׳©׳”",
     baseSpeedMs: 126,
     minSpeedMs: 52,
     speedScoreFactor: 5,
@@ -165,6 +193,8 @@ const DIFFICULTY_PRESETS = {
 
 const BACKGROUND_THEMES = {
   neon: {
+    label: "׳ ׳™׳׳•׳ ׳’׳¨׳™׳“",
+    unlockLevel: 1,
     boardTop: "#151f35",
     boardMid: "#0f1628",
     boardBottom: "#0a101d",
@@ -185,6 +215,8 @@ const BACKGROUND_THEMES = {
     overlayRGB: "8, 12, 22"
   },
   aurora: {
+    label: "׳–׳•׳”׳¨ ׳׳•׳¨׳•׳¨׳”",
+    unlockLevel: 1,
     boardTop: "#132735",
     boardMid: "#122233",
     boardBottom: "#0a1622",
@@ -203,6 +235,28 @@ const BACKGROUND_THEMES = {
     enemySpike: "#ffe0ab",
     burstRGB: "136, 244, 208",
     overlayRGB: "6, 20, 22"
+  },
+  eclipse: {
+    label: "׳׳™׳‘׳× ׳׳™׳׳”",
+    unlockLevel: 4,
+    boardTop: "#1a1831",
+    boardMid: "#13122a",
+    boardBottom: "#090917",
+    gridRGB: "138, 117, 205",
+    vignetteRGB: "8, 7, 20",
+    boardGlow: "rgba(177, 116, 255, 0.16)",
+    foodAura: "rgba(255, 132, 132, 0.2)",
+    foodCore: "#ff907f",
+    foodHighlight: "#ffe3bb",
+    foodLeaf: "#a4f1bc",
+    obstacleFillRGB: "102, 99, 163",
+    obstacleStroke: "#b4b4ff",
+    obstacleAccent: "rgba(237, 228, 255, 0.14)",
+    enemyAura: "rgba(255, 124, 184, 0.3)",
+    enemyCore: "#ff7bc7",
+    enemySpike: "#ffe5b1",
+    burstRGB: "218, 136, 255",
+    overlayRGB: "9, 8, 20"
   }
 };
 
@@ -226,27 +280,29 @@ const PICKUP_STYLES = {
 
 const GADGET_HELP = {
   shield: {
-    title: "ליבת מגן",
+    title: "׳׳™׳‘׳× ׳׳’׳",
     icon: "S",
     description:
-      "המגן שומר עליך מפגיעה אחת. אם תפגע בקיר, במכשול או באויב פעם אחת, הריצה תימשך והמגן יישבר במקום שהמשחק יסתיים."
+      "׳”׳׳’׳ ׳©׳•׳׳¨ ׳¢׳׳™׳ ׳׳₪׳’׳™׳¢׳” ׳׳—׳×. ׳׳ ׳×׳₪׳’׳¢ ׳‘׳§׳™׳¨, ׳‘׳׳›׳©׳•׳ ׳׳• ׳‘׳׳•׳™׳‘ ׳₪׳¢׳ ׳׳—׳×, ׳”׳¨׳™׳¦׳” ׳×׳™׳׳©׳ ׳•׳”׳׳’׳ ׳™׳™׳©׳‘׳¨ ׳‘׳׳§׳•׳ ׳©׳”׳׳©׳—׳§ ׳™׳¡׳×׳™׳™׳."
   },
   blaster: {
-    title: "תא בלסטר",
+    title: "׳×׳ ׳‘׳׳¡׳˜׳¨",
     icon: "B",
     description:
-      "הבלסטר נותן לך מטענים לכפתור הירי. אפשר להשתמש בו כדי לחסל את האויב הקרוב ביותר ולפנות מקום כשהלוח נהיה צפוף."
+      "׳”׳‘׳׳¡׳˜׳¨ ׳ ׳•׳×׳ ׳׳ ׳׳˜׳¢׳ ׳™׳ ׳׳›׳₪׳×׳•׳¨ ׳”׳™׳¨׳™. ׳׳₪׳©׳¨ ׳׳”׳©׳×׳׳© ׳‘׳• ׳›׳“׳™ ׳׳—׳¡׳ ׳׳× ׳”׳׳•׳™׳‘ ׳”׳§׳¨׳•׳‘ ׳‘׳™׳•׳×׳¨ ׳•׳׳₪׳ ׳•׳× ׳׳§׳•׳ ׳›׳©׳”׳׳•׳— ׳ ׳”׳™׳” ׳¦׳₪׳•׳£."
   },
   slow: {
-    title: "שדה זמן",
+    title: "׳©׳“׳” ׳–׳׳",
     icon: "T",
     description:
-      "שדה הזמן מאט את תנועת האויבים לכמה שניות. הכי טוב להשתמש בו כשכמות האיומים גדלה ואתה צריך נתיב בטוח יותר לפרי הבא."
+      "׳©׳“׳” ׳”׳–׳׳ ׳׳׳˜ ׳׳× ׳×׳ ׳•׳¢׳× ׳”׳׳•׳™׳‘׳™׳ ׳׳›׳׳” ׳©׳ ׳™׳•׳×. ׳”׳›׳™ ׳˜׳•׳‘ ׳׳”׳©׳×׳׳© ׳‘׳• ׳›׳©׳›׳׳•׳× ׳”׳׳™׳•׳׳™׳ ׳’׳“׳׳” ׳•׳׳×׳” ׳¦׳¨׳™׳ ׳ ׳×׳™׳‘ ׳‘׳˜׳•׳— ׳™׳•׳×׳¨ ׳׳₪׳¨׳™ ׳”׳‘׳."
   }
 };
 
 const SNAKE_SKINS = {
   classic: {
+    label: "׳™׳¨׳•׳§ ׳§׳׳׳¡׳™",
+    unlockLevel: 1,
     head: "#54e3a5",
     body: "#2fc487",
     eye: "#082a1e",
@@ -255,12 +311,24 @@ const SNAKE_SKINS = {
     highlight: "rgba(222, 255, 241, 0.32)"
   },
   cobalt: {
+    label: "׳›׳—׳•׳ ׳§׳•׳‘׳׳˜",
+    unlockLevel: 1,
     head: "#77b2ff",
     body: "#4c8fff",
     eye: "#0b1d3b",
     headGlow: "rgba(119, 178, 255, 0.24)",
     bodyGlow: "rgba(76, 143, 255, 0.14)",
     highlight: "rgba(230, 242, 255, 0.28)"
+  },
+  ember: {
+    label: "׳’׳—׳׳× ׳₪׳׳–׳׳”",
+    unlockLevel: 6,
+    head: "#ffb173",
+    body: "#ff7d63",
+    eye: "#38150d",
+    headGlow: "rgba(255, 177, 115, 0.26)",
+    bodyGlow: "rgba(255, 125, 99, 0.16)",
+    highlight: "rgba(255, 240, 219, 0.3)"
   }
 };
 
@@ -299,6 +367,88 @@ const CONTROL_SIDE_PRESETS = {
     side: "right"
   }
 };
+
+const ACHIEVEMENT_DEFS = [
+  {
+    id: "first_bite",
+    title: "׳‘׳™׳¡ ׳¨׳׳©׳•׳",
+    description: "׳׳›׳•׳ ׳׳× ׳”׳₪׳¨׳™ ׳”׳¨׳׳©׳•׳ ׳©׳׳",
+    check: (profile) => profile.totalFruit >= 1
+  },
+  {
+    id: "arcade_runner",
+    title: "׳¨׳¥ ׳׳¨׳§׳™׳™׳“",
+    description: "׳”׳©׳׳ 5 ׳¨׳™׳¦׳•׳×",
+    check: (profile) => profile.totalRuns >= 5
+  },
+  {
+    id: "hazard_hunter",
+    title: "׳¦׳™׳™׳“ ׳׳™׳•׳׳™׳",
+    description: "׳—׳¡׳ 5 ׳׳•׳™׳‘׳™׳ ׳¢׳ ׳‘׳׳¡׳˜׳¨",
+    check: (profile) => profile.totalEnemyKills >= 5
+  },
+  {
+    id: "portal_hopper",
+    title: "׳§׳•׳₪׳¥ ׳₪׳•׳¨׳˜׳׳™׳",
+    description: "׳¢׳‘׳¨ 6 ׳₪׳¢׳׳™׳ ׳“׳¨׳ ׳₪׳•׳¨׳˜׳",
+    check: (profile) => profile.totalPortals >= 6
+  },
+  {
+    id: "gadget_master",
+    title: "׳׳•׳¡׳£ ׳’׳׳“׳’'׳˜׳™׳",
+    description: "׳׳¡׳•׳£ 10 ׳’׳׳“׳’'׳˜׳™׳",
+    check: (profile) => profile.totalPickups >= 10
+  },
+  {
+    id: "stage_breaker",
+    title: "׳₪׳•׳¨׳¥ ׳©׳׳‘׳™׳",
+    description: "׳”׳’׳™׳¢ ׳׳©׳׳‘ 6 ׳‘׳¨׳™׳¦׳” ׳׳—׳×",
+    check: (profile) => profile.bestLevel >= 6
+  }
+];
+
+const DAILY_CHALLENGE_DEFS = [
+  {
+    id: "score_sprint",
+    type: "maxScore",
+    title: "׳¡׳₪׳¨׳™׳ ׳˜ ׳ ׳™׳§׳•׳“",
+    description: (target) => `׳”׳’׳™׳¢ ׳׳ ׳™׳§׳•׳“ ${target} ׳‘׳¨׳™׳¦׳” ׳׳—׳×`,
+    rewardXp: 80,
+    targets: [8, 10, 12]
+  },
+  {
+    id: "pickup_route",
+    type: "pickups",
+    title: "׳׳¡׳׳•׳ ׳’׳׳“׳’'׳˜׳™׳",
+    description: (target) => `׳׳¡׳•׳£ ${target} ׳’׳׳“׳’'׳˜׳™׳`,
+    rewardXp: 70,
+    targets: [2, 3, 4]
+  },
+  {
+    id: "enemy_hunt",
+    type: "enemyKills",
+    title: "׳¦׳™׳“ ׳׳•׳™׳‘׳™׳",
+    description: (target) => `׳—׳¡׳ ${target} ׳׳•׳™׳‘׳™׳`,
+    rewardXp: 90,
+    targets: [2, 3, 4]
+  },
+  {
+    id: "portal_run",
+    type: "portals",
+    title: "׳¨׳™׳¦׳× ׳₪׳•׳¨׳˜׳׳™׳",
+    description: (target) => `׳”׳©׳×׳׳© ${target} ׳₪׳¢׳׳™׳ ׳‘׳₪׳•׳¨׳˜׳`,
+    rewardXp: 60,
+    targets: [1, 2, 3]
+  },
+  {
+    id: "play_streak",
+    type: "runs",
+    title: "׳¨׳¦׳£ ׳¨׳™׳¦׳•׳×",
+    description: (target) => `׳©׳—׳§ ${target} ׳¨׳™׳¦׳•׳× ׳”׳™׳•׳`,
+    rewardXp: 65,
+    targets: [2, 3, 4]
+  }
+];
 
 const CARDINALS = [
   { x: 1, y: 0 },
@@ -366,12 +516,12 @@ let personalRecords = loadPersonalRecords();
 let communityFallbackRecords = loadCommunityFallbackRecords();
 let communityRecords = [];
 let communityStatus = {
-  mode: COMMUNITY_LEADERBOARD_ENDPOINT ? "מתחבר" : "דמו לא מקוון",
+  mode: COMMUNITY_LEADERBOARD_ENDPOINT ? "׳׳×׳—׳‘׳¨" : "׳“׳׳• ׳׳ ׳׳§׳•׳•׳",
   detail: COMMUNITY_LEADERBOARD_ENDPOINT
-    ? "מתחבר ללוח הקהילתי..."
-    : "לוח קהילתי: צד השרת עדיין לא מחובר"
+    ? "׳׳×׳—׳‘׳¨ ׳׳׳•׳— ׳”׳§׳”׳™׳׳×׳™..."
+    : "׳׳•׳— ׳§׳”׳™׳׳×׳™: ׳¦׳“ ׳”׳©׳¨׳× ׳¢׳“׳™׳™׳ ׳׳ ׳׳—׳•׳‘׳¨"
 };
-let playerName = localStorage.getItem(STORAGE_KEYS.playerName) || "שחקן";
+let playerName = localStorage.getItem(STORAGE_KEYS.playerName) || "׳©׳—׳§׳";
 let boardBackgroundSource = localStorage.getItem(STORAGE_KEYS.boardBackground) || "";
 let boardBackgroundImage = null;
 let boardBackgroundLoaded = false;
@@ -386,6 +536,10 @@ let gadgetHelpOpen = false;
 let gadgetHelpResumeAfterClose = false;
 let activeGadgetHelpType = "";
 let pendingScoreEntry = null;
+let progressionProfile = loadProgressionProfile();
+let dailyChallenges = loadDailyChallenges();
+let currentRunStats = createEmptyRunStats();
+let lastRunResults = null;
 
 bestEl.textContent = String(bestScore);
 
@@ -432,12 +586,17 @@ function initGame() {
   aimingShot = false;
   targetCursor = null;
   pendingScoreEntry = null;
+  currentRunStats = createEmptyRunStats();
+  lastRunResults = null;
+  if (runResultsPanel) runResultsPanel.hidden = true;
 
   clearStatusTimer();
+  syncDailyChallenges();
   updateDifficultyButtons();
   applyControlLayout();
   updateTouchControlSettingsUI();
   updateCustomizationUI();
+  renderMetaProgressionUI();
   updateModeLabel();
   updateAbilityLabel();
   updatePlayLayoutState();
@@ -464,6 +623,7 @@ function startGame() {
   }
 
   if (!started) started = true;
+  if (!currentRunStats.startedAt) currentRunStats.startedAt = performance.now();
 
   primeAudio();
   gameOverAt = 0;
@@ -503,7 +663,7 @@ function pauseGame() {
   running = false;
   stopLoop();
   clearStatusTimer();
-  statusEl.textContent = "המשחק מושהה";
+  statusEl.textContent = "׳”׳׳©׳—׳§ ׳׳•׳©׳”׳”";
   updatePlayLayoutState();
   updateActionButtons();
 }
@@ -546,23 +706,23 @@ function tick() {
   const willEat = isFoodCell(newHead);
 
   if (isWallCollision(newHead)) {
-    if (!tryUseShield("המגן ספג את הפגיעה")) gameOver("התנגשות בקיר");
+    if (!tryUseShield("׳”׳׳’׳ ׳¡׳₪׳’ ׳׳× ׳”׳₪׳’׳™׳¢׳”")) gameOver("׳”׳×׳ ׳’׳©׳•׳× ׳‘׳§׳™׳¨");
     return;
   }
 
   if (isSelfCollision(newHead, willEat)) {
-    if (!tryUseShield("המגן הציל את הריצה")) gameOver("פגעת בעצמך");
+    if (!tryUseShield("׳”׳׳’׳ ׳”׳¦׳™׳ ׳׳× ׳”׳¨׳™׳¦׳”")) gameOver("׳₪׳’׳¢׳× ׳‘׳¢׳¦׳׳");
     return;
   }
 
   if (isObstacleCollision(newHead)) {
-    if (!tryUseShield("המגן נשבר מהפגיעה")) gameOver("התנגשות במכשול");
+    if (!tryUseShield("׳”׳׳’׳ ׳ ׳©׳‘׳¨ ׳׳”׳₪׳’׳™׳¢׳”")) gameOver("׳”׳×׳ ׳’׳©׳•׳× ׳‘׳׳›׳©׳•׳");
     return;
   }
 
   if (isEnemyCollision(newHead)) {
-    if (!tryUseShield("המגן הדף את האויב")) {
-      gameOver("התנגשות באויב");
+    if (!tryUseShield("׳”׳׳’׳ ׳”׳“׳£ ׳׳× ׳”׳׳•׳™׳‘")) {
+      gameOver("׳”׳×׳ ׳’׳©׳•׳× ׳‘׳׳•׳™׳‘");
     } else {
       enemies = enemies.filter((enemy) => !(enemy.x === newHead.x && enemy.y === newHead.y));
       updateHazardsLabel();
@@ -579,6 +739,7 @@ function tick() {
 
   if (willEat) {
     score += 1;
+    currentRunStats.fruits += 1;
     scoreEl.textContent = String(score);
 
     if (score > bestScore) {
@@ -605,8 +766,8 @@ function tick() {
   moveEnemies();
 
   if (isEnemyTouchingSnake()) {
-    if (!tryUseShield("המגן הדף את האויב")) {
-      gameOver("אויב תפס אותך");
+    if (!tryUseShield("׳”׳׳’׳ ׳”׳“׳£ ׳׳× ׳”׳׳•׳™׳‘")) {
+      gameOver("׳׳•׳™׳‘ ׳×׳₪׳¡ ׳׳•׳×׳");
       return;
     }
     enemies = enemies.filter(
@@ -655,14 +816,16 @@ function gameOver(message) {
   gameOverAt = performance.now();
   gameOverMessage = message;
   pendingScoreEntry = score > 0 ? buildScoreEntry() : null;
+  finalizeRunProgress(message);
   clearStatusTimer();
   stopLoop();
   playSound("fail");
   statusEl.textContent = pendingScoreEntry
-    ? `${message}. אפשר לבחור ריצה חדשה או לתעד את השיא`
-    : `${message}. אפשר לבחור ריצה חדשה או לחזור לתפריט`;
+    ? `${message}. ׳׳₪׳©׳¨ ׳׳‘׳—׳•׳¨ ׳¨׳™׳¦׳” ׳—׳“׳©׳” ׳׳• ׳׳×׳¢׳“ ׳׳× ׳”׳©׳™׳`
+    : `${message}. ׳׳₪׳©׳¨ ׳׳‘׳—׳•׳¨ ׳¨׳™׳¦׳” ׳—׳“׳©׳” ׳׳• ׳׳—׳–׳•׳¨ ׳׳×׳₪׳¨׳™׳˜`;
   triggerBoardFlash("danger");
   boardShakeUntil = performance.now() + 280;
+  setRunResultsOpen(true);
   updatePlayLayoutState();
   updateActionButtons();
 }
@@ -770,9 +933,10 @@ function resolvePortalTravel(pos) {
   if (source.charges <= 0 || destination.charges <= 0) {
     activePortals = [];
   }
+  currentRunStats.portals += 1;
   triggerBoardFlash("portal");
   playSound("portal");
-  addFloatingText("קפיצה", pos.x, pos.y, "#9cc7ff");
+  addFloatingText("׳§׳₪׳™׳¦׳”", pos.x, pos.y, "#9cc7ff");
   return { x: destination.x, y: destination.y };
 }
 
@@ -843,19 +1007,20 @@ function updateLevel() {
 
   while (level < nextLevel) {
     level += 1;
+    currentRunStats.maxLevel = Math.max(currentRunStats.maxLevel, level);
     applyLevelDifficulty(level);
   }
 
   levelEl.textContent = String(level);
   stageBanner = {
-    title: `שלב ${level}`,
-    subtitle: "כמות האיומים עלתה",
+    title: `׳©׳׳‘ ${level}`,
+    subtitle: "׳›׳׳•׳× ׳”׳׳™׳•׳׳™׳ ׳¢׳׳×׳”",
     color: "rgba(120, 174, 255, 0.92)",
     start: performance.now(),
     duration: 1500
   };
   triggerBoardFlash("level");
-  setTemporaryStatus(`שלב ${level}! כמות האיומים עלתה`, 1200);
+  setTemporaryStatus(`׳©׳׳‘ ${level}! ׳›׳׳•׳× ׳”׳׳™׳•׳׳™׳ ׳¢׳׳×׳”`, 1200);
 }
 
 function applyLevelDifficulty(currentLevel) {
@@ -899,7 +1064,7 @@ function maybeSpawnPickup() {
     y: cell.y,
     phase: Math.random() * Math.PI * 2
   };
-  setTemporaryStatus(`${formatPickupName(type)} הופיע על הלוח`, 900);
+  setTemporaryStatus(`${formatPickupName(type)} ׳”׳•׳₪׳™׳¢ ׳¢׳ ׳”׳׳•׳—`, 900);
   updateAbilityLabel();
 }
 
@@ -916,7 +1081,7 @@ function maybeSpawnPortals() {
     { id: "A", x: first.x, y: first.y, phase: Math.random() * Math.PI * 2, charges: 3 },
     { id: "B", x: second.x, y: second.y, phase: Math.random() * Math.PI * 2, charges: 3 }
   ];
-  setTemporaryStatus("פורטלים נפתחו", 900);
+  setTemporaryStatus("׳₪׳•׳¨׳˜׳׳™׳ ׳ ׳₪׳×׳—׳•", 900);
 }
 
 function choosePickupType() {
@@ -955,21 +1120,22 @@ function findOpenCell(avoid = null) {
 }
 
 function collectPickup(pickup) {
+  currentRunStats.pickups += 1;
   switch (pickup.type) {
     case "shield":
       playerPowerState.shield += 1;
-      setTemporaryStatus("מגן מוכן", 1100);
-      addFloatingText("מגן", pickup.x, pickup.y, "#7de3ff");
+      setTemporaryStatus("׳׳’׳ ׳׳•׳›׳", 1100);
+      addFloatingText("׳׳’׳", pickup.x, pickup.y, "#7de3ff");
       break;
     case "blaster":
       playerPowerState.blasterCharges += 2;
-      setTemporaryStatus("2+ מטעני בלסטר", 1100);
-      addFloatingText("בלסטר", pickup.x, pickup.y, "#cfa8ff");
+      setTemporaryStatus("2+ ׳׳˜׳¢׳ ׳™ ׳‘׳׳¡׳˜׳¨", 1100);
+      addFloatingText("׳‘׳׳¡׳˜׳¨", pickup.x, pickup.y, "#cfa8ff");
       break;
     case "slow":
       playerPowerState.slowUntil = performance.now() + 7000;
-      setTemporaryStatus("שדה האטה פעיל", 1100);
-      addFloatingText("האטה", pickup.x, pickup.y, "#9ff3c8");
+      setTemporaryStatus("׳©׳“׳” ׳”׳׳˜׳” ׳₪׳¢׳™׳", 1100);
+      addFloatingText("׳”׳׳˜׳”", pickup.x, pickup.y, "#9ff3c8");
       break;
     default:
       break;
@@ -989,7 +1155,7 @@ function tryUseShield(message) {
   if (playerPowerState.shield <= 0) return false;
   playerPowerState.shield -= 1;
   triggerBoardFlash("shield");
-  addFloatingText("מגן", snake[0].x, snake[0].y, "#7de3ff");
+  addFloatingText("׳׳’׳", snake[0].x, snake[0].y, "#7de3ff");
   setTemporaryStatus(message, 900);
   updateAbilityLabel();
   updateActionButtons();
@@ -1040,9 +1206,9 @@ function draw(nowMs) {
   if (gameOverAt > 0) {
     drawGameOverOverlay(nowMs);
   } else if (!started) {
-    drawStateOverlay("מוכן לשחק", "לחץ על התחל, החליק על הלוח או השתמש במקשי החצים");
+    drawStateOverlay("׳׳•׳›׳ ׳׳©׳—׳§", "׳׳—׳¥ ׳¢׳ ׳”׳×׳—׳, ׳”׳—׳׳™׳§ ׳¢׳ ׳”׳׳•׳— ׳׳• ׳”׳©׳×׳׳© ׳‘׳׳§׳©׳™ ׳”׳—׳¦׳™׳");
   } else if (!running) {
-    drawStateOverlay("המשחק מושהה", "לחץ על המשך או בחר כיוון כדי להמשיך");
+    drawStateOverlay("׳”׳׳©׳—׳§ ׳׳•׳©׳”׳”", "׳׳—׳¥ ׳¢׳ ׳”׳׳©׳ ׳׳• ׳‘׳—׳¨ ׳›׳™׳•׳•׳ ׳›׳“׳™ ׳׳”׳׳©׳™׳");
   }
 
   ctx.restore();
@@ -1621,7 +1787,7 @@ function drawGameOverOverlay(nowMs) {
   const alpha = Math.min(0.68, ((nowMs - gameOverAt) / 280) * 0.68);
   ctx.fillStyle = `rgba(${theme.overlayRGB}, ${alpha})`;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  drawStateOverlay("המשחק נגמר", `${gameOverMessage} | ניקוד ${score}`);
+  drawStateOverlay("׳”׳׳©׳—׳§ ׳ ׳’׳׳¨", `${gameOverMessage} | ׳ ׳™׳§׳•׳“ ${score}`);
 }
 
 function drawStateOverlay(title, subtitle) {
@@ -1739,6 +1905,22 @@ function setDirection(dir) {
 }
 
 function onKeyDown(event) {
+  if (runResultsPanel && !runResultsPanel.hidden) {
+    if (event.key === "Escape") {
+      setRunResultsOpen(false);
+      initGame();
+      setMenuOpen(true);
+    } else if (event.key === "Enter") {
+      if (pendingScoreEntry) {
+        setRunResultsOpen(false);
+        setRecordScoreOpen(true);
+      } else {
+        startFreshRun();
+      }
+    }
+    return;
+  }
+
   if (recordScorePanel && !recordScorePanel.hidden) {
     if (event.key === "Escape") {
       skipPendingScoreRecord();
@@ -1808,6 +1990,11 @@ function onKeyDown(event) {
       }
       if (recordScorePanel && !recordScorePanel.hidden) {
         skipPendingScoreRecord();
+      }
+      if (runResultsPanel && !runResultsPanel.hidden) {
+        setRunResultsOpen(false);
+        initGame();
+        setMenuOpen(true);
       }
       break;
     default:
@@ -1902,7 +2089,7 @@ function onGlobalGestureStart(event) {
 
 function setPlayingStatus() {
   const config = getDifficultyConfig();
-  statusEl.textContent = `משחק פעיל - ${config.label} - שלב ${level}`;
+  statusEl.textContent = `׳׳©׳—׳§ ׳₪׳¢׳™׳ - ${config.label} - ׳©׳׳‘ ${level}`;
 }
 
 function setTemporaryStatus(message, durationMs) {
@@ -1957,8 +2144,8 @@ function setAimingShot(isActive, nextTarget = null) {
   if (aimingShot && targetCursor) {
     setTemporaryStatus(
       targetCursor.kind === "enemy"
-        ? "כוונת נעולה על אויב. לחץ שוב או גע במטרה כדי לירות"
-        : "כוונת נעולה על מכשול. לחץ שוב או גע במטרה כדי לפוצץ",
+        ? "׳›׳•׳•׳ ׳× ׳ ׳¢׳•׳׳” ׳¢׳ ׳׳•׳™׳‘. ׳׳—׳¥ ׳©׳•׳‘ ׳׳• ׳’׳¢ ׳‘׳׳˜׳¨׳” ׳›׳“׳™ ׳׳™׳¨׳•׳×"
+        : "׳›׳•׳•׳ ׳× ׳ ׳¢׳•׳׳” ׳¢׳ ׳׳›׳©׳•׳. ׳׳—׳¥ ׳©׳•׳‘ ׳׳• ׳’׳¢ ׳‘׳׳˜׳¨׳” ׳›׳“׳™ ׳׳₪׳•׳¦׳¥",
       900
     );
   } else if (!aimingShot && running) {
@@ -2006,7 +2193,7 @@ function setDifficulty(nextDifficulty) {
   updateDifficultyButtons();
 
   initGame();
-  setTemporaryStatus(`רמת הקושי הוגדרה ל־${DIFFICULTY_PRESETS[difficulty].label}`, 1500);
+  setTemporaryStatus(`׳¨׳׳× ׳”׳§׳•׳©׳™ ׳”׳•׳’׳“׳¨׳” ׳ײ¾${DIFFICULTY_PRESETS[difficulty].label}`, 1500);
 }
 
 function updateDifficultyButtons() {
@@ -2019,13 +2206,15 @@ function updateDifficultyButtons() {
 }
 
 function setTheme(nextTheme) {
-  activeTheme = normalizeKey(nextTheme, BACKGROUND_THEMES, activeTheme);
+  const normalized = normalizeKey(nextTheme, BACKGROUND_THEMES, activeTheme);
+  activeTheme = isThemeUnlocked(normalized) ? normalized : getFirstUnlockedTheme();
   localStorage.setItem(STORAGE_KEYS.theme, activeTheme);
   updateCustomizationUI();
 }
 
 function setSnakeSkin(nextSkin) {
-  activeSkin = normalizeKey(nextSkin, SNAKE_SKINS, activeSkin);
+  const normalized = normalizeKey(nextSkin, SNAKE_SKINS, activeSkin);
+  activeSkin = isSkinUnlocked(normalized) ? normalized : getFirstUnlockedSkin();
   localStorage.setItem(STORAGE_KEYS.snakeSkin, activeSkin);
   updateCustomizationUI();
 }
@@ -2108,7 +2297,7 @@ function updateTouchControlSettingsUI() {
 function updateMiniHud() {
   if (miniScoreEl) miniScoreEl.textContent = String(score ?? 0);
   if (miniLevelEl) miniLevelEl.textContent = String(level ?? 1);
-  if (miniAbilityEl) miniAbilityEl.textContent = abilityLabelEl?.textContent || "אין בוסט";
+  if (miniAbilityEl) miniAbilityEl.textContent = abilityLabelEl?.textContent || "׳׳™׳ ׳‘׳•׳¡׳˜";
 }
 
 function updateTouchControlsVisibility() {
@@ -2125,7 +2314,7 @@ function updateTouchControlsVisibility() {
 function updatePlayLayoutState() {
   if (!appWrapEl) return;
   const overlayOpen =
-    !menuPanel?.hidden || !leaderboardPanel?.hidden || !recordScorePanel?.hidden || gadgetHelpOpen;
+    !menuPanel?.hidden || !leaderboardPanel?.hidden || !recordScorePanel?.hidden || !runResultsPanel?.hidden || gadgetHelpOpen;
   const isPlayFocused = started || gameOverAt > 0;
   const isBoardOnly = running && !overlayOpen;
   appWrapEl.classList.toggle("is-play-focused", isPlayFocused);
@@ -2149,6 +2338,7 @@ function saveSeenGadgetTips() {
 }
 
 function updateCustomizationUI() {
+  populateCustomizationSelects();
   if (playerNameInput) playerNameInput.value = playerName;
   if (profileNameInput) profileNameInput.value = playerName;
   if (recordPlayerNameInput) recordPlayerNameInput.value = playerName;
@@ -2173,23 +2363,23 @@ function updateCustomizationUI() {
   if (backgroundStatusEl) {
     if (boardBackgroundLoaded) {
       backgroundStatusEl.textContent = boardBackgroundSessionOnly
-        ? "תמונה פעילה לסשן הזה"
+        ? "׳×׳׳•׳ ׳” ׳₪׳¢׳™׳׳” ׳׳¡׳©׳ ׳”׳–׳”"
         : !boardBackgroundSource
-        ? "לוגו ברירת המחדל פעיל"
+        ? "׳׳•׳’׳• ׳‘׳¨׳™׳¨׳× ׳”׳׳—׳“׳ ׳₪׳¢׳™׳"
         : boardBackgroundSource.startsWith("data:")
-        ? "תמונה מהמכשיר פעילה"
-        : "תמונה מקישור פעילה";
+        ? "׳×׳׳•׳ ׳” ׳׳”׳׳›׳©׳™׳¨ ׳₪׳¢׳™׳׳”"
+        : "׳×׳׳•׳ ׳” ׳׳§׳™׳©׳•׳¨ ׳₪׳¢׳™׳׳”";
     } else if (boardBackgroundError) {
       backgroundStatusEl.textContent = boardBackgroundError;
     } else {
-      backgroundStatusEl.textContent = "רקע ברירת מחדל";
+      backgroundStatusEl.textContent = "׳¨׳§׳¢ ׳‘׳¨׳™׳¨׳× ׳׳—׳“׳";
     }
   }
 }
 
 function loadBoardBackground(source) {
   const resolvedSource = source || DEFAULT_BOARD_BACKGROUND;
-  boardBackgroundError = "טוען תמונה...";
+  boardBackgroundError = "׳˜׳•׳¢׳ ׳×׳׳•׳ ׳”...";
   boardBackgroundLoaded = false;
   boardBackgroundResolvedSource = resolvedSource;
   updateCustomizationUI();
@@ -2205,8 +2395,8 @@ function loadBoardBackground(source) {
     boardBackgroundLoaded = false;
     boardBackgroundImage = null;
     boardBackgroundError = resolvedSource === DEFAULT_BOARD_BACKGROUND
-      ? "טעינת רקע ברירת המחדל נכשלה"
-      : "טעינת התמונה נכשלה";
+      ? "׳˜׳¢׳™׳ ׳× ׳¨׳§׳¢ ׳‘׳¨׳™׳¨׳× ׳”׳׳—׳“׳ ׳ ׳›׳©׳׳”"
+      : "׳˜׳¢׳™׳ ׳× ׳”׳×׳׳•׳ ׳” ׳ ׳›׳©׳׳”";
     updateCustomizationUI();
   };
   image.src = resolvedSource;
@@ -2254,7 +2444,7 @@ function openGadgetHelp(type) {
 
   gadgetHelpPanel.hidden = false;
   updatePlayLayoutState();
-  statusEl.textContent = `הסבר על ${help.title}`;
+  statusEl.textContent = `׳”׳¡׳‘׳¨ ׳¢׳ ${help.title}`;
   updateActionButtons();
 }
 
@@ -2356,24 +2546,24 @@ function updateAbilityLabel() {
   if (!abilityLabelEl) return;
 
   if (playerPowerState.blasterCharges > 0) {
-    abilityLabelEl.textContent = `בלסטר x${playerPowerState.blasterCharges}`;
+    abilityLabelEl.textContent = `׳‘׳׳¡׳˜׳¨ x${playerPowerState.blasterCharges}`;
     updateMiniHud();
     return;
   }
 
   if (playerPowerState.shield > 0) {
-    abilityLabelEl.textContent = `מגן x${playerPowerState.shield}`;
+    abilityLabelEl.textContent = `׳׳’׳ x${playerPowerState.shield}`;
     updateMiniHud();
     return;
   }
 
   if (performance.now() < playerPowerState.slowUntil) {
-    abilityLabelEl.textContent = "שדה האטה";
+    abilityLabelEl.textContent = "׳©׳“׳” ׳”׳׳˜׳”";
     updateMiniHud();
     return;
   }
 
-  abilityLabelEl.textContent = activePickup ? `איסוף: ${formatPickupName(activePickup.type)}` : "אין בוסט";
+  abilityLabelEl.textContent = activePickup ? `׳׳™׳¡׳•׳£: ${formatPickupName(activePickup.type)}` : "׳׳™׳ ׳‘׳•׳¡׳˜";
   updateMiniHud();
 }
 
@@ -2398,27 +2588,27 @@ function updateActionButtons() {
   restartBtn.hidden = false;
 
   if (isIdle) {
-    startBtn.textContent = "התחל";
+    startBtn.textContent = "׳”׳×׳—׳";
     startBtn.disabled = gadgetHelpOpen;
     pauseBtn.hidden = true;
     restartBtn.hidden = true;
   } else if (running) {
     startBtn.hidden = true;
-    pauseBtn.textContent = "עצור";
+    pauseBtn.textContent = "׳¢׳¦׳•׳¨";
     pauseBtn.disabled = gadgetHelpOpen;
-    restartBtn.textContent = "ריצה חדשה";
+    restartBtn.textContent = "׳¨׳™׳¦׳” ׳—׳“׳©׳”";
     restartBtn.disabled = gadgetHelpOpen;
   } else if (isPaused) {
-    startBtn.textContent = "המשך";
+    startBtn.textContent = "׳”׳׳©׳";
     startBtn.disabled = gadgetHelpOpen;
     pauseBtn.hidden = true;
-    restartBtn.textContent = "ריצה חדשה";
+    restartBtn.textContent = "׳¨׳™׳¦׳” ׳—׳“׳©׳”";
     restartBtn.disabled = gadgetHelpOpen;
   } else if (isGameOver) {
-    startBtn.textContent = hasRecordableScore ? "תעד שיא" : "לתפריט";
+    startBtn.textContent = hasRecordableScore ? "׳×׳¢׳“ ׳©׳™׳" : "׳׳×׳₪׳¨׳™׳˜";
     startBtn.disabled = gadgetHelpOpen;
     pauseBtn.hidden = true;
-    restartBtn.textContent = "ריצה חדשה";
+    restartBtn.textContent = "׳¨׳™׳¦׳” ׳—׳“׳©׳”";
     restartBtn.disabled = gadgetHelpOpen;
   }
 
@@ -2436,26 +2626,26 @@ function updateActionButtons() {
   if (miniFireBtn) miniFireBtn.hidden = false;
 
   if (canFire) {
-    const actionText = aimingShot ? "שגר" : `כוון x${playerPowerState.blasterCharges}`;
+    const actionText = aimingShot ? "׳©׳’׳¨" : `׳›׳•׳•׳ x${playerPowerState.blasterCharges}`;
     fireBtn.textContent = actionText;
     touchFireBtn.textContent = actionText;
     if (miniFireBtn) {
-      miniFireBtn.textContent = aimingShot ? "◎" : "✦";
-      miniFireBtn.setAttribute("aria-label", aimingShot ? "שגר בלסטר" : "הפעל כוונת בלסטר");
+      miniFireBtn.textContent = aimingShot ? "ג—" : "ג¦";
+      miniFireBtn.setAttribute("aria-label", aimingShot ? "׳©׳’׳¨ ׳‘׳׳¡׳˜׳¨" : "׳”׳₪׳¢׳ ׳›׳•׳•׳ ׳× ׳‘׳׳¡׳˜׳¨");
     }
   } else {
-    touchFireBtn.textContent = "ירי";
-    touchFireBtn.setAttribute("aria-label", "ירי לא זמין");
+    touchFireBtn.textContent = "׳™׳¨׳™";
+    touchFireBtn.setAttribute("aria-label", "׳™׳¨׳™ ׳׳ ׳–׳׳™׳");
     if (miniFireBtn) {
-      miniFireBtn.textContent = "✦";
-      miniFireBtn.setAttribute("aria-label", "ירי לא זמין");
+      miniFireBtn.textContent = "ג¦";
+      miniFireBtn.setAttribute("aria-label", "׳™׳¨׳™ ׳׳ ׳–׳׳™׳");
     }
   }
 
   if (miniPauseBtn) {
     miniPauseBtn.disabled = !started || gameOverAt > 0 || gadgetHelpOpen;
-    miniPauseBtn.textContent = running ? "❚❚" : "▶";
-    miniPauseBtn.setAttribute("aria-label", running ? "השהה משחק" : "המשך משחק");
+    miniPauseBtn.textContent = running ? "גג" : "ג–¶";
+    miniPauseBtn.setAttribute("aria-label", running ? "׳”׳©׳”׳” ׳׳©׳—׳§" : "׳”׳׳©׳ ׳׳©׳—׳§");
   }
 }
 
@@ -2465,7 +2655,7 @@ function setTouchSettingsOpen(isOpen) {
   touchSettingsToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
   touchSettingsToggle.setAttribute(
     "aria-label",
-    isOpen ? "סגור הגדרות מגע" : "פתח הגדרות מגע"
+    isOpen ? "׳¡׳’׳•׳¨ ׳”׳’׳“׳¨׳•׳× ׳׳’׳¢" : "׳₪׳×׳— ׳”׳’׳“׳¨׳•׳× ׳׳’׳¢"
   );
 }
 
@@ -2489,6 +2679,7 @@ function fireWeapon() {
   }
 
   playerPowerState.blasterCharges -= 1;
+  currentRunStats.shots += 1;
   laserShot = {
     from: { ...head },
     to: { x: target.x, y: target.y },
@@ -2504,11 +2695,13 @@ function fireWeapon() {
   let pointsEarned = 1;
   if (target.kind === "enemy") {
     enemies.splice(target.index, 1);
+    currentRunStats.enemyKills += 1;
     pointsEarned = 2;
     addFloatingText("+2", target.x, target.y, "#d9b3ff");
   } else {
     obstacles.splice(target.index, 1);
-    addFloatingText("פיצוץ", target.x, target.y, "#9fd8ff");
+    currentRunStats.obstacleBreaks += 1;
+    addFloatingText("׳₪׳™׳¦׳•׳¥", target.x, target.y, "#9fd8ff");
   }
 
   score += pointsEarned;
@@ -2521,7 +2714,7 @@ function fireWeapon() {
 
   triggerBoardFlash("weapon");
   playSound("weapon");
-  setTemporaryStatus(target.kind === "enemy" ? "הבלסטר חיסל אויב" : "המכשול התפוצץ", 850);
+  setTemporaryStatus(target.kind === "enemy" ? "׳”׳‘׳׳¡׳˜׳¨ ׳—׳™׳¡׳ ׳׳•׳™׳‘" : "׳”׳׳›׳©׳•׳ ׳”׳×׳₪׳•׳¦׳¥", 850);
   setAimingShot(false);
   updateHazardsLabel();
   updateAbilityLabel();
@@ -2531,11 +2724,11 @@ function fireWeapon() {
 function formatPickupName(type) {
   switch (type) {
     case "shield":
-      return "מגן";
+      return "׳׳’׳";
     case "blaster":
-      return "בלסטר";
+      return "׳‘׳׳¡׳˜׳¨";
     case "slow":
-      return "האטה";
+      return "׳”׳׳˜׳”";
     default:
       return type;
   }
@@ -2560,10 +2753,501 @@ function normalizeKey(value, source, fallback) {
   return fallback;
 }
 
+function createDefaultProgressionProfile() {
+  return {
+    level: 1,
+    xp: 0,
+    totalRuns: 0,
+    totalScore: 0,
+    totalFruit: 0,
+    totalEnemyKills: 0,
+    totalObstacleBreaks: 0,
+    totalPickups: 0,
+    totalPortals: 0,
+    totalShots: 0,
+    totalPlaySeconds: 0,
+    bestLevel: 1,
+    achievements: {}
+  };
+}
+
+function loadProgressionProfile() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.progressionProfile);
+    if (!raw) return createDefaultProgressionProfile();
+    const parsed = JSON.parse(raw);
+    return {
+      ...createDefaultProgressionProfile(),
+      ...parsed,
+      achievements: parsed?.achievements && typeof parsed.achievements === "object" ? parsed.achievements : {}
+    };
+  } catch {
+    return createDefaultProgressionProfile();
+  }
+}
+
+function saveProgressionProfile() {
+  localStorage.setItem(STORAGE_KEYS.progressionProfile, JSON.stringify(progressionProfile));
+}
+
+function createEmptyRunStats() {
+  return {
+    startedAt: 0,
+    durationMs: 0,
+    fruits: 0,
+    enemyKills: 0,
+    obstacleBreaks: 0,
+    pickups: 0,
+    portals: 0,
+    shots: 0,
+    maxLevel: 1
+  };
+}
+
+function getLocalDayStamp() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function hashString(value) {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash * 31 + value.charCodeAt(i)) % 2147483647;
+  }
+  return Math.abs(hash);
+}
+
+function buildDailyChallenge(def, seed, index) {
+  const target = def.targets[(seed + index) % def.targets.length];
+  return {
+    id: def.id,
+    type: def.type,
+    title: def.title,
+    description: def.description(target),
+    target,
+    rewardXp: def.rewardXp,
+    progress: 0,
+    completed: false
+  };
+}
+
+function buildDailyChallengesForToday() {
+  const dateStamp = getLocalDayStamp();
+  const seed = hashString(dateStamp);
+  const pool = [...DAILY_CHALLENGE_DEFS];
+  const challenges = [];
+
+  for (let i = 0; i < 3 && pool.length > 0; i += 1) {
+    const pickIndex = (seed + i * 7) % pool.length;
+    const [def] = pool.splice(pickIndex, 1);
+    challenges.push(buildDailyChallenge(def, seed, i));
+  }
+
+  return { dateStamp, challenges };
+}
+
+function loadDailyChallenges() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.dailyChallenges);
+    const parsed = raw ? JSON.parse(raw) : null;
+    if (!parsed || parsed.dateStamp !== getLocalDayStamp() || !Array.isArray(parsed.challenges)) {
+      return buildDailyChallengesForToday();
+    }
+    return parsed;
+  } catch {
+    return buildDailyChallengesForToday();
+  }
+}
+
+function saveDailyChallenges() {
+  localStorage.setItem(STORAGE_KEYS.dailyChallenges, JSON.stringify(dailyChallenges));
+}
+
+function syncDailyChallenges() {
+  if (!dailyChallenges || dailyChallenges.dateStamp !== getLocalDayStamp()) {
+    dailyChallenges = buildDailyChallengesForToday();
+    saveDailyChallenges();
+  }
+}
+
+function getXpGoalForLevel(levelNumber) {
+  return 100 + (levelNumber - 1) * 55;
+}
+
+function addProfileXp(amount) {
+  let leveledUp = 0;
+  progressionProfile.xp += Math.max(0, amount);
+
+  while (progressionProfile.xp >= getXpGoalForLevel(progressionProfile.level)) {
+    progressionProfile.xp -= getXpGoalForLevel(progressionProfile.level);
+    progressionProfile.level += 1;
+    leveledUp += 1;
+  }
+
+  saveProgressionProfile();
+  return leveledUp;
+}
+
+function isThemeUnlocked(key) {
+  return progressionProfile.level >= (BACKGROUND_THEMES[key]?.unlockLevel || 1);
+}
+
+function isSkinUnlocked(key) {
+  return progressionProfile.level >= (SNAKE_SKINS[key]?.unlockLevel || 1);
+}
+
+function getUnlockedThemeKeys() {
+  return Object.keys(BACKGROUND_THEMES).filter(isThemeUnlocked);
+}
+
+function getUnlockedSkinKeys() {
+  return Object.keys(SNAKE_SKINS).filter(isSkinUnlocked);
+}
+
+function getFirstUnlockedTheme() {
+  return getUnlockedThemeKeys()[0] || "neon";
+}
+
+function getFirstUnlockedSkin() {
+  return getUnlockedSkinKeys()[0] || "classic";
+}
+
+function populateCustomizationSelects() {
+  if (themeSelect) {
+    const previous = activeTheme;
+    themeSelect.innerHTML = Object.entries(BACKGROUND_THEMES)
+      .map(([key, theme]) => {
+        const unlocked = isThemeUnlocked(key);
+        const suffix = unlocked ? "" : ` ג€¢ ׳¨׳׳” ${theme.unlockLevel}`;
+        return `<option value="${key}"${unlocked ? "" : " disabled"}>${escapeHtml(theme.label + suffix)}</option>`;
+      })
+      .join("");
+    if (!isThemeUnlocked(previous)) {
+      activeTheme = getFirstUnlockedTheme();
+      localStorage.setItem(STORAGE_KEYS.theme, activeTheme);
+    }
+    themeSelect.value = activeTheme;
+  }
+
+  if (snakeSkinSelect) {
+    const previous = activeSkin;
+    snakeSkinSelect.innerHTML = Object.entries(SNAKE_SKINS)
+      .map(([key, skin]) => {
+        const unlocked = isSkinUnlocked(key);
+        const suffix = unlocked ? "" : ` ג€¢ ׳¨׳׳” ${skin.unlockLevel}`;
+        return `<option value="${key}"${unlocked ? "" : " disabled"}>${escapeHtml(skin.label + suffix)}</option>`;
+      })
+      .join("");
+    if (!isSkinUnlocked(previous)) {
+      activeSkin = getFirstUnlockedSkin();
+      localStorage.setItem(STORAGE_KEYS.snakeSkin, activeSkin);
+    }
+    snakeSkinSelect.value = activeSkin;
+  }
+}
+
+function renderProgressionCard() {
+  if (!playerLevelBadgeEl || !playerXpFillEl) return;
+  const goal = getXpGoalForLevel(progressionProfile.level);
+  const percent = Math.max(0, Math.min(100, (progressionProfile.xp / goal) * 100));
+
+  playerLevelBadgeEl.textContent = `׳¨׳׳” ${progressionProfile.level}`;
+  playerXpLabelEl.textContent = `${progressionProfile.xp} / ${goal} XP`;
+  playerXpHintEl.textContent = `׳¢׳•׳“ ${Math.max(0, goal - progressionProfile.xp)} XP ׳׳¨׳׳” ׳”׳‘׳׳”`;
+  playerXpFillEl.style.width = `${percent}%`;
+  careerRunsValueEl.textContent = String(progressionProfile.totalRuns);
+  careerBestLevelValueEl.textContent = String(Math.max(1, progressionProfile.bestLevel));
+  careerKillsValueEl.textContent = String(progressionProfile.totalEnemyKills);
+  careerPickupsValueEl.textContent = String(progressionProfile.totalPickups);
+}
+
+function renderDailyChallenges() {
+  if (!dailyChallengeListEl || !dailyChallengeDateEl) return;
+  syncDailyChallenges();
+  dailyChallengeDateEl.textContent = dailyChallenges.dateStamp;
+  dailyChallengeListEl.innerHTML = dailyChallenges.challenges
+    .map((challenge) => {
+      const progress = Math.min(challenge.target, challenge.progress || 0);
+      const percent = Math.max(0, Math.min(100, (progress / challenge.target) * 100));
+      return `
+        <article class="challenge-card ${challenge.completed ? "completed" : ""}">
+          <div class="challenge-head">
+            <div>
+              <div class="challenge-title">${escapeHtml(challenge.title)}</div>
+              <div class="challenge-meta">${escapeHtml(challenge.description)}</div>
+            </div>
+            <span class="challenge-pill">+${challenge.rewardXp} XP</span>
+          </div>
+          <div class="challenge-progress" aria-hidden="true">
+            <div class="challenge-fill" style="width:${percent}%"></div>
+          </div>
+          <div class="challenge-meta">${progress} / ${challenge.target}${challenge.completed ? " ג€¢ ׳”׳•׳©׳׳" : ""}</div>
+        </article>`;
+    })
+    .join("");
+}
+
+function renderAchievements() {
+  if (!achievementGridEl || !achievementSummaryEl) return;
+  const unlockedCount = ACHIEVEMENT_DEFS.filter((achievement) => progressionProfile.achievements[achievement.id]).length;
+  achievementSummaryEl.textContent = `${unlockedCount} / ${ACHIEVEMENT_DEFS.length}`;
+  achievementGridEl.innerHTML = ACHIEVEMENT_DEFS.map((achievement) => {
+    const unlocked = Boolean(progressionProfile.achievements[achievement.id]);
+    return `
+      <article class="achievement-card ${unlocked ? "unlocked" : "locked"}">
+        <div class="achievement-head">
+          <div>
+            <div class="achievement-title">${escapeHtml(achievement.title)}</div>
+            <div class="achievement-meta">${escapeHtml(achievement.description)}</div>
+          </div>
+          <span class="achievement-pill">${unlocked ? "׳ ׳₪׳×׳—" : "׳ ׳¢׳•׳"}</span>
+        </div>
+      </article>`;
+  }).join("");
+}
+
+function hydrateProgressionStaticCopy() {
+  const progressSection = playerLevelBadgeEl?.closest(".menu-panel-block");
+  const progressLabels = progressSection?.querySelectorAll(".meta-stat small");
+  if (progressSection) {
+    const heading = progressSection.querySelector("h3");
+    if (heading) heading.textContent = "התקדמות";
+    progressSection.setAttribute("aria-label", "התקדמות שחקן");
+  }
+  if (progressLabels && progressLabels.length >= 4) {
+    progressLabels[0].textContent = "ריצות";
+    progressLabels[1].textContent = "שיא שלב";
+    progressLabels[2].textContent = "חיסולים";
+    progressLabels[3].textContent = "גאדג'טים";
+  }
+
+  const dailySection = dailyChallengeListEl?.closest(".menu-panel-block");
+  if (dailySection) {
+    const heading = dailySection.querySelector("h3");
+    if (heading) heading.textContent = "משימות היום";
+    dailySection.setAttribute("aria-label", "משימות יומיות");
+  }
+
+  const achievementSection = achievementGridEl?.closest(".menu-panel-block");
+  if (achievementSection) {
+    const heading = achievementSection.querySelector("h3");
+    if (heading) heading.textContent = "הישגים";
+    achievementSection.setAttribute("aria-label", "הישגים");
+  }
+
+  if (runResultsPanel) {
+    runResultsPanel.setAttribute("aria-label", "סיכום ריצה");
+  }
+  if (runResultsMenuBtn) runResultsMenuBtn.textContent = "לתפריט";
+  if (runResultsRecordBtn) runResultsRecordBtn.textContent = "תעד שיא";
+  if (runResultsRestartBtn) runResultsRestartBtn.textContent = "ריצה חדשה";
+
+  const resultsBlocks = runResultsPanel?.querySelectorAll(".results-block h3");
+  if (resultsBlocks && resultsBlocks.length >= 4) {
+    resultsBlocks[0].textContent = "הריצה שלך";
+    resultsBlocks[1].textContent = "פירוט ביצוע";
+    resultsBlocks[2].textContent = "התקדמות חדשה";
+    resultsBlocks[3].textContent = "משימות והישגים";
+  }
+  const resultStats = runResultsPanel?.querySelectorAll(".meta-stat small");
+  if (resultStats && resultStats.length >= 4) {
+    resultStats[0].textContent = "ניקוד";
+    resultStats[1].textContent = "שלב";
+    resultStats[2].textContent = "זמן";
+    resultStats[3].textContent = "XP";
+  }
+}
+
+function renderMetaProgressionUI() {
+  hydrateProgressionStaticCopy();
+  renderProgressionCard();
+  renderDailyChallenges();
+  renderAchievements();
+  populateCustomizationSelects();
+}
+
+function applyChallengeProgress(type, value, mode = "add") {
+  syncDailyChallenges();
+  const completed = [];
+
+  dailyChallenges.challenges.forEach((challenge) => {
+    if (challenge.type !== type || challenge.completed) return;
+
+    if (mode === "max") {
+      challenge.progress = Math.max(challenge.progress || 0, value);
+    } else {
+      challenge.progress = (challenge.progress || 0) + value;
+    }
+
+    if (challenge.progress >= challenge.target) {
+      challenge.progress = challenge.target;
+      challenge.completed = true;
+      completed.push(challenge);
+    }
+  });
+
+  if (completed.length > 0) {
+    saveDailyChallenges();
+  } else if (mode === "add" || mode === "max") {
+    saveDailyChallenges();
+  }
+
+  return completed;
+}
+
+function unlockAchievements() {
+  const unlocked = [];
+  ACHIEVEMENT_DEFS.forEach((achievement) => {
+    if (progressionProfile.achievements[achievement.id]) return;
+    if (!achievement.check(progressionProfile)) return;
+    progressionProfile.achievements[achievement.id] = new Date().toISOString();
+    unlocked.push(achievement);
+  });
+  if (unlocked.length > 0) saveProgressionProfile();
+  return unlocked;
+}
+
+function collectCosmeticUnlocks(previousLevel, currentLevel) {
+  const unlocks = [];
+
+  Object.entries(BACKGROUND_THEMES).forEach(([key, theme]) => {
+    if (theme.unlockLevel > previousLevel && theme.unlockLevel <= currentLevel) {
+      unlocks.push(`׳ ׳₪׳×׳— ׳¨׳§׳¢ ׳—׳“׳©: ${theme.label}`);
+    }
+  });
+
+  Object.entries(SNAKE_SKINS).forEach(([key, skin]) => {
+    if (skin.unlockLevel > previousLevel && skin.unlockLevel <= currentLevel) {
+      unlocks.push(`׳ ׳₪׳×׳— ׳¡׳§׳™׳ ׳—׳“׳©: ${skin.label}`);
+    }
+  });
+
+  return unlocks;
+}
+
+function formatDuration(ms) {
+  const totalSeconds = Math.max(0, Math.round(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = String(totalSeconds % 60).padStart(2, "0");
+  return `${minutes}:${seconds}`;
+}
+
+function renderRunResults() {
+  if (!lastRunResults || !runResultsSummaryEl) return;
+
+  runResultsTitleEl.textContent = lastRunResults.title;
+  runResultsLevelBadgeEl.textContent = `׳¨׳׳” ${progressionProfile.level}`;
+  runResultsSummaryEl.textContent = lastRunResults.summary;
+  runStatScoreEl.textContent = String(lastRunResults.score);
+  runStatLevelEl.textContent = String(lastRunResults.level);
+  runStatTimeEl.textContent = formatDuration(lastRunResults.durationMs);
+  runStatXpEl.textContent = `+${lastRunResults.xpEarned}`;
+
+  runBreakdownListEl.innerHTML = lastRunResults.breakdown
+    .map((item) => `<li>${escapeHtml(item)}</li>`)
+    .join("");
+  runUnlockListEl.innerHTML = lastRunResults.unlocks.length > 0
+    ? lastRunResults.unlocks.map((item) => `<li>${escapeHtml(item)}</li>`).join("")
+    : "<li>׳׳ ׳ ׳₪׳×׳—׳• ׳₪׳¨׳™׳˜׳™׳ ׳—׳“׳©׳™׳ ׳‘׳¨׳™׳¦׳” ׳”׳–׳׳×</li>";
+  runMilestoneListEl.innerHTML = lastRunResults.milestones.length > 0
+    ? lastRunResults.milestones.map((item) => `<li>${escapeHtml(item)}</li>`).join("")
+    : "<li>׳׳ ׳”׳•׳©׳׳׳• ׳”׳™׳©׳’׳™׳ ׳׳• ׳׳©׳™׳׳•׳× ׳—׳“׳©׳•׳×</li>";
+
+  if (runResultsRecordBtn) {
+    runResultsRecordBtn.hidden = !pendingScoreEntry;
+  }
+}
+
+function finalizeRunProgress(reason) {
+  currentRunStats.durationMs = currentRunStats.startedAt > 0 ? performance.now() - currentRunStats.startedAt : 0;
+  currentRunStats.maxLevel = Math.max(currentRunStats.maxLevel, level);
+
+  const previousLevel = progressionProfile.level;
+  progressionProfile.totalRuns += 1;
+  progressionProfile.totalScore += score;
+  progressionProfile.totalFruit += currentRunStats.fruits;
+  progressionProfile.totalEnemyKills += currentRunStats.enemyKills;
+  progressionProfile.totalObstacleBreaks += currentRunStats.obstacleBreaks;
+  progressionProfile.totalPickups += currentRunStats.pickups;
+  progressionProfile.totalPortals += currentRunStats.portals;
+  progressionProfile.totalShots += currentRunStats.shots;
+  progressionProfile.totalPlaySeconds += Math.round(currentRunStats.durationMs / 1000);
+  progressionProfile.bestLevel = Math.max(progressionProfile.bestLevel, currentRunStats.maxLevel);
+  saveProgressionProfile();
+
+  const dailyUnlocked = [
+    ...applyChallengeProgress("runs", 1),
+    ...applyChallengeProgress("maxScore", score, "max"),
+    ...applyChallengeProgress("pickups", currentRunStats.pickups),
+    ...applyChallengeProgress("enemyKills", currentRunStats.enemyKills),
+    ...applyChallengeProgress("portals", currentRunStats.portals)
+  ];
+
+  const xpEarned =
+    20 +
+    score * 8 +
+    currentRunStats.maxLevel * 10 +
+    currentRunStats.enemyKills * 12 +
+    currentRunStats.pickups * 8 +
+    currentRunStats.portals * 6 +
+    dailyUnlocked.reduce((sum, challenge) => sum + challenge.rewardXp, 0);
+
+  const levelsGained = addProfileXp(xpEarned);
+  const newAchievements = unlockAchievements();
+  const cosmeticUnlocks = collectCosmeticUnlocks(previousLevel, progressionProfile.level);
+
+  const milestones = [
+    ...dailyUnlocked.map((challenge) => `׳”׳•׳©׳׳׳” ׳׳©׳™׳׳”: ${challenge.title}`),
+    ...newAchievements.map((achievement) => `׳”׳™׳©׳’ ׳—׳“׳©: ${achievement.title}`)
+  ];
+
+  const unlocks = [];
+  if (levelsGained > 0) {
+    unlocks.push(`׳¢׳׳™׳× ${levelsGained > 1 ? `${levelsGained} ׳¨׳׳•׳×` : "׳¨׳׳”"} ׳׳₪׳¨׳•׳₪׳™׳`);
+  }
+  unlocks.push(...cosmeticUnlocks);
+
+  lastRunResults = {
+    title: score > 0 ? "׳¡׳™׳›׳•׳ ׳”׳¨׳™׳¦׳”" : "׳¨׳™׳¦׳” ׳”׳¡׳×׳™׳™׳׳”",
+    summary: `${reason} | ׳ ׳™׳§׳•׳“ ${score} | ׳©׳׳‘ ${level}`,
+    score,
+    level,
+    durationMs: currentRunStats.durationMs,
+    xpEarned,
+    breakdown: [
+      `׳₪׳™׳¨׳•׳× ׳©׳ ׳׳¡׳₪׳•: ${currentRunStats.fruits}`,
+      `׳׳•׳™׳‘׳™׳ ׳©׳—׳•׳¡׳׳•: ${currentRunStats.enemyKills}`,
+      `׳׳›׳©׳•׳׳™׳ ׳©׳₪׳•׳¦׳¦׳•: ${currentRunStats.obstacleBreaks}`,
+      `׳’׳׳“׳’'׳˜׳™׳ ׳©׳ ׳׳¡׳₪׳•: ${currentRunStats.pickups}`,
+      `׳׳¢׳‘׳¨׳™ ׳₪׳•׳¨׳˜׳: ${currentRunStats.portals}`
+    ],
+    unlocks,
+    milestones
+  };
+
+  renderMetaProgressionUI();
+  renderRunResults();
+}
+
+function setRunResultsOpen(isOpen) {
+  if (!runResultsPanel) return;
+  if (isOpen && menuPanel) menuPanel.hidden = true;
+  if (isOpen && leaderboardPanel) leaderboardPanel.hidden = true;
+  if (isOpen && recordScorePanel) recordScorePanel.hidden = true;
+  if (isOpen && gadgetHelpPanel) gadgetHelpPanel.hidden = true;
+  runResultsPanel.hidden = !isOpen;
+  if (isOpen) renderRunResults();
+  updatePlayLayoutState();
+  updateActionButtons();
+}
+
 function getIdleStatus() {
   return isTouchDevice
-    ? "לחץ על התחל, החליק על הלוח או השתמש בבקרים"
-    : "לחץ על התחל או על מקשי החצים";
+    ? "׳׳—׳¥ ׳¢׳ ׳”׳×׳—׳, ׳”׳—׳׳™׳§ ׳¢׳ ׳”׳׳•׳— ׳׳• ׳”׳©׳×׳׳© ׳‘׳‘׳§׳¨׳™׳"
+    : "׳׳—׳¥ ׳¢׳ ׳”׳×׳—׳ ׳׳• ׳¢׳ ׳׳§׳©׳™ ׳”׳—׳¦׳™׳";
 }
 
 function loadPersonalRecords() {
@@ -2628,7 +3312,7 @@ function renderLeaderboards() {
 
   const personalBest = personalRecords[0]?.score || 0;
   if (personalBestSummaryEl) {
-    personalBestSummaryEl.textContent = `${personalBest} נק'`;
+    personalBestSummaryEl.textContent = `${personalBest} ׳ ׳§'`;
   }
 
   if (communityStatusEl) {
@@ -2644,7 +3328,7 @@ function renderLeaderboardList(target, entries, includeMeta) {
   if (!target) return;
 
   if (!entries || entries.length === 0) {
-    target.innerHTML = "<li><span>עדיין אין שיאים</span><span>שחק ריצה אחת</span></li>";
+    target.innerHTML = "<li><span>׳¢׳“׳™׳™׳ ׳׳™׳ ׳©׳™׳׳™׳</span><span>׳©׳—׳§ ׳¨׳™׳¦׳” ׳׳—׳×</span></li>";
     return;
   }
 
@@ -2652,10 +3336,10 @@ function renderLeaderboardList(target, entries, includeMeta) {
     .slice(0, includeMeta ? MAX_PERSONAL_RECORDS : MAX_COMMUNITY_RECORDS)
     .map((entry) => {
       const rightLabel = includeMeta
-        ? `שלב ${entry.level} | ${entry.difficulty}`
-        : `${entry.score} נק'`;
+        ? `׳©׳׳‘ ${entry.level} | ${entry.difficulty}`
+        : `${entry.score} ׳ ׳§'`;
       const leftLabel = includeMeta
-        ? `${entry.score} נק'`
+        ? `${entry.score} ׳ ׳§'`
         : `${entry.player}`;
       const primary = includeMeta ? entry.player : leftLabel;
       return `<li><span>${escapeHtml(primary)}</span><span>${escapeHtml(includeMeta ? leftLabel + " | " + rightLabel : rightLabel)}</span></li>`;
@@ -2667,18 +3351,18 @@ async function loadCommunityLeaderboard() {
   if (!COMMUNITY_LEADERBOARD_ENDPOINT) {
     communityRecords = getOfflineCommunityRecords();
     communityStatus = {
-      mode: communityFallbackRecords.length > 0 ? "דמו מקומי" : "דמו לא מקוון",
+      mode: communityFallbackRecords.length > 0 ? "׳“׳׳• ׳׳§׳•׳׳™" : "׳“׳׳• ׳׳ ׳׳§׳•׳•׳",
       detail: communityFallbackRecords.length > 0
-        ? "השיאים המשותפים נשמרים כרגע בדמו המקומי של המכשיר"
-        : "כדי להפעיל לוח קהילתי אמיתי צריך לחבר צד שרת"
+        ? "׳”׳©׳™׳׳™׳ ׳”׳׳©׳•׳×׳₪׳™׳ ׳ ׳©׳׳¨׳™׳ ׳›׳¨׳’׳¢ ׳‘׳“׳׳• ׳”׳׳§׳•׳׳™ ׳©׳ ׳”׳׳›׳©׳™׳¨"
+        : "׳›׳“׳™ ׳׳”׳₪׳¢׳™׳ ׳׳•׳— ׳§׳”׳™׳׳×׳™ ׳׳׳™׳×׳™ ׳¦׳¨׳™׳ ׳׳—׳‘׳¨ ׳¦׳“ ׳©׳¨׳×"
     };
     renderLeaderboards();
     return;
   }
 
   communityStatus = {
-    mode: "מחובר",
-    detail: "טוען את הלוח הקהילתי..."
+    mode: "׳׳—׳•׳‘׳¨",
+    detail: "׳˜׳•׳¢׳ ׳׳× ׳”׳׳•׳— ׳”׳§׳”׳™׳׳×׳™..."
   };
   renderLeaderboards();
 
@@ -2698,16 +3382,16 @@ async function loadCommunityLeaderboard() {
       ? payload.slice(0, MAX_COMMUNITY_RECORDS)
       : getOfflineCommunityRecords();
     communityStatus = {
-      mode: "חי",
-      detail: "הלוח הקהילתי מחובר"
+      mode: "׳—׳™",
+      detail: "׳”׳׳•׳— ׳”׳§׳”׳™׳׳×׳™ ׳׳—׳•׳‘׳¨"
     };
   } catch {
     communityRecords = getOfflineCommunityRecords();
     communityStatus = {
-      mode: communityFallbackRecords.length > 0 ? "דמו מקומי" : "דמו לא מקוון",
+      mode: communityFallbackRecords.length > 0 ? "׳“׳׳• ׳׳§׳•׳׳™" : "׳“׳׳• ׳׳ ׳׳§׳•׳•׳",
       detail: communityFallbackRecords.length > 0
-        ? "השרת לא זמין, לכן מוצג כרגע הלוח המשותף המקומי"
-        : "הלוח הקהילתי חזר למצב גיבוי כי השרת לא זמין"
+        ? "׳”׳©׳¨׳× ׳׳ ׳–׳׳™׳, ׳׳›׳ ׳׳•׳¦׳’ ׳›׳¨׳’׳¢ ׳”׳׳•׳— ׳”׳׳©׳•׳×׳£ ׳”׳׳§׳•׳׳™"
+        : "׳”׳׳•׳— ׳”׳§׳”׳™׳׳×׳™ ׳—׳–׳¨ ׳׳׳¦׳‘ ׳’׳™׳‘׳•׳™ ׳›׳™ ׳”׳©׳¨׳× ׳׳ ׳–׳׳™׳"
     };
   }
 
@@ -2723,8 +3407,8 @@ async function submitCommunityScore(entry) {
     persistCommunityFallbackRecords();
     communityRecords = getOfflineCommunityRecords();
     communityStatus = {
-      mode: "דמו מקומי",
-      detail: "השיא נשמר בלוח הקהילה המקומי עד שיחובר שרת אמיתי"
+      mode: "׳“׳׳• ׳׳§׳•׳׳™",
+      detail: "׳”׳©׳™׳ ׳ ׳©׳׳¨ ׳‘׳׳•׳— ׳”׳§׳”׳™׳׳” ׳”׳׳§׳•׳׳™ ׳¢׳“ ׳©׳™׳—׳•׳‘׳¨ ׳©׳¨׳× ׳׳׳™׳×׳™"
     };
     renderLeaderboards();
     return;
@@ -2741,8 +3425,8 @@ async function submitCommunityScore(entry) {
     await loadCommunityLeaderboard();
   } catch {
     communityStatus = {
-      mode: "דמו מקומי",
-      detail: "שליחת השיא נכשלה, לכן הוא נשמר כרגע בלוח הקהילה המקומי"
+      mode: "׳“׳׳• ׳׳§׳•׳׳™",
+      detail: "׳©׳׳™׳—׳× ׳”׳©׳™׳ ׳ ׳›׳©׳׳”, ׳׳›׳ ׳”׳•׳ ׳ ׳©׳׳¨ ׳›׳¨׳’׳¢ ׳‘׳׳•׳— ׳”׳§׳”׳™׳׳” ׳”׳׳§׳•׳׳™"
     };
     communityFallbackRecords = sortScoreEntries(
       [entry, ...communityFallbackRecords],
@@ -2756,17 +3440,17 @@ async function submitCommunityScore(entry) {
 
 function getDemoCommunityRecords() {
   return [
-    { player: "רץ־בייט", score: 92, level: 14, difficulty: "קשה" },
-    { player: "שועל־גריד", score: 71, level: 11, difficulty: "בינוני" },
-    { player: "צלופח־לייזר", score: 58, level: 9, difficulty: "קשה" },
-    { player: "זנב־נובה", score: 43, level: 8, difficulty: "בינוני" },
-    { player: "טייס־ארקייד", score: 30, level: 6, difficulty: "קל" }
+    { player: "׳¨׳¥ײ¾׳‘׳™׳™׳˜", score: 92, level: 14, difficulty: "׳§׳©׳”" },
+    { player: "׳©׳•׳¢׳ײ¾׳’׳¨׳™׳“", score: 71, level: 11, difficulty: "׳‘׳™׳ ׳•׳ ׳™" },
+    { player: "׳¦׳׳•׳₪׳—ײ¾׳׳™׳™׳–׳¨", score: 58, level: 9, difficulty: "׳§׳©׳”" },
+    { player: "׳–׳ ׳‘ײ¾׳ ׳•׳‘׳”", score: 43, level: 8, difficulty: "׳‘׳™׳ ׳•׳ ׳™" },
+    { player: "׳˜׳™׳™׳¡ײ¾׳׳¨׳§׳™׳™׳“", score: 30, level: 6, difficulty: "׳§׳" }
   ];
 }
 
 function sanitizePlayerName(value) {
   const trimmed = (value || "").trim().slice(0, 14);
-  return trimmed || "שחקן";
+  return trimmed || "׳©׳—׳§׳";
 }
 
 function escapeHtml(value) {
@@ -2794,13 +3478,13 @@ function updateRecordScoreSummary() {
   if (!recordScoreSummaryEl) return;
 
   if (!pendingScoreEntry) {
-    recordScoreSummaryEl.textContent = "אין כרגע שיא זמין לתיעוד.";
+    recordScoreSummaryEl.textContent = "׳׳™׳ ׳›׳¨׳’׳¢ ׳©׳™׳ ׳–׳׳™׳ ׳׳×׳™׳¢׳•׳“.";
     return;
   }
 
   recordScoreSummaryEl.textContent =
-    `ניקוד ${pendingScoreEntry.score} | שלב ${pendingScoreEntry.level} | ` +
-    `קושי ${pendingScoreEntry.difficulty}. בחר איך לשמור את הריצה הזאת.`;
+    `׳ ׳™׳§׳•׳“ ${pendingScoreEntry.score} | ׳©׳׳‘ ${pendingScoreEntry.level} | ` +
+    `׳§׳•׳©׳™ ${pendingScoreEntry.difficulty}. ׳‘׳—׳¨ ׳׳™׳ ׳׳©׳׳•׳¨ ׳׳× ׳”׳¨׳™׳¦׳” ׳”׳–׳׳×.`;
 }
 
 function setRecordScoreOpen(isOpen) {
@@ -2809,6 +3493,7 @@ function setRecordScoreOpen(isOpen) {
   if (isOpen && menuPanel) menuPanel.hidden = true;
   if (isOpen && leaderboardPanel) leaderboardPanel.hidden = true;
   if (isOpen && gadgetHelpPanel) gadgetHelpPanel.hidden = true;
+  if (isOpen && runResultsPanel) runResultsPanel.hidden = true;
 
   recordScorePanel.hidden = !isOpen;
   if (isOpen) {
@@ -2849,17 +3534,19 @@ async function submitPendingScoreRecord() {
 
   pendingScoreEntry = null;
   setRecordScoreOpen(false);
+  setRunResultsOpen(false);
   initGame();
   setMenuOpen(true);
-  statusEl.textContent = "השיא נשמר. אפשר לבחור קושי ולהתחיל ריצה חדשה";
+  statusEl.textContent = "׳”׳©׳™׳ ׳ ׳©׳׳¨. ׳׳₪׳©׳¨ ׳׳‘׳—׳•׳¨ ׳§׳•׳©׳™ ׳•׳׳”׳×׳—׳™׳ ׳¨׳™׳¦׳” ׳—׳“׳©׳”";
 }
 
 function skipPendingScoreRecord() {
   pendingScoreEntry = null;
   setRecordScoreOpen(false);
+  setRunResultsOpen(false);
   initGame();
   setMenuOpen(true);
-  statusEl.textContent = "חזרת לתפריט הראשי";
+  statusEl.textContent = "׳—׳–׳¨׳× ׳׳×׳₪׳¨׳™׳˜ ׳”׳¨׳׳©׳™";
 }
 
 function setLeaderboardOpen(isOpen) {
@@ -2872,6 +3559,9 @@ function setLeaderboardOpen(isOpen) {
   }
   if (isOpen && recordScorePanel) {
     recordScorePanel.hidden = true;
+  }
+  if (isOpen && runResultsPanel) {
+    runResultsPanel.hidden = true;
   }
   leaderboardPanel.hidden = !isOpen;
   updatePlayLayoutState();
@@ -2887,6 +3577,9 @@ function setMenuOpen(isOpen) {
   }
   if (isOpen && recordScorePanel) {
     recordScorePanel.hidden = true;
+  }
+  if (isOpen && runResultsPanel) {
+    runResultsPanel.hidden = true;
   }
   menuPanel.hidden = !isOpen;
   updatePlayLayoutState();
@@ -3158,6 +3851,17 @@ if (recordScorePanel) {
   });
 }
 
+if (runResultsPanel) {
+  runResultsPanel.addEventListener("click", (event) => {
+    const target = event.target;
+    if (target instanceof Element && target.hasAttribute("data-close-overlay")) {
+      setRunResultsOpen(false);
+      initGame();
+      setMenuOpen(true);
+    }
+  });
+}
+
 if (closeRecordScoreBtn) {
   closeRecordScoreBtn.addEventListener("click", skipPendingScoreRecord);
 }
@@ -3169,6 +3873,34 @@ if (skipRecordBtn) {
 if (submitRecordBtn) {
   submitRecordBtn.addEventListener("click", () => {
     void submitPendingScoreRecord();
+  });
+}
+
+if (runResultsMenuBtn) {
+  runResultsMenuBtn.addEventListener("click", () => {
+    setRunResultsOpen(false);
+    initGame();
+    setMenuOpen(true);
+  });
+}
+
+if (runResultsRecordBtn) {
+  runResultsRecordBtn.addEventListener("click", () => {
+    if (!pendingScoreEntry) {
+      setRunResultsOpen(false);
+      initGame();
+      setMenuOpen(true);
+      return;
+    }
+    setRunResultsOpen(false);
+    setRecordScoreOpen(true);
+  });
+}
+
+if (runResultsRestartBtn) {
+  runResultsRestartBtn.addEventListener("click", () => {
+    setRunResultsOpen(false);
+    startFreshRun();
   });
 }
 
@@ -3233,7 +3965,7 @@ if (backgroundFileInput) {
     const file = backgroundFileInput.files?.[0];
     if (!file) return;
     if (file.size > 8_000_000) {
-      boardBackgroundError = "בחר תמונה עד 8MB";
+      boardBackgroundError = "׳‘׳—׳¨ ׳×׳׳•׳ ׳” ׳¢׳“ 8MB";
       updateCustomizationUI();
       backgroundFileInput.value = "";
       return;
@@ -3248,7 +3980,7 @@ if (backgroundFileInput) {
       backgroundFileInput.value = "";
     };
     reader.onerror = () => {
-      boardBackgroundError = "העלאת התמונה נכשלה";
+      boardBackgroundError = "׳”׳¢׳׳׳× ׳”׳×׳׳•׳ ׳” ׳ ׳›׳©׳׳”";
       updateCustomizationUI();
       backgroundFileInput.value = "";
     };
