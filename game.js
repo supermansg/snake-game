@@ -1,5 +1,16 @@
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
+const bodyEl = document.body;
+const homeScreenEl = document.getElementById("homeScreen");
+const homePrimaryBtn = document.getElementById("homePrimaryBtn");
+const homeContinueBtn = document.getElementById("homeContinueBtn");
+const homeSettingsBtn = document.getElementById("homeSettingsBtn");
+const homeProgressBtn = document.getElementById("homeProgressBtn");
+const homeAccountBtn = document.getElementById("homeAccountBtn");
+const homeHelperTextEl = document.getElementById("homeHelperText");
+const homeAccountBadgeEl = document.getElementById("homeAccountBadge");
+const homeStatusBadgeEl = document.getElementById("homeStatusBadge");
+const toastStackEl = document.getElementById("toastStack");
 const appWrapEl = document.querySelector(".wrap");
 const topbarEl = document.querySelector(".topbar");
 const hudEl = document.querySelector(".hud");
@@ -46,6 +57,7 @@ const themeSelect = document.getElementById("themeSelect");
 const snakeSkinSelect = document.getElementById("snakeSkinSelect");
 const soundToggle = document.getElementById("soundToggle");
 const gadgetTipsToggle = document.getElementById("gadgetTipsToggle");
+const reducedMotionToggle = document.getElementById("reducedMotionToggle");
 const backgroundUrlInput = document.getElementById("backgroundUrlInput");
 const applyBackgroundUrlBtn = document.getElementById("applyBackgroundUrlBtn");
 const backgroundFileInput = document.getElementById("backgroundFileInput");
@@ -99,8 +111,22 @@ const runMilestoneListEl = document.getElementById("runMilestoneList");
 const runResultsMenuBtn = document.getElementById("runResultsMenuBtn");
 const runResultsRecordBtn = document.getElementById("runResultsRecordBtn");
 const runResultsRestartBtn = document.getElementById("runResultsRestartBtn");
+const authPanel = document.getElementById("authPanel");
+const closeAuthBtn = document.getElementById("closeAuthBtn");
+const guestCloseAuthBtn = document.getElementById("guestCloseAuthBtn");
+const googleAuthBtn = document.getElementById("googleAuthBtn");
+const magicLinkForm = document.getElementById("magicLinkForm");
+const magicLinkEmailInput = document.getElementById("magicLinkEmailInput");
+const authStatusMessageEl = document.getElementById("authStatusMessage");
+const authSignOutBtn = document.getElementById("authSignOutBtn");
+const openAuthBtn = document.getElementById("openAuthBtn");
+const menuSignOutBtn = document.getElementById("menuSignOutBtn");
+const accountModeBadgeEl = document.getElementById("accountModeBadge");
+const accountStatusTextEl = document.getElementById("accountStatusText");
+const accountEmailTextEl = document.getElementById("accountEmailText");
 const touchButtons = document.querySelectorAll("[data-dir]");
 const isTouchDevice = window.matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
+const authService = window.SnakeMeServices?.auth || null;
 
 const GRID_SIZE = 21;
 const CELL = canvas.width / GRID_SIZE;
@@ -126,10 +152,11 @@ const STORAGE_KEYS = {
   gadgetTipsDisabled: "snake_gadget_tips_disabled",
   gadgetTipsSeen: "snake_gadget_tips_seen",
   progressionProfile: "snake_progression_profile",
-  dailyChallenges: "snake_daily_challenges"
+  dailyChallenges: "snake_daily_challenges",
+  reducedMotion: "snake_reduced_motion"
 };
 
-const DEFAULT_BOARD_BACKGROUND = "./defualt background.png";
+const DEFAULT_BOARD_BACKGROUND = "/assets/ui/default-board-bg.svg";
 
 const DIFFICULTY_PRESETS = {
   easy: {
@@ -531,6 +558,12 @@ let boardBackgroundSessionOnly = false;
 let audioMuted = localStorage.getItem(STORAGE_KEYS.audioMuted) === "1";
 let gadgetTipsDisabled = localStorage.getItem(STORAGE_KEYS.gadgetTipsDisabled) === "1";
 let seenGadgetTips = loadSeenGadgetTips();
+let reducedMotionEnabled = (() => {
+  const stored = localStorage.getItem(STORAGE_KEYS.reducedMotion);
+  if (stored === "1") return true;
+  if (stored === "0") return false;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+})();
 let audioContext = null;
 let gadgetHelpOpen = false;
 let gadgetHelpResumeAfterClose = false;
@@ -540,8 +573,173 @@ let progressionProfile = loadProgressionProfile();
 let dailyChallenges = loadDailyChallenges();
 let currentRunStats = createEmptyRunStats();
 let lastRunResults = null;
+let homeOpen = true;
+let authOpen = false;
+let resumeCountdown = null;
+let authSnapshot = authService?.getState?.() || {
+  status: "guest",
+  detail: "משחק אורח זמין תמיד",
+  user: null,
+  session: null
+};
 
 bestEl.textContent = String(bestScore);
+
+function getCanContinueRun() {
+  return started && gameOverAt === 0 && !running && !resumeCountdown;
+}
+
+function hasBlockingOverlayOpen() {
+  return Boolean(
+    homeOpen ||
+      authOpen ||
+      (menuPanel && !menuPanel.hidden) ||
+      (leaderboardPanel && !leaderboardPanel.hidden) ||
+      (recordScorePanel && !recordScorePanel.hidden) ||
+      (runResultsPanel && !runResultsPanel.hidden)
+  );
+}
+
+function applyThemeTokensToDocument() {
+  const theme = getThemeConfig();
+  if (!theme) return;
+
+  document.documentElement.style.setProperty("--theme-accent", theme.obstacleStroke);
+  document.documentElement.style.setProperty("--theme-accent-rgb", theme.gridRGB);
+  document.documentElement.style.setProperty("--theme-glow-rgb", theme.burstRGB);
+  document.documentElement.style.setProperty("--theme-surface-top", "rgba(18, 27, 45, 0.94)");
+  document.documentElement.style.setProperty("--theme-surface-bottom", "rgba(10, 15, 24, 0.92)");
+}
+
+function updateAuthUI() {
+  const isAuthed = authSnapshot.status === "authenticated" && authSnapshot.user;
+  const email = authSnapshot.user?.email || "לא מחובר כרגע";
+  const displayName =
+    authSnapshot.user?.user_metadata?.full_name ||
+    authSnapshot.user?.user_metadata?.name ||
+    authSnapshot.user?.email ||
+    "משחק אורח";
+
+  if (homeAccountBadgeEl) {
+    homeAccountBadgeEl.textContent = isAuthed ? "חשבון מחובר" : "משחק אורח";
+  }
+
+  if (homeStatusBadgeEl) {
+    homeStatusBadgeEl.textContent = getCanContinueRun() ? "אפשר להמשיך ריצה" : "מוכן לריצה חדשה";
+  }
+
+  if (homeHelperTextEl) {
+    homeHelperTextEl.textContent = isAuthed
+      ? `מחובר בתור ${displayName}. המשחק נשאר מהיר, והחשבון כבר מוכן לשמירה וסנכרון עתידיים.`
+      : "שחק כאורח מיד או התחבר כדי להכין את הקרקע לשמירה, סנכרון והתקדמות עתידית.";
+  }
+
+  if (accountModeBadgeEl) accountModeBadgeEl.textContent = isAuthed ? "מחובר" : "אורח";
+  if (accountStatusTextEl) accountStatusTextEl.textContent = authSnapshot.detail || "משחק אורח זמין תמיד";
+  if (accountEmailTextEl) accountEmailTextEl.textContent = email;
+  if (authStatusMessageEl) {
+    authStatusMessageEl.textContent = isAuthed
+      ? `מחובר בתור ${displayName}. אפשר להמשיך לשחק בלי לעצור את הזרימה.`
+      : authSnapshot.detail || "שחק כאורח מיד, או התחבר כדי להכין פרופיל עתידי.";
+  }
+
+  if (menuSignOutBtn) menuSignOutBtn.hidden = !isAuthed;
+  if (authSignOutBtn) authSignOutBtn.hidden = !isAuthed;
+  if (openAuthBtn) openAuthBtn.textContent = isAuthed ? "נהל התחברות" : "פתח מסך התחברות";
+  if (homeAccountBtn) homeAccountBtn.textContent = isAuthed ? "חשבון מחובר" : "חשבון והתחברות";
+}
+
+function setHomeOpen(isOpen) {
+  homeOpen = Boolean(isOpen);
+  if (homeScreenEl) homeScreenEl.hidden = !homeOpen;
+  bodyEl?.classList.toggle("home-open", homeOpen);
+  updateAuthUI();
+  updatePlayLayoutState();
+  updateActionButtons();
+}
+
+function setAuthOpen(isOpen) {
+  authOpen = Boolean(isOpen);
+  if (authPanel) authPanel.hidden = !authOpen;
+  if (authOpen && homeOpen) {
+    setHomeOpen(false);
+  }
+  if (authOpen && menuPanel) menuPanel.hidden = true;
+  if (authOpen && leaderboardPanel) leaderboardPanel.hidden = true;
+  if (authOpen && runResultsPanel) runResultsPanel.hidden = true;
+  updatePlayLayoutState();
+  updateActionButtons();
+}
+
+function beginResumeCountdown() {
+  if (resumeCountdown || running || !started || gameOverAt > 0) return;
+
+  clearStatusTimer();
+  resumeCountdown = {
+    startedAt: performance.now(),
+    totalMs: 3000
+  };
+  statusEl.textContent = "חוזרים למשחק בעוד 3";
+  updateActionButtons();
+}
+
+function maybeCompleteResumeCountdown(nowMs) {
+  if (!resumeCountdown) return;
+
+  const elapsed = nowMs - resumeCountdown.startedAt;
+  if (elapsed < resumeCountdown.totalMs) return;
+
+  resumeCountdown = null;
+  running = true;
+  setPlayingStatus();
+  runLoop();
+  updatePlayLayoutState();
+  updateActionButtons();
+}
+
+function getResumeCountdownValue(nowMs) {
+  if (!resumeCountdown) return null;
+  const remaining = Math.max(0, resumeCountdown.totalMs - (nowMs - resumeCountdown.startedAt));
+  return Math.max(1, Math.ceil(remaining / 1000));
+}
+
+function drawResumeCountdown(nowMs) {
+  const countdownValue = getResumeCountdownValue(nowMs);
+  if (!countdownValue) return;
+
+  ctx.save();
+  ctx.fillStyle = "rgba(7, 11, 20, 0.66)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  drawStateOverlay(`חוזרים בעוד ${countdownValue}`, "קח רגע קצר להתמקם לפני שהמשחק ממשיך");
+  ctx.restore();
+}
+
+async function handleGoogleAuth() {
+  if (!authService) return;
+  await authService.signInWithGoogle();
+}
+
+async function handleMagicLinkSubmit(event) {
+  event.preventDefault();
+  if (!authService || !magicLinkEmailInput) return;
+
+  const email = magicLinkEmailInput.value.trim();
+  if (!email) {
+    authSnapshot = {
+      ...authSnapshot,
+      detail: "יש להזין מייל תקין כדי לשלוח קישור"
+    };
+    updateAuthUI();
+    return;
+  }
+
+  await authService.signInWithMagicLink(email);
+}
+
+async function handleSignOut() {
+  if (!authService) return;
+  await authService.signOut();
+}
 
 function initGame() {
   const config = getDifficultyConfig();
@@ -588,6 +786,7 @@ function initGame() {
   pendingScoreEntry = null;
   currentRunStats = createEmptyRunStats();
   lastRunResults = null;
+  resumeCountdown = null;
   if (runResultsPanel) runResultsPanel.hidden = true;
 
   clearStatusTimer();
@@ -616,12 +815,18 @@ function initGame() {
 }
 
 function startGame() {
-  if (running) return;
+  if (running || resumeCountdown) return;
 
   if (gameOverAt > 0) {
     initGame();
   }
 
+  if (started && !running && gameOverAt === 0) {
+    beginResumeCountdown();
+    return;
+  }
+
+  if (homeOpen) setHomeOpen(false);
   if (!started) started = true;
   if (!currentRunStats.startedAt) currentRunStats.startedAt = performance.now();
 
@@ -636,6 +841,7 @@ function startGame() {
 
 function startFreshRun() {
   initGame();
+  setHomeOpen(false);
   startGame();
 }
 
@@ -658,9 +864,10 @@ function handleRestartButtonClick() {
 }
 
 function pauseGame() {
-  if (!running) return;
+  if (!running && !resumeCountdown) return;
 
   running = false;
+  resumeCountdown = null;
   stopLoop();
   clearStatusTimer();
   statusEl.textContent = "המשחק מושהה";
@@ -1017,10 +1224,11 @@ function updateLevel() {
     subtitle: "כמות האיומים עלתה",
     color: "rgba(120, 174, 255, 0.92)",
     start: performance.now(),
-    duration: 1500
+    duration: reducedMotionEnabled ? 1000 : 1500
   };
   triggerBoardFlash("level");
   setTemporaryStatus(`שלב ${level}! כמות האיומים עלתה`, 1200);
+  pushToast(`שלב ${level}`, "קצב הריצה עולה", "accent");
 }
 
 function applyLevelDifficulty(currentLevel) {
@@ -1126,16 +1334,19 @@ function collectPickup(pickup) {
       playerPowerState.shield += 1;
       setTemporaryStatus("מגן מוכן", 1100);
       addFloatingText("מגן", pickup.x, pickup.y, "#7de3ff");
+      pushToast("מגן נאסף", "פגיעה אחת תיבלם בריצה", "success");
       break;
     case "blaster":
       playerPowerState.blasterCharges += 2;
       setTemporaryStatus("2+ מטעני בלסטר", 1100);
       addFloatingText("בלסטר", pickup.x, pickup.y, "#cfa8ff");
+      pushToast("בלסטר פעיל", "+2 מטענים לירי", "accent");
       break;
     case "slow":
       playerPowerState.slowUntil = performance.now() + 7000;
       setTemporaryStatus("שדה האטה פעיל", 1100);
       addFloatingText("האטה", pickup.x, pickup.y, "#9ff3c8");
+      pushToast("שדה האטה", "האויבים יזוזו לאט יותר", "success");
       break;
     default:
       break;
@@ -1181,6 +1392,7 @@ function getCurrentSpeedMs() {
 }
 
 function draw(nowMs) {
+  maybeCompleteResumeCountdown(nowMs);
   const t = nowMs * 0.001;
   const shake = getBoardShakeOffset(nowMs);
 
@@ -1205,6 +1417,8 @@ function draw(nowMs) {
 
   if (gameOverAt > 0) {
     drawGameOverOverlay(nowMs);
+  } else if (resumeCountdown) {
+    drawResumeCountdown(nowMs);
   } else if (!started) {
     drawStateOverlay("מוכן לשחק", "לחץ על התחל, החליק על הלוח או השתמש במקשי החצים");
   } else if (!running) {
@@ -1216,7 +1430,7 @@ function draw(nowMs) {
 
 function drawBackground(t) {
   const theme = getThemeConfig();
-  const wobble = Math.sin(t * 1.35) * 18;
+  const wobble = reducedMotionEnabled ? 0 : Math.sin(t * 1.35) * 18;
   const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height + wobble);
   grad.addColorStop(0, theme.boardTop);
   grad.addColorStop(0.55, theme.boardMid);
@@ -1293,7 +1507,7 @@ function drawBoardFlash(nowMs) {
 
 function drawGrid(t) {
   const theme = getThemeConfig();
-  const alpha = 0.22 + Math.sin(t * 2.2) * 0.06;
+  const alpha = reducedMotionEnabled ? 0.2 : 0.22 + Math.sin(t * 2.2) * 0.06;
   ctx.strokeStyle = `rgba(${theme.gridRGB}, ${alpha})`;
   ctx.lineWidth = 1;
 
@@ -1322,7 +1536,7 @@ function drawPortals(t) {
   activePortals.forEach((portal, index) => {
     const cx = (portal.x + 0.5) * CELL;
     const cy = (portal.y + 0.5) * CELL;
-    const pulse = 1 + Math.sin(t * 5 + portal.phase) * 0.08;
+    const pulse = reducedMotionEnabled ? 1 : 1 + Math.sin(t * 5 + portal.phase) * 0.08;
     const outer = CELL * 0.46 * pulse;
     const inner = CELL * 0.2;
     const color = index === 0 ? "rgba(116, 173, 255, 0.95)" : "rgba(190, 118, 255, 0.95)";
@@ -1348,7 +1562,7 @@ function drawPortals(t) {
 
 function drawFood(t) {
   const theme = getThemeConfig();
-  const pulse = 1 + Math.sin(t * 9) * 0.14;
+  const pulse = reducedMotionEnabled ? 1 : 1 + Math.sin(t * 9) * 0.14;
   const cx = (food.x + 0.5) * CELL;
   const cy = (food.y + 0.5) * CELL;
 
@@ -1358,7 +1572,6 @@ function drawFood(t) {
   ctx.fill();
 
   const size = CELL - 8;
-  const x = food.x * CELL + 4;
   const y = food.y * CELL + 4;
   const core = ctx.createRadialGradient(
     cx - 2,
@@ -1394,7 +1607,7 @@ function drawPickup(t) {
 
   const cx = (activePickup.x + 0.5) * CELL;
   const cy = (activePickup.y + 0.5) * CELL;
-  const pulse = 1 + Math.sin(t * 6 + activePickup.phase) * 0.14;
+  const pulse = reducedMotionEnabled ? 1 : 1 + Math.sin(t * 6 + activePickup.phase) * 0.14;
   const style = PICKUP_STYLES[activePickup.type];
   ctx.fillStyle = style.glow;
   ctx.beginPath();
@@ -1596,7 +1809,7 @@ function drawObstacles(t) {
 
   for (let i = 0; i < obstacles.length; i += 1) {
     const obstacle = obstacles[i];
-    const glow = 0.24 + (Math.sin(t * 3.7 + obstacle.phase) + 1) * 0.13;
+      const glow = reducedMotionEnabled ? 0.28 : 0.24 + (Math.sin(t * 3.7 + obstacle.phase) + 1) * 0.13;
     const x = obstacle.x * CELL + 2;
     const y = obstacle.y * CELL + 2;
     const size = CELL - 4;
@@ -1630,7 +1843,7 @@ function drawEnemies(t) {
     const enemy = enemies[i];
     const cx = (enemy.x + 0.5) * CELL;
     const cy = (enemy.y + 0.5) * CELL;
-    const pulse = 1 + Math.sin(t * 7 + enemy.phase) * 0.1;
+    const pulse = reducedMotionEnabled ? 1 : 1 + Math.sin(t * 7 + enemy.phase) * 0.1;
 
     ctx.save();
     ctx.translate(cx, cy);
@@ -1895,6 +2108,7 @@ function setDirection(dir) {
   nextDirection = candidate;
 
   if (!started) {
+    setHomeOpen(false);
     startGame();
     return;
   }
@@ -1926,6 +2140,27 @@ function onKeyDown(event) {
       skipPendingScoreRecord();
     } else if (event.key === "Enter") {
       void submitPendingScoreRecord();
+    }
+    return;
+  }
+
+  if (authPanel && !authPanel.hidden) {
+    if (event.key === "Escape") {
+      setAuthOpen(false);
+    }
+    return;
+  }
+
+  if (menuPanel && !menuPanel.hidden) {
+    if (event.key === "Escape") {
+      setMenuOpen(false);
+    }
+    return;
+  }
+
+  if (leaderboardPanel && !leaderboardPanel.hidden) {
+    if (event.key === "Escape") {
+      setLeaderboardOpen(false);
     }
     return;
   }
@@ -1968,10 +2203,7 @@ function onKeyDown(event) {
         closeGadgetHelp();
         break;
       }
-      if (!running && started) {
-        initGame();
-        startGame();
-      }
+      handlePrimaryButtonClick();
       break;
     case "f":
     case "F":
@@ -2019,7 +2251,7 @@ function onCanvasPointerDown(event) {
   if (canvas.setPointerCapture) {
     try {
       canvas.setPointerCapture(event.pointerId);
-    } catch (error) {
+    } catch {
       // Ignore unsupported pointer capture scenarios.
     }
   }
@@ -2107,6 +2339,52 @@ function setTemporaryStatus(message, durationMs) {
       statusEl.textContent = getIdleStatus();
     }
   }, durationMs);
+}
+
+function flashElement(element, className, durationMs) {
+  if (!element) return;
+  element.classList.remove(className);
+  void element.offsetWidth;
+  element.classList.add(className);
+  window.setTimeout(() => {
+    element.classList.remove(className);
+  }, durationMs);
+}
+
+function pulseProgressionUI() {
+  const progressCard = playerLevelBadgeEl?.closest(".menu-panel-block");
+  const pulseDuration = reducedMotionEnabled ? 220 : 900;
+  flashElement(progressCard, "is-highlighted", pulseDuration);
+  flashElement(playerLevelBadgeEl, "is-highlighted", pulseDuration);
+}
+
+function pushToast(title, detail = "", tone = "accent") {
+  if (!toastStackEl || !title) return;
+
+  const toast = document.createElement("article");
+  toast.className = `game-toast game-toast--${tone}`;
+  toast.setAttribute("role", "status");
+  toast.innerHTML = `
+    <p class="game-toast__title">${escapeHtml(title)}</p>
+    ${detail ? `<p class="game-toast__detail">${escapeHtml(detail)}</p>` : ""}
+  `;
+
+  toastStackEl.appendChild(toast);
+  while (toastStackEl.children.length > 3) {
+    toastStackEl.removeChild(toastStackEl.firstElementChild);
+  }
+
+  requestAnimationFrame(() => {
+    toast.classList.add("is-visible");
+  });
+
+  const visibleMs = reducedMotionEnabled ? 1800 : 2800;
+  window.setTimeout(() => {
+    toast.classList.remove("is-visible");
+    window.setTimeout(() => {
+      toast.remove();
+    }, reducedMotionEnabled ? 0 : 180);
+  }, visibleMs);
 }
 
 function getWeaponTargets() {
@@ -2209,6 +2487,7 @@ function setTheme(nextTheme) {
   const normalized = normalizeKey(nextTheme, BACKGROUND_THEMES, activeTheme);
   activeTheme = isThemeUnlocked(normalized) ? normalized : getFirstUnlockedTheme();
   localStorage.setItem(STORAGE_KEYS.theme, activeTheme);
+  applyThemeTokensToDocument();
   updateCustomizationUI();
 }
 
@@ -2216,6 +2495,7 @@ function setSnakeSkin(nextSkin) {
   const normalized = normalizeKey(nextSkin, SNAKE_SKINS, activeSkin);
   activeSkin = isSkinUnlocked(normalized) ? normalized : getFirstUnlockedSkin();
   localStorage.setItem(STORAGE_KEYS.snakeSkin, activeSkin);
+  applyThemeTokensToDocument();
   updateCustomizationUI();
 }
 
@@ -2240,6 +2520,12 @@ function setAudioMuted(isMuted) {
 function setGadgetTipsDisabled(isDisabled) {
   gadgetTipsDisabled = Boolean(isDisabled);
   localStorage.setItem(STORAGE_KEYS.gadgetTipsDisabled, gadgetTipsDisabled ? "1" : "0");
+  updateCustomizationUI();
+}
+
+function setReducedMotionEnabled(isEnabled) {
+  reducedMotionEnabled = Boolean(isEnabled);
+  localStorage.setItem(STORAGE_KEYS.reducedMotion, reducedMotionEnabled ? "1" : "0");
   updateCustomizationUI();
 }
 
@@ -2307,15 +2593,21 @@ function updateTouchControlsVisibility() {
     return;
   }
 
-  const shouldShow = started && gameOverAt === 0;
+  const shouldShow = started && gameOverAt === 0 && !homeOpen && !authOpen;
   touchControlsEl.hidden = !shouldShow;
 }
 
 function updatePlayLayoutState() {
   if (!appWrapEl) return;
   const overlayOpen =
-    !menuPanel?.hidden || !leaderboardPanel?.hidden || !recordScorePanel?.hidden || !runResultsPanel?.hidden || gadgetHelpOpen;
-  const isPlayFocused = started || gameOverAt > 0;
+    !menuPanel?.hidden ||
+    !leaderboardPanel?.hidden ||
+    !recordScorePanel?.hidden ||
+    !runResultsPanel?.hidden ||
+    !authPanel?.hidden ||
+    gadgetHelpOpen ||
+    homeOpen;
+  const isPlayFocused = !homeOpen && (started || gameOverAt > 0 || authOpen);
   const isBoardOnly = running && !overlayOpen;
   appWrapEl.classList.toggle("is-play-focused", isPlayFocused);
   appWrapEl.classList.toggle("is-board-only", isBoardOnly);
@@ -2346,6 +2638,7 @@ function updateCustomizationUI() {
   if (snakeSkinSelect) snakeSkinSelect.value = activeSkin;
   if (soundToggle) soundToggle.checked = !audioMuted;
   if (gadgetTipsToggle) gadgetTipsToggle.checked = !gadgetTipsDisabled;
+  if (reducedMotionToggle) reducedMotionToggle.checked = reducedMotionEnabled;
 
   if (backgroundUrlInput && boardBackgroundSource.startsWith("http")) {
     backgroundUrlInput.value = boardBackgroundSource;
@@ -2365,7 +2658,7 @@ function updateCustomizationUI() {
       backgroundStatusEl.textContent = boardBackgroundSessionOnly
         ? "תמונה פעילה לסשן הזה"
         : !boardBackgroundSource
-        ? "לוגו ברירת המחדל פעיל"
+        ? "רקע ברירת המחדל פעיל"
         : boardBackgroundSource.startsWith("data:")
         ? "תמונה מהמכשיר פעילה"
         : "תמונה מקישור פעילה";
@@ -2375,6 +2668,7 @@ function updateCustomizationUI() {
       backgroundStatusEl.textContent = "רקע ברירת מחדל";
     }
   }
+  updateAuthUI();
 }
 
 function loadBoardBackground(source) {
@@ -2459,9 +2753,7 @@ function closeGadgetHelp() {
   if (gadgetHelpPanel) gadgetHelpPanel.hidden = true;
 
   if (gadgetHelpResumeAfterClose && started && gameOverAt === 0) {
-    running = true;
-    setPlayingStatus();
-    runLoop();
+    beginResumeCountdown();
   } else if (!started) {
     statusEl.textContent = getIdleStatus();
   }
@@ -2568,10 +2860,19 @@ function updateAbilityLabel() {
 }
 
 function updateActionButtons() {
+  const controlsBlocked = hasBlockingOverlayOpen();
   const hasWeaponTargets = getWeaponTargets().length > 0;
-  const canFire = playerPowerState.blasterCharges > 0 && hasWeaponTargets && started && gameOverAt === 0 && !gadgetHelpOpen;
+  const canFire =
+    playerPowerState.blasterCharges > 0 &&
+    hasWeaponTargets &&
+    started &&
+    gameOverAt === 0 &&
+    !gadgetHelpOpen &&
+    !resumeCountdown &&
+    !controlsBlocked;
   const isIdle = !started && gameOverAt === 0;
-  const isPaused = started && !running && gameOverAt === 0;
+  const isPaused = started && !running && gameOverAt === 0 && !resumeCountdown;
+  const isCountingDown = Boolean(resumeCountdown);
   const isGameOver = gameOverAt > 0;
   const hasRecordableScore = Boolean(pendingScoreEntry);
 
@@ -2588,52 +2889,62 @@ function updateActionButtons() {
   restartBtn.hidden = false;
 
   if (isIdle) {
-    startBtn.textContent = "התחל";
+    startBtn.textContent = homeOpen ? "התחל משחק" : "התחל";
     startBtn.disabled = gadgetHelpOpen;
     pauseBtn.hidden = true;
     restartBtn.hidden = true;
   } else if (running) {
-    startBtn.hidden = true;
+    startBtn.hidden = controlsBlocked;
     pauseBtn.textContent = "עצור";
-    pauseBtn.disabled = gadgetHelpOpen;
+    pauseBtn.disabled = gadgetHelpOpen || controlsBlocked;
     restartBtn.textContent = "ריצה חדשה";
-    restartBtn.disabled = gadgetHelpOpen;
+    restartBtn.disabled = gadgetHelpOpen || controlsBlocked;
+  } else if (isCountingDown) {
+    startBtn.textContent = `חוזרים ${getResumeCountdownValue(performance.now()) ?? 3}`;
+    startBtn.disabled = true;
+    pauseBtn.hidden = true;
+    restartBtn.textContent = "ריצה חדשה";
+    restartBtn.disabled = gadgetHelpOpen || controlsBlocked;
   } else if (isPaused) {
     startBtn.textContent = "המשך";
-    startBtn.disabled = gadgetHelpOpen;
+    startBtn.disabled = gadgetHelpOpen || controlsBlocked;
     pauseBtn.hidden = true;
     restartBtn.textContent = "ריצה חדשה";
-    restartBtn.disabled = gadgetHelpOpen;
+    restartBtn.disabled = gadgetHelpOpen || controlsBlocked;
   } else if (isGameOver) {
     startBtn.textContent = hasRecordableScore ? "תעד שיא" : "לתפריט";
-    startBtn.disabled = gadgetHelpOpen;
+    startBtn.disabled = gadgetHelpOpen || controlsBlocked;
     pauseBtn.hidden = true;
     restartBtn.textContent = "ריצה חדשה";
-    restartBtn.disabled = gadgetHelpOpen;
+    restartBtn.disabled = gadgetHelpOpen || controlsBlocked;
   }
 
   const visibleButtons = [startBtn, pauseBtn, restartBtn].filter((button) => !button.hidden).length;
   if (controlsEl) {
-    controlsEl.dataset.hasAction = canFire ? "true" : "false";
-    controlsEl.style.setProperty("--control-cols", String(Math.max(visibleButtons + (canFire ? 1 : 0), 1)));
+    controlsEl.dataset.hasAction = "true";
+    controlsEl.style.setProperty("--control-cols", String(Math.max(visibleButtons + 1, 1)));
   }
 
   fireBtn.disabled = !canFire;
   touchFireBtn.disabled = !canFire;
   if (miniFireBtn) miniFireBtn.disabled = !canFire;
-  fireBtn.hidden = !canFire;
+  fireBtn.hidden = false;
   touchFireBtn.hidden = false;
   if (miniFireBtn) miniFireBtn.hidden = false;
+  fireBtn.textContent = isTouchDevice ? "ירי" : "ירי / F";
+  touchFireBtn.textContent = "ירי";
+  touchFireBtn.setAttribute("aria-label", "ירי לא זמין");
 
   if (canFire) {
-    const actionText = aimingShot ? "שגר" : `כוון x${playerPowerState.blasterCharges}`;
-    fireBtn.textContent = actionText;
-    touchFireBtn.textContent = actionText;
+    fireBtn.textContent = aimingShot ? "שגר" : `ירי x${playerPowerState.blasterCharges}`;
+    touchFireBtn.textContent = aimingShot ? "שגר" : `ירי x${playerPowerState.blasterCharges}`;
+    touchFireBtn.setAttribute("aria-label", aimingShot ? "שגר בלסטר" : "ירי עם בלסטר");
     if (miniFireBtn) {
       miniFireBtn.textContent = aimingShot ? "◎" : "✦";
-      miniFireBtn.setAttribute("aria-label", aimingShot ? "שגר בלסטר" : "הפעל כוונת בלסטר");
+      miniFireBtn.setAttribute("aria-label", aimingShot ? "שגר בלסטר" : "כוון וירה עם בלסטר");
     }
   } else {
+    fireBtn.textContent = isTouchDevice ? "ירי" : "ירי / F";
     touchFireBtn.textContent = "ירי";
     touchFireBtn.setAttribute("aria-label", "ירי לא זמין");
     if (miniFireBtn) {
@@ -2643,10 +2954,11 @@ function updateActionButtons() {
   }
 
   if (miniPauseBtn) {
-    miniPauseBtn.disabled = !started || gameOverAt > 0 || gadgetHelpOpen;
+    miniPauseBtn.disabled = !started || gameOverAt > 0 || gadgetHelpOpen || isCountingDown || controlsBlocked;
     miniPauseBtn.textContent = running ? "❚❚" : "▶";
     miniPauseBtn.setAttribute("aria-label", running ? "השהה משחק" : "המשך משחק");
   }
+  if (homeContinueBtn) homeContinueBtn.hidden = !getCanContinueRun();
 }
 
 function setTouchSettingsOpen(isOpen) {
@@ -2666,7 +2978,7 @@ function toggleTouchSettings() {
 }
 
 function fireWeapon() {
-  if (playerPowerState.blasterCharges <= 0 || !started || gameOverAt > 0 || gadgetHelpOpen) return;
+  if (playerPowerState.blasterCharges <= 0 || !started || gameOverAt > 0 || gadgetHelpOpen || resumeCountdown || hasBlockingOverlayOpen()) return;
 
   const head = snake[0];
   const target = targetCursor || findNearestWeaponTarget(head);
@@ -3113,13 +3425,13 @@ function unlockAchievements() {
 function collectCosmeticUnlocks(previousLevel, currentLevel) {
   const unlocks = [];
 
-  Object.entries(BACKGROUND_THEMES).forEach(([key, theme]) => {
+  Object.entries(BACKGROUND_THEMES).forEach(([_key, theme]) => {
     if (theme.unlockLevel > previousLevel && theme.unlockLevel <= currentLevel) {
       unlocks.push(`נפתח רקע חדש: ${theme.label}`);
     }
   });
 
-  Object.entries(SNAKE_SKINS).forEach(([key, skin]) => {
+  Object.entries(SNAKE_SKINS).forEach(([_key, skin]) => {
     if (skin.unlockLevel > previousLevel && skin.unlockLevel <= currentLevel) {
       unlocks.push(`נפתח סקין חדש: ${skin.label}`);
     }
@@ -3198,6 +3510,27 @@ function finalizeRunProgress(reason) {
   const levelsGained = addProfileXp(xpEarned);
   const newAchievements = unlockAchievements();
   const cosmeticUnlocks = collectCosmeticUnlocks(previousLevel, progressionProfile.level);
+
+  if (xpEarned > 0) {
+    pulseProgressionUI();
+    pushToast(`+${xpEarned} XP`, "הפרופיל התעדכן בסוף הריצה", "accent");
+  }
+  if (levelsGained > 0) {
+    pushToast(
+      levelsGained > 1 ? `עלית ${levelsGained} רמות` : "עלית רמה",
+      `פרופיל ${progressionProfile.level}`,
+      "success"
+    );
+  }
+  dailyUnlocked.forEach((challenge) => {
+    pushToast("משימה הושלמה", challenge.title, "warn");
+  });
+  newAchievements.forEach((achievement) => {
+    pushToast("הישג חדש", achievement.title, "success");
+  });
+  cosmeticUnlocks.slice(0, 2).forEach((unlockText) => {
+    pushToast("נפתח פריט חדש", unlockText, "accent");
+  });
 
   const milestones = [
     ...dailyUnlocked.map((challenge) => `הושלמה משימה: ${challenge.title}`),
@@ -3554,6 +3887,10 @@ function setLeaderboardOpen(isOpen) {
   if (isOpen && menuPanel) {
     menuPanel.hidden = true;
   }
+  if (isOpen && authPanel) {
+    authPanel.hidden = true;
+    authOpen = false;
+  }
   if (isOpen && gadgetHelpPanel) {
     gadgetHelpPanel.hidden = true;
   }
@@ -3565,12 +3902,18 @@ function setLeaderboardOpen(isOpen) {
   }
   leaderboardPanel.hidden = !isOpen;
   updatePlayLayoutState();
+  updateActionButtons();
 }
 
 function setMenuOpen(isOpen) {
   if (!menuPanel) return;
+  if (isOpen) setHomeOpen(false);
   if (isOpen && leaderboardPanel) {
     leaderboardPanel.hidden = true;
+  }
+  if (isOpen && authPanel) {
+    authPanel.hidden = true;
+    authOpen = false;
   }
   if (isOpen && gadgetHelpPanel) {
     gadgetHelpPanel.hidden = true;
@@ -3583,6 +3926,7 @@ function setMenuOpen(isOpen) {
   }
   menuPanel.hidden = !isOpen;
   updatePlayLayoutState();
+  updateActionButtons();
 }
 
 function syncViewportLayout() {
@@ -3701,6 +4045,10 @@ function addFloatingText(text, x, y, color) {
 }
 
 function getBoardShakeOffset(nowMs) {
+  if (reducedMotionEnabled) {
+    return { x: 0, y: 0 };
+  }
+
   if (nowMs >= boardShakeUntil) {
     return { x: 0, y: 0 };
   }
@@ -3784,6 +4132,38 @@ if (miniPauseBtn) miniPauseBtn.addEventListener("click", togglePause);
 if (miniFireBtn) miniFireBtn.addEventListener("click", fireWeapon);
 if (miniMenuBtn) miniMenuBtn.addEventListener("click", () => setMenuOpen(true));
 
+if (homePrimaryBtn) {
+  homePrimaryBtn.addEventListener("click", () => {
+    startFreshRun();
+  });
+}
+
+if (homeContinueBtn) {
+  homeContinueBtn.addEventListener("click", () => {
+    setHomeOpen(false);
+    startGame();
+  });
+}
+
+if (homeSettingsBtn) {
+  homeSettingsBtn.addEventListener("click", () => {
+    setHomeOpen(false);
+    setMenuOpen(true);
+  });
+}
+
+if (homeProgressBtn) {
+  homeProgressBtn.addEventListener("click", () => {
+    setHomeOpen(false);
+    setMenuOpen(true);
+    playerLevelBadgeEl?.scrollIntoView({ block: "nearest", behavior: reducedMotionEnabled ? "auto" : "smooth" });
+  });
+}
+
+if (homeAccountBtn) {
+  homeAccountBtn.addEventListener("click", () => setAuthOpen(true));
+}
+
 difficultyButtons.forEach((button) => {
   button.addEventListener("click", () => setDifficulty(button.dataset.difficulty));
 });
@@ -3822,6 +4202,16 @@ if (closeLeaderboardBtn) {
 
 if (closeMenuBtn) {
   closeMenuBtn.addEventListener("click", () => setMenuOpen(false));
+}
+
+if (openAuthBtn) {
+  openAuthBtn.addEventListener("click", () => setAuthOpen(true));
+}
+
+if (menuSignOutBtn) {
+  menuSignOutBtn.addEventListener("click", () => {
+    void handleSignOut();
+  });
 }
 
 if (menuPanel) {
@@ -3949,6 +4339,12 @@ if (gadgetTipsToggle) {
   });
 }
 
+if (reducedMotionToggle) {
+  reducedMotionToggle.addEventListener("change", () => {
+    setReducedMotionEnabled(Boolean(reducedMotionToggle.checked));
+  });
+}
+
 if (applyBackgroundUrlBtn && backgroundUrlInput) {
   applyBackgroundUrlBtn.addEventListener("click", () => {
     const value = backgroundUrlInput.value.trim();
@@ -4009,6 +4405,41 @@ if (gadgetHelpPanel) {
   });
 }
 
+if (closeAuthBtn) {
+  closeAuthBtn.addEventListener("click", () => setAuthOpen(false));
+}
+
+if (guestCloseAuthBtn) {
+  guestCloseAuthBtn.addEventListener("click", () => setAuthOpen(false));
+}
+
+if (googleAuthBtn) {
+  googleAuthBtn.addEventListener("click", () => {
+    void handleGoogleAuth();
+  });
+}
+
+if (magicLinkForm) {
+  magicLinkForm.addEventListener("submit", (event) => {
+    void handleMagicLinkSubmit(event);
+  });
+}
+
+if (authSignOutBtn) {
+  authSignOutBtn.addEventListener("click", () => {
+    void handleSignOut();
+  });
+}
+
+if (authPanel) {
+  authPanel.addEventListener("click", (event) => {
+    const target = event.target;
+    if (target instanceof Element && target.hasAttribute("data-close-overlay")) {
+      setAuthOpen(false);
+    }
+  });
+}
+
 touchButtons.forEach((button) => {
   button.addEventListener("pointerdown", (event) => {
     event.preventDefault();
@@ -4022,6 +4453,34 @@ canvas.addEventListener("pointercancel", onCanvasPointerCancel);
 
 document.addEventListener("touchend", onGlobalTouchEnd, { passive: false });
 document.addEventListener("gesturestart", onGlobalGestureStart, { passive: false });
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && (running || resumeCountdown)) {
+    pauseGame();
+  }
+});
+
+if (authService?.subscribe) {
+  authService.subscribe((nextState) => {
+    const previousStatus = authSnapshot.status;
+    const previousEmail = authSnapshot.user?.email || "";
+    authSnapshot = nextState;
+    updateAuthUI();
+    if (nextState.status === "authenticated") {
+      if (authOpen) setAuthOpen(false);
+      if (previousStatus !== "authenticated" || previousEmail !== (nextState.user?.email || "")) {
+        pushToast("התחברת בהצלחה", nextState.user?.email || "החשבון זמין עכשיו", "success");
+      }
+      return;
+    }
+    if (previousStatus === "authenticated" && nextState.status === "guest") {
+      pushToast("חזרת למצב אורח", "המשחק וההתקדמות המקומית נשארו זמינים", "accent");
+      return;
+    }
+    if (nextState.status === "guest" && typeof nextState.detail === "string" && nextState.detail.includes("קישור")) {
+      pushToast("קישור נשלח", nextState.detail, "accent");
+    }
+  });
+}
 
 setTheme(activeTheme);
 setSnakeSkin(activeSkin);
@@ -4031,7 +4490,10 @@ setControlSide(preferredControlSide);
 setTouchSettingsOpen(false);
 setMenuOpen(false);
 setLeaderboardOpen(false);
+setAuthOpen(false);
 loadBoardBackground(boardBackgroundSource);
 initGame();
 void loadCommunityLeaderboard();
+updateAuthUI();
+setHomeOpen(true);
 syncViewportLayout();

@@ -7,7 +7,42 @@
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-  <main class="wrap">
+  <section id="homeScreen" class="home-screen" aria-label="מסך הבית">
+    <div class="home-screen__backdrop"></div>
+    <div class="home-screen__content">
+      <div class="home-hero">
+        <img class="home-hero__logo" src="/assets/ui/logo-snake-me.svg" alt="Snake Me">
+        <p class="home-hero__kicker">ארקייד מהיר בעברית, עם התקדמות, גאדג'טים ומובייל חזק</p>
+        <h2 class="home-hero__title">ברוכים הבאים ל-Snake Me</h2>
+        <p class="home-hero__copy">ריצה חדה, שליטה מדויקת, פרופיל מתפתח, והכול בלי לאבד את הקצב של המשחק.</p>
+        <div class="home-hero__meta">
+          <span id="homeAccountBadge" class="mini-pill">משחק אורח</span>
+          <span id="homeStatusBadge" class="mini-pill">מוכן לריצה חדשה</span>
+        </div>
+      </div>
+
+      <div class="home-actions-card">
+        <div class="home-actions-card__header">
+          <p class="overlay-kicker">כניסה מהירה</p>
+          <h2>התחלה חלקה</h2>
+        </div>
+
+        <div class="home-actions">
+          <button id="homePrimaryBtn" type="button">התחל משחק</button>
+          <button id="homeContinueBtn" class="utility-btn" type="button" hidden>המשך ריצה</button>
+          <button id="homeSettingsBtn" class="utility-btn" type="button">הגדרות והתאמה</button>
+          <button id="homeProgressBtn" class="utility-btn" type="button">הישגים והתקדמות</button>
+          <button id="homeAccountBtn" class="utility-btn" type="button">חשבון והתחברות</button>
+        </div>
+
+        <p id="homeHelperText" class="home-helper-text">שחק כאורח מיד או התחבר כדי להכין את הקרקע לשמירה וסנכרון עתידיים.</p>
+      </div>
+    </div>
+    </section>
+
+    <div id="toastStack" class="toast-stack" aria-live="polite" aria-atomic="false"></div>
+
+    <main class="wrap">
     <header class="topbar">
       <div class="brand-row">
         <h1>Snake Me</h1>
@@ -166,6 +201,21 @@
           </label>
         </section>
 
+        <section class="menu-panel-block" aria-label="חשבון שחקן">
+          <div class="leaderboard-title-row">
+            <h3>חשבון</h3>
+            <span id="accountModeBadge" class="mini-pill">אורח</span>
+          </div>
+
+          <p id="accountStatusText" class="menu-help-text">אפשר להמשיך כאורח או להתחבר עם Google וקישור קסם.</p>
+          <p id="accountEmailText" class="menu-help-text">לא מחובר כרגע</p>
+
+          <div class="overlay-actions home-actions home-actions--stack">
+            <button id="openAuthBtn" class="utility-btn" type="button">פתח מסך התחברות</button>
+            <button id="menuSignOutBtn" class="utility-btn close-btn" type="button" hidden>התנתק</button>
+          </div>
+        </section>
+
         <section class="menu-panel-block" aria-label="עיצוב חזותי">
           <div class="leaderboard-title-row">
             <h3>עיצוב חזותי</h3>
@@ -206,7 +256,43 @@
               </span>
               <input id="gadgetTipsToggle" type="checkbox" role="switch">
             </label>
+
+            <label class="switch-row" for="reducedMotionToggle">
+              <span>
+                <strong>הפחתת תנועה</strong>
+                <small>מוריד פולסים, תזוזות ועדינות אנימציה כדי לשמור על קריאות וביצועים</small>
+              </span>
+              <input id="reducedMotionToggle" type="checkbox" role="switch">
+            </label>
           </div>
+        </section>
+
+        <section class="menu-panel-block" aria-label="מרכז שליטה">
+          <div class="leaderboard-title-row">
+            <h3>שליטה</h3>
+            <span class="mini-pill">מקלדת + מגע</span>
+          </div>
+
+          <div class="meta-stats-grid">
+            <div class="meta-stat">
+              <small>כיוון</small>
+              <strong>חיצים / WASD</strong>
+            </div>
+            <div class="meta-stat">
+              <small>עצירה</small>
+              <strong>רווח / כפתור עצירה</strong>
+            </div>
+            <div class="meta-stat">
+              <small>ירי</small>
+              <strong>F / כפתור ירי</strong>
+            </div>
+            <div class="meta-stat">
+              <small>מובייל</small>
+              <strong>D-pad + ירי נפרד</strong>
+            </div>
+          </div>
+
+          <p class="menu-help-text">כפתור הירי מופיע תמיד ומקבל עדיפות ברורה כשיש מטעני בלסטר, בלי להסתיר את בקרי התנועה.</p>
         </section>
 
         <section class="menu-panel-block mobile-only-settings" aria-label="התאמת בקרי מגע">
@@ -508,7 +594,41 @@
       </div>
     </div>
   </section>
-  <script src="./game.js"></script>
+  <section id="authPanel" class="overlay-panel" hidden aria-label="התחברות לחשבון">
+    <div class="overlay-backdrop" data-close-overlay="auth"></div>
+    <div class="overlay-card auth-card">
+      <div class="overlay-header">
+        <div>
+          <p class="overlay-kicker">חשבון Snake Me</p>
+          <h2>התחברות ושמירה עתידית</h2>
+        </div>
+        <button id="closeAuthBtn" class="utility-btn close-btn" type="button" aria-label="סגור התחברות">סגור</button>
+      </div>
+
+      <p id="authStatusMessage" class="record-summary">שחק כאורח מיד, או התחבר כדי להכין פרופיל שיתמוך בעתיד בשמירה וסנכרון.</p>
+
+      <div class="auth-actions">
+        <button id="googleAuthBtn" class="auth-provider-btn" type="button">
+          <img src="/assets/ui/auth-google.svg" alt="" aria-hidden="true">
+          <span>התחבר עם Google</span>
+        </button>
+      </div>
+
+      <form id="magicLinkForm" class="auth-form">
+        <label class="name-field" for="magicLinkEmailInput">
+          <span>קישור קסם למייל</span>
+          <input id="magicLinkEmailInput" type="email" inputmode="email" autocomplete="email" placeholder="player@example.com">
+        </label>
+        <button id="magicLinkSubmitBtn" type="submit">שלח קישור כניסה</button>
+      </form>
+
+      <div class="overlay-actions">
+        <button id="guestCloseAuthBtn" class="utility-btn" type="button">המשך כאורח</button>
+        <button id="authSignOutBtn" class="utility-btn close-btn" type="button" hidden>התנתק</button>
+      </div>
+    </div>
+  </section>
+  <script type="module" src="/src/main.js"></script>
 </body>
 </html>
 

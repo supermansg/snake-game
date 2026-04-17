@@ -1,0 +1,25 @@
+<svg width="1200" height="1200" viewBox="0 0 1200 1200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="140" y1="60" x2="1020" y2="1120" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1A2946"/>
+      <stop offset="0.52" stop-color="#101A2D"/>
+      <stop offset="1" stop-color="#09111E"/>
+    </linearGradient>
+    <radialGradient id="glowA" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(302 216) rotate(65.128) scale(534.354)">
+      <stop stop-color="#567CFF" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="#567CFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowB" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(914 308) rotate(135) scale(480)">
+      <stop stop-color="#53D2B2" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="#53D2B2" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="52" height="52" patternUnits="userSpaceOnUse">
+      <path d="M52 0H0V52" stroke="#8AB2FF" stroke-opacity="0.12"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="1200" rx="72" fill="url(#bg)"/>
+  <rect width="1200" height="1200" rx="72" fill="url(#grid)"/>
+  <rect width="1200" height="1200" rx="72" fill="url(#glowA)"/>
+  <rect width="1200" height="1200" rx="72" fill="url(#glowB)"/>
+  <rect x="18" y="18" width="1164" height="1164" rx="54" stroke="#BBD1FF" stroke-opacity="0.18" stroke-width="2"/>
+</svg>

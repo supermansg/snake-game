@@ -1,0 +1,21 @@
+<svg width="360" height="116" viewBox="0 0 360 116" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="360" y2="116" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5CE0B0"/>
+      <stop offset="0.52" stop-color="#62A6FF"/>
+      <stop offset="1" stop-color="#A487FF"/>
+    </linearGradient>
+    <linearGradient id="stroke" x1="28" y1="20" x2="108" y2="92" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D7FFF2"/>
+      <stop offset="1" stop-color="#85F2C8"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="356" height="112" rx="26" fill="#0A1220" stroke="rgba(188,214,255,0.18)"/>
+  <g filter="url(#none)">
+    <path d="M39 40C39 31.1634 46.1634 24 55 24H96C104.837 24 112 31.1634 112 40V48C112 56.8366 104.837 64 96 64H70C64.4772 64 60 68.4772 60 74C60 79.5228 64.4772 84 70 84H99" stroke="url(#stroke)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="95.5" cy="84.5" r="10.5" fill="#0B1829" stroke="#CCFFF0" stroke-width="4"/>
+    <circle cx="99" cy="81" r="2.5" fill="#CCFFF0"/>
+  </g>
+  <text x="132" y="52" fill="url(#bg)" font-family="Segoe UI, Tahoma, sans-serif" font-size="34" font-weight="800" letter-spacing="0.06em">SNAKE ME</text>
+  <text x="132" y="82" fill="#D7E6FF" font-family="Segoe UI, Tahoma, sans-serif" font-size="16" font-weight="600">premium arcade snake</text>
+</svg>
