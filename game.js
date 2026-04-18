@@ -28,6 +28,7 @@ const scoreEl = document.getElementById("score");
 const bestEl = document.getElementById("best");
 const levelEl = document.getElementById("level");
 const hazardsEl = document.getElementById("hazards");
+const ammoEl = document.getElementById("ammo");
 const statusEl = document.getElementById("status");
 const modeLabelEl = document.getElementById("modeLabel");
 const abilityLabelEl = document.getElementById("abilityLabel");
@@ -533,7 +534,7 @@ let activePortals = [];
 let activeExplosionBursts = [];
 let playerPowerState = {
   shield: 0,
-  blasterCharges: 0,
+  blasterCharges: 3,
   slowUntil: 0
 };
 let laserShot = null;
@@ -609,6 +610,16 @@ function applyThemeTokensToDocument() {
   document.documentElement.style.setProperty("--theme-glow-rgb", theme.burstRGB);
   document.documentElement.style.setProperty("--theme-surface-top", "rgba(18, 27, 45, 0.94)");
   document.documentElement.style.setProperty("--theme-surface-bottom", "rgba(10, 15, 24, 0.92)");
+}
+
+function formatAmmoDisplay(count) {
+  const ammoCount = Math.max(0, count);
+  const icons = "✦".repeat(Math.min(ammoCount, 3)) || "—";
+  return `${icons} × ${ammoCount}`;
+}
+
+function updateAmmoHud() {
+  if (ammoEl) ammoEl.textContent = formatAmmoDisplay(playerPowerState.blasterCharges);
 }
 
 function updateAuthUI() {
@@ -777,7 +788,7 @@ function initGame() {
   activeExplosionBursts = [];
   playerPowerState = {
     shield: 0,
-    blasterCharges: 0,
+    blasterCharges: 3,
     slowUntil: 0
   };
   laserShot = null;
@@ -805,6 +816,7 @@ function initGame() {
   scoreEl.textContent = "0";
   levelEl.textContent = String(level);
   updateHazardsLabel();
+  updateAmmoHud();
   statusEl.textContent = getIdleStatus();
   updateMiniHud();
 
@@ -839,8 +851,12 @@ function startGame() {
   runLoop();
 }
 
-function startFreshRun() {
+function startFreshRun(initialDirection = null) {
   initGame();
+  if (initialDirection && (initialDirection.x !== -direction.x || initialDirection.y !== -direction.y)) {
+    direction = { ...initialDirection };
+    nextDirection = { ...initialDirection };
+  }
   setHomeOpen(false);
   startGame();
 }
@@ -852,6 +868,11 @@ function handlePrimaryButtonClick() {
     } else {
       skipPendingScoreRecord();
     }
+    return;
+  }
+
+  if (!started) {
+    startFreshRun();
     return;
   }
 
@@ -879,7 +900,7 @@ function togglePause() {
   if (gameOverAt > 0) return;
 
   if (!started) {
-    startGame();
+    startFreshRun();
     return;
   }
 
@@ -2102,16 +2123,16 @@ function setDirection(dir) {
 
   const candidate = map[dir];
   if (!candidate) return;
+  if (resumeCountdown) return;
 
   if (candidate.x === -direction.x && candidate.y === -direction.y) return;
 
-  nextDirection = candidate;
-
   if (!started) {
-    setHomeOpen(false);
-    startGame();
+    startFreshRun(candidate);
     return;
   }
+
+  nextDirection = candidate;
 
   if (!running && started && gameOverAt === 0) {
     startGame();
@@ -2580,9 +2601,10 @@ function updateTouchControlSettingsUI() {
   if (menuControlSideSelect) menuControlSideSelect.value = preferredControlSide;
 }
 
-function updateMiniHud() {
+const patchedUpdateMiniHud = function updateMiniHud() {
   if (miniScoreEl) miniScoreEl.textContent = String(score ?? 0);
   if (miniLevelEl) miniLevelEl.textContent = String(level ?? 1);
+  updateAmmoHud();
   if (miniAbilityEl) miniAbilityEl.textContent = abilityLabelEl?.textContent || "אין בוסט";
 }
 
@@ -4042,6 +4064,326 @@ function addFloatingText(text, x, y, color) {
     start: performance.now(),
     duration: 520
   });
+}
+
+function updateMiniHud() {
+  if (miniScoreEl) miniScoreEl.textContent = String(score ?? 0);
+  if (miniLevelEl) miniLevelEl.textContent = String(level ?? 1);
+  updateAmmoHud();
+  if (miniAbilityEl) miniAbilityEl.textContent = abilityLabelEl?.textContent || "אין בוסט";
+};
+
+const patchedFormatPickupName = function formatPickupName(type) {
+  switch (type) {
+    case "shield":
+      return "מגן";
+    case "blaster":
+      return "תחמושת";
+    case "slow":
+      return "האטה";
+    default:
+      return type;
+  }
+};
+
+const patchedUpdateAbilityLabel = function updateAbilityLabel() {
+  if (!abilityLabelEl) return;
+
+  if (playerPowerState.shield > 0) {
+    abilityLabelEl.textContent = `מגן x${playerPowerState.shield}`;
+    updateMiniHud();
+    return;
+  }
+
+  if (performance.now() < playerPowerState.slowUntil) {
+    abilityLabelEl.textContent = "שדה האטה";
+    updateMiniHud();
+    return;
+  }
+
+  abilityLabelEl.textContent = activePickup ? `איסוף: ${formatPickupName(activePickup.type)}` : "אין בוסט";
+  updateMiniHud();
+};
+
+const patchedUpdateActionButtons = function updateActionButtons() {
+  const isIdle = !started && gameOverAt === 0;
+  const isActiveRun = started && running && gameOverAt === 0;
+  const isPaused = started && !running && gameOverAt === 0 && !resumeCountdown;
+  const isCountingDown = Boolean(resumeCountdown);
+  const isGameOver = gameOverAt > 0;
+  const hasRecordableScore = Boolean(pendingScoreEntry);
+  const showFireControls = started && gameOverAt === 0 && !homeOpen;
+  const canFire = isActiveRun && playerPowerState.blasterCharges > 0 && !gadgetHelpOpen && !resumeCountdown;
+  const ammoCount = Math.max(0, playerPowerState.blasterCharges);
+
+  aimingShot = false;
+  targetCursor = null;
+
+  startBtn.hidden = isActiveRun;
+  pauseBtn.hidden = !isActiveRun;
+  restartBtn.hidden = isIdle;
+
+  if (isIdle) {
+    startBtn.textContent = "התחל";
+    startBtn.disabled = false;
+  } else if (isCountingDown) {
+    startBtn.hidden = false;
+    startBtn.textContent = `חוזרים ${getResumeCountdownValue(performance.now()) ?? 3}`;
+    startBtn.disabled = true;
+  } else if (isPaused) {
+    startBtn.hidden = false;
+    startBtn.textContent = "המשך";
+    startBtn.disabled = false;
+  } else if (isGameOver) {
+    startBtn.hidden = false;
+    startBtn.textContent = hasRecordableScore ? "תעד שיא" : "לתפריט";
+    startBtn.disabled = false;
+  }
+
+  pauseBtn.textContent = "עצור";
+  pauseBtn.disabled = gadgetHelpOpen || isCountingDown;
+  restartBtn.textContent = "ריצה חדשה";
+  restartBtn.disabled = gadgetHelpOpen || isCountingDown;
+
+  fireBtn.hidden = !showFireControls;
+  touchFireBtn.hidden = !showFireControls;
+  if (miniFireBtn) miniFireBtn.hidden = !showFireControls;
+
+  fireBtn.disabled = !canFire;
+  touchFireBtn.disabled = !canFire;
+  if (miniFireBtn) miniFireBtn.disabled = !canFire;
+
+  fireBtn.textContent = `◎ ירי ${ammoCount}`;
+  touchFireBtn.textContent = `◎ ירי ${ammoCount}`;
+  touchFireBtn.setAttribute("aria-label", canFire ? `ירי, ${ammoCount} תחמושת` : "ירי לא זמין");
+  if (miniFireBtn) {
+    miniFireBtn.textContent = "◎";
+    miniFireBtn.setAttribute("aria-label", canFire ? `ירי, ${ammoCount} תחמושת` : "ירי לא זמין");
+  }
+
+  if (miniPauseBtn) {
+    miniPauseBtn.disabled = !started || gameOverAt > 0 || gadgetHelpOpen || isCountingDown;
+    miniPauseBtn.textContent = running ? "❚❚" : "▶";
+    miniPauseBtn.setAttribute("aria-label", running ? "השהה משחק" : "המשך משחק");
+  }
+
+  const visibleButtons = [startBtn, pauseBtn, restartBtn, fireBtn].filter((button) => button && !button.hidden).length;
+  if (controlsEl) {
+    controlsEl.dataset.hasAction = visibleButtons > 0 ? "true" : "false";
+    controlsEl.style.setProperty("--control-cols", String(Math.max(visibleButtons, 1)));
+  }
+  if (homeContinueBtn) homeContinueBtn.hidden = !getCanContinueRun();
+};
+
+const patchedChoosePickupType = function choosePickupType() {
+  const weightedPool = ["shield", "shield", "blaster", "slow"];
+
+  if (playerPowerState.blasterCharges <= 1) {
+    weightedPool.push("blaster", "blaster", "blaster");
+  } else if (playerPowerState.blasterCharges < 4) {
+    weightedPool.push("blaster", "blaster");
+  }
+
+  if (playerPowerState.shield === 0) weightedPool.push("shield");
+  if (level >= 3) weightedPool.push("slow");
+
+  return weightedPool[randomInt(0, weightedPool.length - 1)];
+};
+
+const patchedCollectPickup = function collectPickup(pickup) {
+  currentRunStats.pickups += 1;
+
+  switch (pickup.type) {
+    case "shield":
+      playerPowerState.shield += 1;
+      setTemporaryStatus("מגן מוכן", 1100);
+      addFloatingText("מגן", pickup.x, pickup.y, "#7de3ff");
+      pushToast("מגן נאסף", "פגיעה אחת תיבלם בריצה", "success");
+      break;
+    case "blaster":
+      playerPowerState.blasterCharges += 2;
+      setTemporaryStatus("תחמושת +2", 1100);
+      addFloatingText("+2 ירי", pickup.x, pickup.y, "#d9b3ff");
+      activeExplosionBursts.push({
+        x: pickup.x,
+        y: pickup.y,
+        start: performance.now(),
+        duration: reducedMotionEnabled ? 220 : 320
+      });
+      pushToast("תחמושת נטענה", "קיבלת עוד 2 יריות", "accent");
+      break;
+    case "slow":
+      playerPowerState.slowUntil = performance.now() + 7000;
+      setTemporaryStatus("שדה האטה פעיל", 1100);
+      addFloatingText("האטה", pickup.x, pickup.y, "#9ff3c8");
+      pushToast("שדה האטה", "האויבים יזוזו לאט יותר", "success");
+      break;
+    default:
+      break;
+  }
+
+  triggerBoardFlash(pickup.type === "blaster" ? "weapon" : "pickup");
+  playSound("gadget");
+  updateAmmoHud();
+  updateAbilityLabel();
+  updateActionButtons();
+
+  if (shouldShowGadgetHelp(pickup.type)) {
+    requestAnimationFrame(() => openGadgetHelp(pickup.type));
+  }
+};
+
+function getShotTrace() {
+  const cells = [];
+  const shotDirection = direction || { x: 1, y: 0 };
+  let cursor = { ...snake[0] };
+
+  while (true) {
+    cursor = {
+      x: cursor.x + shotDirection.x,
+      y: cursor.y + shotDirection.y
+    };
+    if (isWallCollision(cursor)) break;
+    cells.push({ ...cursor });
+  }
+
+  return cells;
+}
+
+function getShotHits(trace) {
+  const hitKeys = new Set(trace.map((cell) => `${cell.x}:${cell.y}`));
+  const enemyHits = enemies.filter((enemy) => hitKeys.has(`${enemy.x}:${enemy.y}`));
+  const obstacleHits = obstacles.filter((obstacle) => hitKeys.has(`${obstacle.x}:${obstacle.y}`));
+  return { enemyHits, obstacleHits };
+}
+
+const patchedDrawLaserShot = function drawLaserShot(nowMs) {
+  if (!laserShot) return;
+  const progress = (nowMs - laserShot.start) / (reducedMotionEnabled ? 120 : 180);
+  if (progress >= 1) {
+    laserShot = null;
+    return;
+  }
+
+  const fromX = (laserShot.from.x + 0.5) * CELL;
+  const fromY = (laserShot.from.y + 0.5) * CELL;
+  const toX = (laserShot.to.x + 0.5) * CELL;
+  const toY = (laserShot.to.y + 0.5) * CELL;
+
+  ctx.save();
+  ctx.strokeStyle = `rgba(236, 210, 255, ${0.95 - progress * 0.82})`;
+  ctx.lineWidth = 6 - progress * 3;
+  ctx.beginPath();
+  ctx.moveTo(fromX, fromY);
+  ctx.lineTo(toX, toY);
+  ctx.stroke();
+
+  ctx.strokeStyle = `rgba(135, 218, 255, ${0.72 - progress * 0.6})`;
+  ctx.lineWidth = 2.4 - progress * 1.4;
+  ctx.beginPath();
+  ctx.moveTo(fromX, fromY);
+  ctx.lineTo(toX, toY);
+  ctx.stroke();
+
+  ctx.fillStyle = `rgba(255, 240, 194, ${0.65 - progress * 0.5})`;
+  ctx.beginPath();
+  ctx.arc(toX, toY, CELL * (0.16 + progress * 0.14), 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+};
+
+const patchedFireWeapon = function fireWeapon() {
+  if (!running || playerPowerState.blasterCharges <= 0 || gameOverAt > 0 || gadgetHelpOpen || resumeCountdown) return;
+
+  const head = snake[0];
+  const trace = getShotTrace();
+  if (trace.length === 0) return;
+
+  playerPowerState.blasterCharges -= 1;
+  currentRunStats.shots += 1;
+
+  const { enemyHits, obstacleHits } = getShotHits(trace);
+  const hitKeys = new Set([...enemyHits, ...obstacleHits].map((target) => `${target.x}:${target.y}`));
+  const shotEnd = trace[trace.length - 1];
+
+  laserShot = {
+    from: { ...head },
+    to: { ...shotEnd },
+    start: performance.now()
+  };
+
+  if (enemyHits.length > 0) {
+    enemies = enemies.filter((enemy) => !hitKeys.has(`${enemy.x}:${enemy.y}`));
+    currentRunStats.enemyKills += enemyHits.length;
+    enemyHits.forEach((enemy, index) => {
+      addFloatingText(`+2`, enemy.x, enemy.y - index * 0.08, "#d9b3ff");
+      activeExplosionBursts.push({
+        x: enemy.x,
+        y: enemy.y,
+        start: performance.now(),
+        duration: reducedMotionEnabled ? 220 : 320
+      });
+    });
+  }
+
+  if (obstacleHits.length > 0) {
+    obstacles = obstacles.filter((obstacle) => !hitKeys.has(`${obstacle.x}:${obstacle.y}`));
+    currentRunStats.obstacleBreaks += obstacleHits.length;
+    obstacleHits.forEach((obstacle) => {
+      addFloatingText("פיצוץ", obstacle.x, obstacle.y, "#9fd8ff");
+      activeExplosionBursts.push({
+        x: obstacle.x,
+        y: obstacle.y,
+        start: performance.now(),
+        duration: reducedMotionEnabled ? 220 : 320
+      });
+    });
+  }
+
+  const pointsEarned = enemyHits.length * 2 + obstacleHits.length;
+  if (pointsEarned > 0) {
+    score += pointsEarned;
+    scoreEl.textContent = String(score);
+    if (score > bestScore) {
+      bestScore = score;
+      bestEl.textContent = String(bestScore);
+      localStorage.setItem(STORAGE_KEYS.bestScore, String(bestScore));
+    }
+    updateLevel();
+    updateSpeedIfNeeded();
+  }
+
+  boardShakeUntil = performance.now() + (reducedMotionEnabled ? 90 : 140);
+  triggerBoardFlash("weapon");
+  playSound("weapon");
+  updateAmmoHud();
+  updateHazardsLabel();
+  updateAbilityLabel();
+  updateActionButtons();
+
+  if (enemyHits.length || obstacleHits.length) {
+    const summary = [
+      enemyHits.length > 0 ? `${enemyHits.length} אויבים` : "",
+      obstacleHits.length > 0 ? `${obstacleHits.length} מכשולים` : ""
+    ].filter(Boolean).join(" + ");
+    setTemporaryStatus(`לייזר פגע: ${summary}`, 900);
+  } else {
+    setTemporaryStatus("לייזר נורה", 650);
+  }
+};
+
+updateMiniHud = patchedUpdateMiniHud;
+formatPickupName = patchedFormatPickupName;
+updateAbilityLabel = patchedUpdateAbilityLabel;
+updateActionButtons = patchedUpdateActionButtons;
+choosePickupType = patchedChoosePickupType;
+collectPickup = patchedCollectPickup;
+drawLaserShot = patchedDrawLaserShot;
+fireWeapon = patchedFireWeapon;
+
+if (GADGET_HELP.blaster) {
+  GADGET_HELP.blaster.title = "תחמושת לייזר";
+  GADGET_HELP.blaster.description = "איסוף תחמושת מוסיף עוד יריות ללייזר הישר של הנחש. הירי פוגע בכל אויב או מכשול שנמצאים בקו התנועה הנוכחי.";
 }
 
 function getBoardShakeOffset(nowMs) {
