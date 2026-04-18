@@ -538,8 +538,6 @@ let playerPowerState = {
   slowUntil: 0
 };
 let laserShot = null;
-let aimingShot = false;
-let targetCursor = null;
 let personalRecords = loadPersonalRecords();
 let communityFallbackRecords = loadCommunityFallbackRecords();
 let communityRecords = [];
@@ -667,6 +665,7 @@ function setHomeOpen(isOpen) {
   updateAuthUI();
   updatePlayLayoutState();
   updateActionButtons();
+  focusGameSurface();
 }
 
 function setAuthOpen(isOpen) {
@@ -680,6 +679,7 @@ function setAuthOpen(isOpen) {
   if (authOpen && runResultsPanel) runResultsPanel.hidden = true;
   updatePlayLayoutState();
   updateActionButtons();
+  if (!authOpen && started && gameOverAt === 0) focusGameSurface();
 }
 
 function focusGameSurface() {
@@ -703,6 +703,7 @@ function beginResumeCountdown() {
   };
   statusEl.textContent = "חוזרים למשחק בעוד 3";
   updateActionButtons();
+  focusGameSurface();
 }
 
 function maybeCompleteResumeCountdown(nowMs) {
@@ -717,6 +718,7 @@ function maybeCompleteResumeCountdown(nowMs) {
   runLoop();
   updatePlayLayoutState();
   updateActionButtons();
+  focusGameSurface();
 }
 
 function getResumeCountdownValue(nowMs) {
@@ -803,8 +805,6 @@ function initGame() {
     slowUntil: 0
   };
   laserShot = null;
-  aimingShot = false;
-  targetCursor = null;
   pendingScoreEntry = null;
   currentRunStats = createEmptyRunStats();
   lastRunResults = null;
@@ -1447,7 +1447,6 @@ function draw(nowMs) {
   drawFood(t);
   drawPickup(t);
   drawEnemies(t);
-  drawTargetCursor(nowMs);
   drawLaserShot(nowMs);
   drawExplosionBursts(nowMs);
   drawSnake(t);
@@ -1963,37 +1962,6 @@ function drawLaserShot(nowMs) {
   ctx.restore();
 }
 
-function drawTargetCursor(nowMs) {
-  if (!aimingShot || !targetCursor) return;
-
-  const cx = (targetCursor.x + 0.5) * CELL;
-  const cy = (targetCursor.y + 0.5) * CELL;
-  const pulse = 1 + Math.sin(nowMs * 0.012) * 0.08;
-  const radius = CELL * 0.42 * pulse;
-  const color = targetCursor.kind === "enemy" ? "255, 148, 106" : "120, 214, 255";
-
-  ctx.save();
-  ctx.strokeStyle = `rgba(${color}, 0.95)`;
-  ctx.lineWidth = 2.2;
-  ctx.beginPath();
-  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-  ctx.stroke();
-
-  ctx.strokeStyle = `rgba(${color}, 0.55)`;
-  ctx.lineWidth = 1.3;
-  ctx.beginPath();
-  ctx.moveTo(cx - radius - 6, cy);
-  ctx.lineTo(cx - radius + 4, cy);
-  ctx.moveTo(cx + radius - 4, cy);
-  ctx.lineTo(cx + radius + 6, cy);
-  ctx.moveTo(cx, cy - radius - 6);
-  ctx.lineTo(cx, cy - radius + 4);
-  ctx.moveTo(cx, cy + radius - 4);
-  ctx.lineTo(cx, cy + radius + 6);
-  ctx.stroke();
-  ctx.restore();
-}
-
 function drawExplosionBursts(nowMs) {
   if (activeExplosionBursts.length === 0) return;
 
@@ -2163,7 +2131,7 @@ function setDirection(dir) {
   if (!candidate) return;
   if (resumeCountdown) return;
 
-  if (candidate.x === -direction.x && candidate.y === -direction.y) return;
+  if (candidate.x === -nextDirection.x && candidate.y === -nextDirection.y) return;
 
   if (!started) {
     startFreshRun(candidate);
@@ -2308,12 +2276,6 @@ function onKeyDown(event) {
 
 function onCanvasPointerDown(event) {
   focusGameSurface();
-  if (aimingShot) {
-    swipeStart = null;
-    event.preventDefault();
-    return;
-  }
-
   if (event.pointerType === "mouse") return;
 
   swipeStart = {
@@ -2333,17 +2295,6 @@ function onCanvasPointerDown(event) {
 }
 
 function onCanvasPointerUp(event) {
-  if (aimingShot) {
-    const cell = getCellFromPointerEvent(event);
-    const tappedTarget = getTargetAtCell(cell);
-    if (tappedTarget) {
-      targetCursor = tappedTarget;
-    }
-    fireWeapon();
-    event.preventDefault();
-    return;
-  }
-
   if (!swipeStart) return;
 
   const dx = event.clientX - swipeStart.x;
@@ -2458,75 +2409,6 @@ function pushToast(title, detail = "", tone = "accent") {
       toast.remove();
     }, reducedMotionEnabled ? 0 : 180);
   }, visibleMs);
-}
-
-function getWeaponTargets() {
-  return [
-    ...enemies.map((enemy, index) => ({ kind: "enemy", x: enemy.x, y: enemy.y, index })),
-    ...obstacles.map((obstacle, index) => ({ kind: "obstacle", x: obstacle.x, y: obstacle.y, index }))
-  ];
-}
-
-function findNearestWeaponTarget(from = snake?.[0]) {
-  if (!from) return null;
-  const targets = getWeaponTargets();
-  if (targets.length === 0) return null;
-
-  let bestTarget = null;
-  let bestDistance = Infinity;
-
-  targets.forEach((target) => {
-    const distance = Math.abs(target.x - from.x) + Math.abs(target.y - from.y);
-    const enemyBias = target.kind === "enemy" ? -0.35 : 0;
-    const weightedDistance = distance + enemyBias;
-    if (weightedDistance < bestDistance) {
-      bestDistance = weightedDistance;
-      bestTarget = target;
-    }
-  });
-
-  return bestTarget;
-}
-
-function _setAimingShot(isActive, nextTarget = null) {
-  aimingShot = isActive;
-  targetCursor = isActive ? (nextTarget || findNearestWeaponTarget()) : null;
-
-  if (aimingShot && targetCursor) {
-    setTemporaryStatus(
-      targetCursor.kind === "enemy"
-        ? "כוונת נעולה על אויב. לחץ שוב או גע במטרה כדי לירות"
-        : "כוונת נעולה על מכשול. לחץ שוב או גע במטרה כדי לפוצץ",
-      900
-    );
-  } else if (!aimingShot && running) {
-    setPlayingStatus();
-  }
-}
-
-function getCellFromPointerEvent(event) {
-  const rect = canvas.getBoundingClientRect();
-  const x = Math.floor(((event.clientX - rect.left) / rect.width) * GRID_SIZE);
-  const y = Math.floor(((event.clientY - rect.top) / rect.height) * GRID_SIZE);
-
-  if (x < 0 || x >= GRID_SIZE || y < 0 || y >= GRID_SIZE) return null;
-  return { x, y };
-}
-
-function getTargetAtCell(cell) {
-  if (!cell) return null;
-
-  const enemyIndex = enemies.findIndex((enemy) => enemy.x === cell.x && enemy.y === cell.y);
-  if (enemyIndex >= 0) {
-    return { kind: "enemy", x: cell.x, y: cell.y, index: enemyIndex };
-  }
-
-  const obstacleIndex = obstacles.findIndex((obstacle) => obstacle.x === cell.x && obstacle.y === cell.y);
-  if (obstacleIndex >= 0) {
-    return { kind: "obstacle", x: cell.x, y: cell.y, index: obstacleIndex };
-  }
-
-  return null;
 }
 
 function clearStatusTimer() {
@@ -2828,6 +2710,7 @@ function closeGadgetHelp() {
   gadgetHelpResumeAfterClose = false;
   updatePlayLayoutState();
   updateActionButtons();
+  if (started && gameOverAt === 0) focusGameSurface();
 }
 
 function primeAudio() {
@@ -2942,14 +2825,6 @@ function updateActionButtons() {
   const isGameOver = gameOverAt > 0;
   const hasRecordableScore = Boolean(pendingScoreEntry);
 
-  if (aimingShot) {
-    targetCursor = targetCursor ? getTargetAtCell(targetCursor) || findNearestWeaponTarget() : findNearestWeaponTarget();
-    if (!canFire || !targetCursor) {
-      aimingShot = false;
-      targetCursor = null;
-    }
-  }
-
   startBtn.hidden = false;
   pauseBtn.hidden = false;
   restartBtn.hidden = false;
@@ -3050,8 +2925,6 @@ function fireWeapon() {
   const trace = getShotTrace();
   if (trace.length === 0) return;
 
-  aimingShot = false;
-  targetCursor = null;
   playerPowerState.blasterCharges -= 1;
   currentRunStats.shots += 1;
 
@@ -3667,6 +3540,7 @@ function setRunResultsOpen(isOpen) {
   if (isOpen) renderRunResults();
   updatePlayLayoutState();
   updateActionButtons();
+  if (!isOpen && started && gameOverAt === 0) focusGameSurface();
 }
 
 function getIdleStatus() {
@@ -3932,6 +3806,7 @@ function setRecordScoreOpen(isOpen) {
   }
   updatePlayLayoutState();
   updateActionButtons();
+  if (!isOpen && started && gameOverAt === 0) focusGameSurface();
 }
 
 async function submitPendingScoreRecord() {
@@ -3995,6 +3870,7 @@ function setLeaderboardOpen(isOpen) {
   leaderboardPanel.hidden = !isOpen;
   updatePlayLayoutState();
   updateActionButtons();
+  if (!isOpen && started && gameOverAt === 0) focusGameSurface();
 }
 
 function setMenuOpen(isOpen) {
@@ -4019,6 +3895,7 @@ function setMenuOpen(isOpen) {
   menuPanel.hidden = !isOpen;
   updatePlayLayoutState();
   updateActionButtons();
+  if (!isOpen && started && gameOverAt === 0) focusGameSurface();
 }
 
 function syncViewportLayout() {
