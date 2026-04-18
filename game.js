@@ -682,6 +682,17 @@ function setAuthOpen(isOpen) {
   updateActionButtons();
 }
 
+function focusGameSurface() {
+  if (!canvas || homeOpen || authOpen) return;
+  requestAnimationFrame(() => {
+    try {
+      canvas.focus({ preventScroll: true });
+    } catch {
+      canvas.focus();
+    }
+  });
+}
+
 function beginResumeCountdown() {
   if (resumeCountdown || running || !started || gameOverAt > 0) return;
 
@@ -848,6 +859,7 @@ function startGame() {
   setPlayingStatus();
   updatePlayLayoutState();
   updateActionButtons();
+  focusGameSurface();
   runLoop();
 }
 
@@ -858,6 +870,7 @@ function startFreshRun(initialDirection = null) {
     nextDirection = { ...initialDirection };
   }
   setHomeOpen(false);
+  focusGameSurface();
   startGame();
 }
 
@@ -1314,15 +1327,14 @@ function maybeSpawnPortals() {
 }
 
 function choosePickupType() {
-  const weightedPool = [
-    "shield",
-    "shield",
-    "blaster",
-    "blaster",
-    "slow"
-  ];
+  const weightedPool = ["shield", "shield", "blaster", "slow"];
 
-  if (playerPowerState.blasterCharges === 0) weightedPool.push("blaster");
+  if (playerPowerState.blasterCharges <= 1) {
+    weightedPool.push("blaster", "blaster", "blaster");
+  } else if (playerPowerState.blasterCharges < 4) {
+    weightedPool.push("blaster", "blaster");
+  }
+
   if (playerPowerState.shield === 0) weightedPool.push("shield");
   if (level >= 3) weightedPool.push("slow");
 
@@ -1359,9 +1371,15 @@ function collectPickup(pickup) {
       break;
     case "blaster":
       playerPowerState.blasterCharges += 2;
-      setTemporaryStatus("2+ מטעני בלסטר", 1100);
-      addFloatingText("בלסטר", pickup.x, pickup.y, "#cfa8ff");
-      pushToast("בלסטר פעיל", "+2 מטענים לירי", "accent");
+      activeExplosionBursts.push({
+        x: pickup.x,
+        y: pickup.y,
+        start: performance.now(),
+        duration: reducedMotionEnabled ? 220 : 320
+      });
+      setTemporaryStatus("תחמושת +2", 1100);
+      addFloatingText("+2 ירי", pickup.x, pickup.y, "#d9b3ff");
+      pushToast("תחמושת נטענה", "קיבלת עוד 2 יריות", "accent");
       break;
     case "slow":
       playerPowerState.slowUntil = performance.now() + 7000;
@@ -1373,8 +1391,9 @@ function collectPickup(pickup) {
       break;
   }
 
-  triggerBoardFlash("pickup");
+  triggerBoardFlash(pickup.type === "blaster" ? "weapon" : "pickup");
   playSound("gadget");
+  updateAmmoHud();
   updateAbilityLabel();
   updateActionButtons();
 
@@ -1911,18 +1930,37 @@ function drawEnemies(t) {
 
 function drawLaserShot(nowMs) {
   if (!laserShot) return;
-  const progress = (nowMs - laserShot.start) / 180;
+  const progress = (nowMs - laserShot.start) / (reducedMotionEnabled ? 120 : 180);
   if (progress >= 1) {
     laserShot = null;
     return;
   }
 
-  ctx.strokeStyle = `rgba(226, 178, 255, ${0.9 - progress * 0.85})`;
-  ctx.lineWidth = 4 - progress * 2.5;
+  const fromX = (laserShot.from.x + 0.5) * CELL;
+  const fromY = (laserShot.from.y + 0.5) * CELL;
+  const toX = (laserShot.to.x + 0.5) * CELL;
+  const toY = (laserShot.to.y + 0.5) * CELL;
+
+  ctx.save();
+  ctx.strokeStyle = `rgba(236, 210, 255, ${0.95 - progress * 0.82})`;
+  ctx.lineWidth = 6 - progress * 3;
   ctx.beginPath();
-  ctx.moveTo((laserShot.from.x + 0.5) * CELL, (laserShot.from.y + 0.5) * CELL);
-  ctx.lineTo((laserShot.to.x + 0.5) * CELL, (laserShot.to.y + 0.5) * CELL);
+  ctx.moveTo(fromX, fromY);
+  ctx.lineTo(toX, toY);
   ctx.stroke();
+
+  ctx.strokeStyle = `rgba(135, 218, 255, ${0.72 - progress * 0.6})`;
+  ctx.lineWidth = 2.4 - progress * 1.4;
+  ctx.beginPath();
+  ctx.moveTo(fromX, fromY);
+  ctx.lineTo(toX, toY);
+  ctx.stroke();
+
+  ctx.fillStyle = `rgba(255, 240, 194, ${0.65 - progress * 0.5})`;
+  ctx.beginPath();
+  ctx.arc(toX, toY, CELL * (0.16 + progress * 0.14), 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
 }
 
 function drawTargetCursor(nowMs) {
@@ -2140,6 +2178,14 @@ function setDirection(dir) {
 }
 
 function onKeyDown(event) {
+  if (event.ctrlKey || event.altKey || event.metaKey) return;
+  if (event.target instanceof HTMLElement) {
+    const tagName = event.target.tagName;
+    if (tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT") {
+      if (event.key !== "Escape" && event.key !== "Enter") return;
+    }
+  }
+
   if (runResultsPanel && !runResultsPanel.hidden) {
     if (event.key === "Escape") {
       setRunResultsOpen(false);
@@ -2194,21 +2240,25 @@ function onKeyDown(event) {
     case "ArrowUp":
     case "w":
     case "W":
+      event.preventDefault();
       setDirection("up");
       break;
     case "ArrowDown":
     case "s":
     case "S":
+      event.preventDefault();
       setDirection("down");
       break;
     case "ArrowLeft":
     case "a":
     case "A":
+      event.preventDefault();
       setDirection("left");
       break;
     case "ArrowRight":
     case "d":
     case "D":
+      event.preventDefault();
       setDirection("right");
       break;
     case " ":
@@ -2228,6 +2278,7 @@ function onKeyDown(event) {
       break;
     case "f":
     case "F":
+      event.preventDefault();
       fireWeapon();
       break;
     case "Escape":
@@ -2256,6 +2307,7 @@ function onKeyDown(event) {
 }
 
 function onCanvasPointerDown(event) {
+  focusGameSurface();
   if (aimingShot) {
     swipeStart = null;
     event.preventDefault();
@@ -2436,7 +2488,7 @@ function findNearestWeaponTarget(from = snake?.[0]) {
   return bestTarget;
 }
 
-function setAimingShot(isActive, nextTarget = null) {
+function _setAimingShot(isActive, nextTarget = null) {
   aimingShot = isActive;
   targetCursor = isActive ? (nextTarget || findNearestWeaponTarget()) : null;
 
@@ -2599,13 +2651,6 @@ function updateTouchControlSettingsUI() {
   if (menuControlLayoutSelect) menuControlLayoutSelect.value = preferredControlLayout;
   if (menuControlSizeSelect) menuControlSizeSelect.value = preferredControlSize;
   if (menuControlSideSelect) menuControlSideSelect.value = preferredControlSide;
-}
-
-const patchedUpdateMiniHud = function updateMiniHud() {
-  if (miniScoreEl) miniScoreEl.textContent = String(score ?? 0);
-  if (miniLevelEl) miniLevelEl.textContent = String(level ?? 1);
-  updateAmmoHud();
-  if (miniAbilityEl) miniAbilityEl.textContent = abilityLabelEl?.textContent || "אין בוסט";
 }
 
 function updateTouchControlsVisibility() {
@@ -2883,10 +2928,9 @@ function updateAbilityLabel() {
 
 function updateActionButtons() {
   const controlsBlocked = hasBlockingOverlayOpen();
-  const hasWeaponTargets = getWeaponTargets().length > 0;
   const canFire =
     playerPowerState.blasterCharges > 0 &&
-    hasWeaponTargets &&
+    running &&
     started &&
     gameOverAt === 0 &&
     !gadgetHelpOpen &&
@@ -2916,7 +2960,7 @@ function updateActionButtons() {
     pauseBtn.hidden = true;
     restartBtn.hidden = true;
   } else if (running) {
-    startBtn.hidden = controlsBlocked;
+    startBtn.hidden = true;
     pauseBtn.textContent = "עצור";
     pauseBtn.disabled = gadgetHelpOpen || controlsBlocked;
     restartBtn.textContent = "ריצה חדשה";
@@ -2953,24 +2997,24 @@ function updateActionButtons() {
   fireBtn.hidden = false;
   touchFireBtn.hidden = false;
   if (miniFireBtn) miniFireBtn.hidden = false;
-  fireBtn.textContent = isTouchDevice ? "ירי" : "ירי / F";
+  fireBtn.textContent = isTouchDevice ? "◎ ירי" : "◎ ירי / F";
   touchFireBtn.textContent = "ירי";
   touchFireBtn.setAttribute("aria-label", "ירי לא זמין");
 
   if (canFire) {
-    fireBtn.textContent = aimingShot ? "שגר" : `ירי x${playerPowerState.blasterCharges}`;
-    touchFireBtn.textContent = aimingShot ? "שגר" : `ירי x${playerPowerState.blasterCharges}`;
-    touchFireBtn.setAttribute("aria-label", aimingShot ? "שגר בלסטר" : "ירי עם בלסטר");
+    fireBtn.textContent = `◎ ירי x${playerPowerState.blasterCharges}`;
+    touchFireBtn.textContent = `◎ ירי x${playerPowerState.blasterCharges}`;
+    touchFireBtn.setAttribute("aria-label", "ירי עם בלסטר");
     if (miniFireBtn) {
-      miniFireBtn.textContent = aimingShot ? "◎" : "✦";
-      miniFireBtn.setAttribute("aria-label", aimingShot ? "שגר בלסטר" : "כוון וירה עם בלסטר");
+      miniFireBtn.textContent = "◎";
+      miniFireBtn.setAttribute("aria-label", "ירי עם בלסטר");
     }
   } else {
-    fireBtn.textContent = isTouchDevice ? "ירי" : "ירי / F";
-    touchFireBtn.textContent = "ירי";
+    fireBtn.textContent = isTouchDevice ? "◎ ירי" : "◎ ירי / F";
+    touchFireBtn.textContent = "◎ ירי";
     touchFireBtn.setAttribute("aria-label", "ירי לא זמין");
     if (miniFireBtn) {
-      miniFireBtn.textContent = "✦";
+      miniFireBtn.textContent = "◎";
       miniFireBtn.setAttribute("aria-label", "ירי לא זמין");
     }
   }
@@ -3000,59 +3044,85 @@ function toggleTouchSettings() {
 }
 
 function fireWeapon() {
-  if (playerPowerState.blasterCharges <= 0 || !started || gameOverAt > 0 || gadgetHelpOpen || resumeCountdown || hasBlockingOverlayOpen()) return;
+  if (!running || playerPowerState.blasterCharges <= 0 || gameOverAt > 0 || gadgetHelpOpen || resumeCountdown || hasBlockingOverlayOpen()) return;
 
   const head = snake[0];
-  const target = targetCursor || findNearestWeaponTarget(head);
-  if (!target) return;
+  const trace = getShotTrace();
+  if (trace.length === 0) return;
 
-  if (!aimingShot) {
-    setAimingShot(true, target);
-    updateActionButtons();
-    return;
-  }
-
+  aimingShot = false;
+  targetCursor = null;
   playerPowerState.blasterCharges -= 1;
   currentRunStats.shots += 1;
+
+  const { enemyHits, obstacleHits } = getShotHits(trace);
+  const hitKeys = new Set([...enemyHits, ...obstacleHits].map((target) => `${target.x}:${target.y}`));
+  const shotEnd = trace[trace.length - 1];
+
   laserShot = {
     from: { ...head },
-    to: { x: target.x, y: target.y },
+    to: { ...shotEnd },
     start: performance.now()
   };
-  activeExplosionBursts.push({
-    x: target.x,
-    y: target.y,
-    start: performance.now(),
-    duration: 320
-  });
 
-  let pointsEarned = 1;
-  if (target.kind === "enemy") {
-    enemies.splice(target.index, 1);
-    currentRunStats.enemyKills += 1;
-    pointsEarned = 2;
-    addFloatingText("+2", target.x, target.y, "#d9b3ff");
-  } else {
-    obstacles.splice(target.index, 1);
-    currentRunStats.obstacleBreaks += 1;
-    addFloatingText("פיצוץ", target.x, target.y, "#9fd8ff");
+  if (enemyHits.length > 0) {
+    enemies = enemies.filter((enemy) => !hitKeys.has(`${enemy.x}:${enemy.y}`));
+    currentRunStats.enemyKills += enemyHits.length;
+    enemyHits.forEach((enemy, index) => {
+      addFloatingText(`+2`, enemy.x, enemy.y - index * 0.08, "#d9b3ff");
+      activeExplosionBursts.push({
+        x: enemy.x,
+        y: enemy.y,
+        start: performance.now(),
+        duration: reducedMotionEnabled ? 220 : 320
+      });
+    });
   }
 
-  score += pointsEarned;
-  scoreEl.textContent = String(score);
-  if (score > bestScore) {
-    bestScore = score;
-    bestEl.textContent = String(bestScore);
-    localStorage.setItem(STORAGE_KEYS.bestScore, String(bestScore));
+  if (obstacleHits.length > 0) {
+    obstacles = obstacles.filter((obstacle) => !hitKeys.has(`${obstacle.x}:${obstacle.y}`));
+    currentRunStats.obstacleBreaks += obstacleHits.length;
+    obstacleHits.forEach((obstacle) => {
+      addFloatingText("פיצוץ", obstacle.x, obstacle.y, "#9fd8ff");
+      activeExplosionBursts.push({
+        x: obstacle.x,
+        y: obstacle.y,
+        start: performance.now(),
+        duration: reducedMotionEnabled ? 220 : 320
+      });
+    });
   }
 
+  const pointsEarned = enemyHits.length * 2 + obstacleHits.length;
+  if (pointsEarned > 0) {
+    score += pointsEarned;
+    scoreEl.textContent = String(score);
+    if (score > bestScore) {
+      bestScore = score;
+      bestEl.textContent = String(bestScore);
+      localStorage.setItem(STORAGE_KEYS.bestScore, String(bestScore));
+    }
+    updateLevel();
+    updateSpeedIfNeeded();
+  }
+
+  boardShakeUntil = performance.now() + (reducedMotionEnabled ? 90 : 140);
   triggerBoardFlash("weapon");
   playSound("weapon");
-  setTemporaryStatus(target.kind === "enemy" ? "הבלסטר חיסל אויב" : "המכשול התפוצץ", 850);
-  setAimingShot(false);
+  updateAmmoHud();
   updateHazardsLabel();
   updateAbilityLabel();
   updateActionButtons();
+
+  if (enemyHits.length || obstacleHits.length) {
+    const summary = [
+      enemyHits.length > 0 ? `${enemyHits.length} אויבים` : "",
+      obstacleHits.length > 0 ? `${obstacleHits.length} מכשולים` : ""
+    ].filter(Boolean).join(" + ");
+    setTemporaryStatus(`לייזר פגע: ${summary}`, 900);
+  } else {
+    setTemporaryStatus("לייזר נורה", 650);
+  }
 }
 
 function formatPickupName(type) {
@@ -3060,7 +3130,7 @@ function formatPickupName(type) {
     case "shield":
       return "מגן";
     case "blaster":
-      return "בלסטר";
+      return "תחמושת";
     case "slow":
       return "האטה";
     default:
@@ -4070,168 +4140,8 @@ function updateMiniHud() {
   if (miniScoreEl) miniScoreEl.textContent = String(score ?? 0);
   if (miniLevelEl) miniLevelEl.textContent = String(level ?? 1);
   updateAmmoHud();
-  if (miniAbilityEl) miniAbilityEl.textContent = abilityLabelEl?.textContent || "אין בוסט";
-};
-
-const patchedFormatPickupName = function formatPickupName(type) {
-  switch (type) {
-    case "shield":
-      return "מגן";
-    case "blaster":
-      return "תחמושת";
-    case "slow":
-      return "האטה";
-    default:
-      return type;
-  }
-};
-
-const patchedUpdateAbilityLabel = function updateAbilityLabel() {
-  if (!abilityLabelEl) return;
-
-  if (playerPowerState.shield > 0) {
-    abilityLabelEl.textContent = `מגן x${playerPowerState.shield}`;
-    updateMiniHud();
-    return;
-  }
-
-  if (performance.now() < playerPowerState.slowUntil) {
-    abilityLabelEl.textContent = "שדה האטה";
-    updateMiniHud();
-    return;
-  }
-
-  abilityLabelEl.textContent = activePickup ? `איסוף: ${formatPickupName(activePickup.type)}` : "אין בוסט";
-  updateMiniHud();
-};
-
-const patchedUpdateActionButtons = function updateActionButtons() {
-  const isIdle = !started && gameOverAt === 0;
-  const isActiveRun = started && running && gameOverAt === 0;
-  const isPaused = started && !running && gameOverAt === 0 && !resumeCountdown;
-  const isCountingDown = Boolean(resumeCountdown);
-  const isGameOver = gameOverAt > 0;
-  const hasRecordableScore = Boolean(pendingScoreEntry);
-  const showFireControls = started && gameOverAt === 0 && !homeOpen;
-  const canFire = isActiveRun && playerPowerState.blasterCharges > 0 && !gadgetHelpOpen && !resumeCountdown;
-  const ammoCount = Math.max(0, playerPowerState.blasterCharges);
-
-  aimingShot = false;
-  targetCursor = null;
-
-  startBtn.hidden = isActiveRun;
-  pauseBtn.hidden = !isActiveRun;
-  restartBtn.hidden = isIdle;
-
-  if (isIdle) {
-    startBtn.textContent = "התחל";
-    startBtn.disabled = false;
-  } else if (isCountingDown) {
-    startBtn.hidden = false;
-    startBtn.textContent = `חוזרים ${getResumeCountdownValue(performance.now()) ?? 3}`;
-    startBtn.disabled = true;
-  } else if (isPaused) {
-    startBtn.hidden = false;
-    startBtn.textContent = "המשך";
-    startBtn.disabled = false;
-  } else if (isGameOver) {
-    startBtn.hidden = false;
-    startBtn.textContent = hasRecordableScore ? "תעד שיא" : "לתפריט";
-    startBtn.disabled = false;
-  }
-
-  pauseBtn.textContent = "עצור";
-  pauseBtn.disabled = gadgetHelpOpen || isCountingDown;
-  restartBtn.textContent = "ריצה חדשה";
-  restartBtn.disabled = gadgetHelpOpen || isCountingDown;
-
-  fireBtn.hidden = !showFireControls;
-  touchFireBtn.hidden = !showFireControls;
-  if (miniFireBtn) miniFireBtn.hidden = !showFireControls;
-
-  fireBtn.disabled = !canFire;
-  touchFireBtn.disabled = !canFire;
-  if (miniFireBtn) miniFireBtn.disabled = !canFire;
-
-  fireBtn.textContent = `◎ ירי ${ammoCount}`;
-  touchFireBtn.textContent = `◎ ירי ${ammoCount}`;
-  touchFireBtn.setAttribute("aria-label", canFire ? `ירי, ${ammoCount} תחמושת` : "ירי לא זמין");
-  if (miniFireBtn) {
-    miniFireBtn.textContent = "◎";
-    miniFireBtn.setAttribute("aria-label", canFire ? `ירי, ${ammoCount} תחמושת` : "ירי לא זמין");
-  }
-
-  if (miniPauseBtn) {
-    miniPauseBtn.disabled = !started || gameOverAt > 0 || gadgetHelpOpen || isCountingDown;
-    miniPauseBtn.textContent = running ? "❚❚" : "▶";
-    miniPauseBtn.setAttribute("aria-label", running ? "השהה משחק" : "המשך משחק");
-  }
-
-  const visibleButtons = [startBtn, pauseBtn, restartBtn, fireBtn].filter((button) => button && !button.hidden).length;
-  if (controlsEl) {
-    controlsEl.dataset.hasAction = visibleButtons > 0 ? "true" : "false";
-    controlsEl.style.setProperty("--control-cols", String(Math.max(visibleButtons, 1)));
-  }
-  if (homeContinueBtn) homeContinueBtn.hidden = !getCanContinueRun();
-};
-
-const patchedChoosePickupType = function choosePickupType() {
-  const weightedPool = ["shield", "shield", "blaster", "slow"];
-
-  if (playerPowerState.blasterCharges <= 1) {
-    weightedPool.push("blaster", "blaster", "blaster");
-  } else if (playerPowerState.blasterCharges < 4) {
-    weightedPool.push("blaster", "blaster");
-  }
-
-  if (playerPowerState.shield === 0) weightedPool.push("shield");
-  if (level >= 3) weightedPool.push("slow");
-
-  return weightedPool[randomInt(0, weightedPool.length - 1)];
-};
-
-const patchedCollectPickup = function collectPickup(pickup) {
-  currentRunStats.pickups += 1;
-
-  switch (pickup.type) {
-    case "shield":
-      playerPowerState.shield += 1;
-      setTemporaryStatus("מגן מוכן", 1100);
-      addFloatingText("מגן", pickup.x, pickup.y, "#7de3ff");
-      pushToast("מגן נאסף", "פגיעה אחת תיבלם בריצה", "success");
-      break;
-    case "blaster":
-      playerPowerState.blasterCharges += 2;
-      setTemporaryStatus("תחמושת +2", 1100);
-      addFloatingText("+2 ירי", pickup.x, pickup.y, "#d9b3ff");
-      activeExplosionBursts.push({
-        x: pickup.x,
-        y: pickup.y,
-        start: performance.now(),
-        duration: reducedMotionEnabled ? 220 : 320
-      });
-      pushToast("תחמושת נטענה", "קיבלת עוד 2 יריות", "accent");
-      break;
-    case "slow":
-      playerPowerState.slowUntil = performance.now() + 7000;
-      setTemporaryStatus("שדה האטה פעיל", 1100);
-      addFloatingText("האטה", pickup.x, pickup.y, "#9ff3c8");
-      pushToast("שדה האטה", "האויבים יזוזו לאט יותר", "success");
-      break;
-    default:
-      break;
-  }
-
-  triggerBoardFlash(pickup.type === "blaster" ? "weapon" : "pickup");
-  playSound("gadget");
-  updateAmmoHud();
-  updateAbilityLabel();
-  updateActionButtons();
-
-  if (shouldShowGadgetHelp(pickup.type)) {
-    requestAnimationFrame(() => openGadgetHelp(pickup.type));
-  }
-};
+  if (miniAbilityEl) miniAbilityEl.textContent = abilityLabelEl?.textContent || "";
+}
 
 function getShotTrace() {
   const cells = [];
@@ -4257,133 +4167,9 @@ function getShotHits(trace) {
   return { enemyHits, obstacleHits };
 }
 
-const patchedDrawLaserShot = function drawLaserShot(nowMs) {
-  if (!laserShot) return;
-  const progress = (nowMs - laserShot.start) / (reducedMotionEnabled ? 120 : 180);
-  if (progress >= 1) {
-    laserShot = null;
-    return;
-  }
-
-  const fromX = (laserShot.from.x + 0.5) * CELL;
-  const fromY = (laserShot.from.y + 0.5) * CELL;
-  const toX = (laserShot.to.x + 0.5) * CELL;
-  const toY = (laserShot.to.y + 0.5) * CELL;
-
-  ctx.save();
-  ctx.strokeStyle = `rgba(236, 210, 255, ${0.95 - progress * 0.82})`;
-  ctx.lineWidth = 6 - progress * 3;
-  ctx.beginPath();
-  ctx.moveTo(fromX, fromY);
-  ctx.lineTo(toX, toY);
-  ctx.stroke();
-
-  ctx.strokeStyle = `rgba(135, 218, 255, ${0.72 - progress * 0.6})`;
-  ctx.lineWidth = 2.4 - progress * 1.4;
-  ctx.beginPath();
-  ctx.moveTo(fromX, fromY);
-  ctx.lineTo(toX, toY);
-  ctx.stroke();
-
-  ctx.fillStyle = `rgba(255, 240, 194, ${0.65 - progress * 0.5})`;
-  ctx.beginPath();
-  ctx.arc(toX, toY, CELL * (0.16 + progress * 0.14), 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-};
-
-const patchedFireWeapon = function fireWeapon() {
-  if (!running || playerPowerState.blasterCharges <= 0 || gameOverAt > 0 || gadgetHelpOpen || resumeCountdown) return;
-
-  const head = snake[0];
-  const trace = getShotTrace();
-  if (trace.length === 0) return;
-
-  playerPowerState.blasterCharges -= 1;
-  currentRunStats.shots += 1;
-
-  const { enemyHits, obstacleHits } = getShotHits(trace);
-  const hitKeys = new Set([...enemyHits, ...obstacleHits].map((target) => `${target.x}:${target.y}`));
-  const shotEnd = trace[trace.length - 1];
-
-  laserShot = {
-    from: { ...head },
-    to: { ...shotEnd },
-    start: performance.now()
-  };
-
-  if (enemyHits.length > 0) {
-    enemies = enemies.filter((enemy) => !hitKeys.has(`${enemy.x}:${enemy.y}`));
-    currentRunStats.enemyKills += enemyHits.length;
-    enemyHits.forEach((enemy, index) => {
-      addFloatingText(`+2`, enemy.x, enemy.y - index * 0.08, "#d9b3ff");
-      activeExplosionBursts.push({
-        x: enemy.x,
-        y: enemy.y,
-        start: performance.now(),
-        duration: reducedMotionEnabled ? 220 : 320
-      });
-    });
-  }
-
-  if (obstacleHits.length > 0) {
-    obstacles = obstacles.filter((obstacle) => !hitKeys.has(`${obstacle.x}:${obstacle.y}`));
-    currentRunStats.obstacleBreaks += obstacleHits.length;
-    obstacleHits.forEach((obstacle) => {
-      addFloatingText("פיצוץ", obstacle.x, obstacle.y, "#9fd8ff");
-      activeExplosionBursts.push({
-        x: obstacle.x,
-        y: obstacle.y,
-        start: performance.now(),
-        duration: reducedMotionEnabled ? 220 : 320
-      });
-    });
-  }
-
-  const pointsEarned = enemyHits.length * 2 + obstacleHits.length;
-  if (pointsEarned > 0) {
-    score += pointsEarned;
-    scoreEl.textContent = String(score);
-    if (score > bestScore) {
-      bestScore = score;
-      bestEl.textContent = String(bestScore);
-      localStorage.setItem(STORAGE_KEYS.bestScore, String(bestScore));
-    }
-    updateLevel();
-    updateSpeedIfNeeded();
-  }
-
-  boardShakeUntil = performance.now() + (reducedMotionEnabled ? 90 : 140);
-  triggerBoardFlash("weapon");
-  playSound("weapon");
-  updateAmmoHud();
-  updateHazardsLabel();
-  updateAbilityLabel();
-  updateActionButtons();
-
-  if (enemyHits.length || obstacleHits.length) {
-    const summary = [
-      enemyHits.length > 0 ? `${enemyHits.length} אויבים` : "",
-      obstacleHits.length > 0 ? `${obstacleHits.length} מכשולים` : ""
-    ].filter(Boolean).join(" + ");
-    setTemporaryStatus(`לייזר פגע: ${summary}`, 900);
-  } else {
-    setTemporaryStatus("לייזר נורה", 650);
-  }
-};
-
-updateMiniHud = patchedUpdateMiniHud;
-formatPickupName = patchedFormatPickupName;
-updateAbilityLabel = patchedUpdateAbilityLabel;
-updateActionButtons = patchedUpdateActionButtons;
-choosePickupType = patchedChoosePickupType;
-collectPickup = patchedCollectPickup;
-drawLaserShot = patchedDrawLaserShot;
-fireWeapon = patchedFireWeapon;
-
 if (GADGET_HELP.blaster) {
   GADGET_HELP.blaster.title = "תחמושת לייזר";
-  GADGET_HELP.blaster.description = "איסוף תחמושת מוסיף עוד יריות ללייזר הישר של הנחש. הירי פוגע בכל אויב או מכשול שנמצאים בקו התנועה הנוכחי.";
+  GADGET_HELP.blaster.description = "איסוף תחמושת מוסיף עוד יריות ללייזר הישר של הנחש. הירי פוגע בכל אויב או מכשול שנמצא בקו התנועה הנוכחי.";
 }
 
 function getBoardShakeOffset(nowMs) {
@@ -4839,3 +4625,4 @@ void loadCommunityLeaderboard();
 updateAuthUI();
 setHomeOpen(true);
 syncViewportLayout();
+

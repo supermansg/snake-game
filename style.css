@@ -545,14 +545,14 @@ h1 {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
+  gap: 14px;
 }
 
 .board-mini-stats,
 .board-icon-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
 .board-mini-stats {
@@ -593,13 +593,13 @@ h1 {
 }
 
 .icon-btn {
-  min-width: 36px;
-  min-height: 36px;
+  min-width: 42px;
+  min-height: 42px;
   padding: 0;
   display: grid;
   place-items: center;
   font-size: 1rem;
-  border-radius: 12px;
+  border-radius: 14px;
   background: rgba(8, 14, 28, 0.76);
   border: 1px solid rgba(134, 159, 217, 0.24);
   color: #eff5ff;
