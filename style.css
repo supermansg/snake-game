@@ -169,7 +169,7 @@ body.home-open .wrap {
 
 .wrap.compact-viewport .touch-fire-btn,
 .wrap.compact-viewport .gear-btn {
-  min-height: 34px;
+  min-height: 40px;
 }
 
 .wrap.compact-viewport .touch-controls[data-size="small"] {
@@ -214,7 +214,7 @@ body.home-open .wrap {
 .status-badges {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
 .utility-actions {
@@ -841,9 +841,9 @@ input:focus-visible {
 }
 
 .touch-fire-btn {
-  min-height: 42px;
-  padding: 0 15px;
-  border-radius: 14px;
+  min-height: 50px;
+  padding: 0 18px;
+  border-radius: 16px;
   font-size: 1rem;
 }
 
@@ -1694,6 +1694,7 @@ input:focus-visible {
 .wrap.is-play-focused .touch-header-actions {
   width: 100%;
   justify-content: space-between;
+  gap: 12px;
 }
 
 .wrap.is-board-only .controls {

@@ -516,6 +516,7 @@ let preferredControlSide = normalizeKey(
 let bestScore = Number(localStorage.getItem(STORAGE_KEYS.bestScore) || 0);
 let currentSpeedMs = DIFFICULTY_PRESETS[difficulty].baseSpeedMs;
 let gameTimer = null;
+let kickoffTickTimeout = null;
 let rafId = null;
 let running = false;
 let started = false;
@@ -738,7 +739,7 @@ function maybeCompleteResumeCountdown(nowMs) {
   resumeCountdown = null;
   running = true;
   setPlayingStatus();
-  runLoop();
+  runLoop({ prime: true });
   updatePlayLayoutState();
   updateActionButtons();
   focusGameSurface();
@@ -883,7 +884,7 @@ function startGame() {
   updatePlayLayoutState();
   updateActionButtons();
   focusGameSurface();
-  runLoop();
+  runLoop({ prime: true });
 }
 
 function startFreshRun(initialDirection = null) {
@@ -944,13 +945,24 @@ function togglePause() {
   else startGame();
 }
 
-function runLoop() {
+function runLoop(options = {}) {
   stopLoop();
   currentSpeedMs = getCurrentSpeedMs();
+  if (options.prime) {
+    const kickoffDelay = Math.max(16, Math.min(32, Math.round(currentSpeedMs * 0.2)));
+    kickoffTickTimeout = setTimeout(() => {
+      kickoffTickTimeout = null;
+      tick();
+    }, kickoffDelay);
+  }
   gameTimer = setInterval(tick, currentSpeedMs);
 }
 
 function stopLoop() {
+  if (kickoffTickTimeout) {
+    clearTimeout(kickoffTickTimeout);
+    kickoffTickTimeout = null;
+  }
   if (!gameTimer) return;
   clearInterval(gameTimer);
   gameTimer = null;
@@ -2168,6 +2180,14 @@ function setDirection(dir) {
   }
 }
 
+function matchesKeyInput(event, { key, code, keys = [], codes = [] }) {
+  if (key && event.key === key) return true;
+  if (code && event.code === code) return true;
+  if (keys.includes(event.key)) return true;
+  if (codes.includes(event.code)) return true;
+  return false;
+}
+
 function onKeyDown(event) {
   if (event.ctrlKey || event.altKey || event.metaKey) return;
   if (event.target instanceof HTMLElement) {
@@ -2227,73 +2247,75 @@ function onKeyDown(event) {
     return;
   }
 
-  switch (event.key) {
-    case "ArrowUp":
-    case "w":
-    case "W":
-      event.preventDefault();
-      setDirection("up");
-      break;
-    case "ArrowDown":
-    case "s":
-    case "S":
-      event.preventDefault();
-      setDirection("down");
-      break;
-    case "ArrowLeft":
-    case "a":
-    case "A":
-      event.preventDefault();
-      setDirection("left");
-      break;
-    case "ArrowRight":
-    case "d":
-    case "D":
-      event.preventDefault();
-      setDirection("right");
-      break;
-    case " ":
-      event.preventDefault();
-      if (gadgetHelpOpen) {
-        closeGadgetHelp();
-        break;
-      }
-      togglePause();
-      break;
-    case "Enter":
-      if (gadgetHelpOpen) {
-        closeGadgetHelp();
-        break;
-      }
-      handlePrimaryButtonClick();
-      break;
-    case "f":
-    case "F":
-      event.preventDefault();
-      fireWeapon();
-      break;
-    case "Escape":
-      if (gadgetHelpOpen) {
-        closeGadgetHelp();
-        break;
-      }
-      if (menuPanel && !menuPanel.hidden) {
-        setMenuOpen(false);
-      }
-      if (leaderboardPanel && !leaderboardPanel.hidden) {
-        setLeaderboardOpen(false);
-      }
-      if (recordScorePanel && !recordScorePanel.hidden) {
-        skipPendingScoreRecord();
-      }
-      if (runResultsPanel && !runResultsPanel.hidden) {
-        setRunResultsOpen(false);
-        initGame();
-        setMenuOpen(true);
-      }
-      break;
-    default:
+  if (matchesKeyInput(event, { keys: ["ArrowUp", "w", "W"], codes: ["KeyW"] })) {
+    event.preventDefault();
+    setDirection("up");
+    return;
+  }
+
+  if (matchesKeyInput(event, { keys: ["ArrowDown", "s", "S"], codes: ["KeyS"] })) {
+    event.preventDefault();
+    setDirection("down");
+    return;
+  }
+
+  if (matchesKeyInput(event, { keys: ["ArrowLeft", "a", "A"], codes: ["KeyA"] })) {
+    event.preventDefault();
+    setDirection("left");
+    return;
+  }
+
+  if (matchesKeyInput(event, { keys: ["ArrowRight", "d", "D"], codes: ["KeyD"] })) {
+    event.preventDefault();
+    setDirection("right");
+    return;
+  }
+
+  if (matchesKeyInput(event, { key: " ", code: "Space" })) {
+    event.preventDefault();
+    if (gadgetHelpOpen) {
+      closeGadgetHelp();
       return;
+    }
+    togglePause();
+    return;
+  }
+
+  if (matchesKeyInput(event, { key: "Enter", code: "Enter" })) {
+    if (gadgetHelpOpen) {
+      closeGadgetHelp();
+      return;
+    }
+    handlePrimaryButtonClick();
+    return;
+  }
+
+  if (matchesKeyInput(event, { keys: ["f", "F"], codes: ["KeyF"] })) {
+    event.preventDefault();
+    fireWeapon();
+    return;
+  }
+
+  if (matchesKeyInput(event, { key: "Escape", code: "Escape" })) {
+    if (gadgetHelpOpen) {
+      closeGadgetHelp();
+      return;
+    }
+    if (menuPanel && !menuPanel.hidden) {
+      setMenuOpen(false);
+    }
+    if (leaderboardPanel && !leaderboardPanel.hidden) {
+      setLeaderboardOpen(false);
+    }
+    if (recordScorePanel && !recordScorePanel.hidden) {
+      skipPendingScoreRecord();
+    }
+    if (runResultsPanel && !runResultsPanel.hidden) {
+      setRunResultsOpen(false);
+      initGame();
+      setMenuOpen(true);
+    }
+    return;
   }
 }
 
@@ -2953,12 +2975,16 @@ function fireWeapon() {
   if (playerPowerState.blasterCharges <= 0) {
     setTemporaryStatus("אין תחמושת לירי", 850);
     updateActionButtons();
+    focusGameSurface();
     return;
   }
 
   const head = snake[0];
   const trace = getShotTrace();
-  if (trace.length === 0) return;
+  if (trace.length === 0) {
+    focusGameSurface();
+    return;
+  }
 
   playerPowerState.blasterCharges -= 1;
   currentRunStats.shots += 1;
@@ -3031,6 +3057,7 @@ function fireWeapon() {
   } else {
     setTemporaryStatus("לייזר נורה", 650);
   }
+  focusGameSurface();
 }
 
 function formatPickupName(type) {
@@ -4163,7 +4190,7 @@ if (window.visualViewport) {
   window.visualViewport.addEventListener("resize", syncViewportLayout);
   window.visualViewport.addEventListener("scroll", syncViewportLayout);
 }
-document.addEventListener("keydown", onKeyDown);
+window.addEventListener("keydown", onKeyDown, { capture: true });
 startBtn.addEventListener("click", handlePrimaryButtonClick);
 pauseBtn.addEventListener("click", togglePause);
 restartBtn.addEventListener("click", handleRestartButtonClick);
