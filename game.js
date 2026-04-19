@@ -706,15 +706,31 @@ function setAuthOpen(isOpen) {
   if (!authOpen && started && gameOverAt === 0) focusGameSurface();
 }
 
-function focusGameSurface() {
+function focusGameSurface(options = {}) {
   if (!canvas || homeOpen || authOpen) return;
-  requestAnimationFrame(() => {
+
+  const focusCanvas = () => {
+    if (document.activeElement instanceof HTMLElement && document.activeElement !== canvas) {
+      document.activeElement.blur?.();
+    }
+    try {
+      window.focus();
+    } catch {
+      // Ignore platforms that disallow programmatic window focus.
+    }
     try {
       canvas.focus({ preventScroll: true });
     } catch {
       canvas.focus();
     }
-  });
+  };
+
+  if (options.immediate) {
+    focusCanvas();
+    return;
+  }
+
+  requestAnimationFrame(focusCanvas);
 }
 
 function beginResumeCountdown() {
@@ -739,10 +755,10 @@ function maybeCompleteResumeCountdown(nowMs) {
   resumeCountdown = null;
   running = true;
   setPlayingStatus();
-  runLoop({ prime: true });
+  runLoop({ kickoff: "resume" });
   updatePlayLayoutState();
   updateActionButtons();
-  focusGameSurface();
+  focusGameSurface({ immediate: true });
 }
 
 function getResumeCountdownValue(nowMs) {
@@ -883,8 +899,8 @@ function startGame() {
   setPlayingStatus();
   updatePlayLayoutState();
   updateActionButtons();
-  focusGameSurface();
-  runLoop({ prime: true });
+  focusGameSurface({ immediate: true });
+  runLoop({ kickoff: "fresh" });
 }
 
 function startFreshRun(initialDirection = null) {
@@ -894,7 +910,7 @@ function startFreshRun(initialDirection = null) {
     nextDirection = { ...initialDirection };
   }
   setHomeOpen(false);
-  focusGameSurface();
+  focusGameSurface({ immediate: true });
   startGame();
 }
 
@@ -948,8 +964,10 @@ function togglePause() {
 function runLoop(options = {}) {
   stopLoop();
   currentSpeedMs = getCurrentSpeedMs();
-  if (options.prime) {
-    const kickoffDelay = Math.max(16, Math.min(32, Math.round(currentSpeedMs * 0.2)));
+  if (options.kickoff) {
+    const kickoffDelay = options.kickoff === "resume"
+      ? Math.max(16, Math.min(32, Math.round(currentSpeedMs * 0.2)))
+      : Math.max(110, Math.min(160, Math.round(currentSpeedMs * 0.9)));
     kickoffTickTimeout = setTimeout(() => {
       kickoffTickTimeout = null;
       tick();
@@ -4550,6 +4568,12 @@ if (authService?.subscribe) {
       pushToast("קישור נשלח", nextState.detail, "accent");
     }
   });
+}
+
+if (["127.0.0.1", "localhost"].includes(window.location.hostname)) {
+  window.__snakeMeQa = {
+    snapshot: getQaInputSnapshot
+  };
 }
 
 setTheme(activeTheme);
