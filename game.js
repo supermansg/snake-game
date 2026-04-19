@@ -616,8 +616,31 @@ function formatAmmoDisplay(count) {
   return `${icons} × ${ammoCount}`;
 }
 
+function formatAmmoPips(count) {
+  const ammoCount = Math.max(0, count);
+  const filled = Math.min(ammoCount, 3);
+  const empty = Math.max(0, 3 - filled);
+  const overflow = Math.max(0, ammoCount - 3);
+  return `${"✦".repeat(filled)}${"·".repeat(empty)}${overflow > 0 ? `+${overflow}` : ""}`;
+}
+
 function updateAmmoHud() {
-  if (ammoEl) ammoEl.textContent = formatAmmoDisplay(playerPowerState.blasterCharges);
+  const ammoCount = Math.max(0, playerPowerState.blasterCharges);
+  const ammoDisplay = formatAmmoDisplay(ammoCount);
+  const ammoPips = formatAmmoPips(ammoCount);
+
+  if (ammoEl) {
+    ammoEl.textContent = ammoDisplay;
+    ammoEl.dataset.ammoCount = String(ammoCount);
+    ammoEl.dataset.ammoPips = ammoPips;
+    ammoEl.parentElement?.setAttribute("data-ammo-pips", ammoPips);
+  }
+
+  [fireBtn, touchFireBtn, miniFireBtn].filter(Boolean).forEach((button) => {
+    button.dataset.ammoCount = String(ammoCount);
+    button.dataset.ammoPips = ammoPips;
+    button.dataset.hasAmmo = ammoCount > 0 ? "true" : "false";
+  });
 }
 
 function updateAuthUI() {
@@ -2811,8 +2834,9 @@ function updateAbilityLabel() {
 
 function updateActionButtons() {
   const controlsBlocked = hasBlockingOverlayOpen();
+  const ammoCount = Math.max(0, playerPowerState.blasterCharges);
   const canFire =
-    playerPowerState.blasterCharges > 0 &&
+    ammoCount > 0 &&
     running &&
     started &&
     gameOverAt === 0 &&
@@ -2824,6 +2848,7 @@ function updateActionButtons() {
   const isCountingDown = Boolean(resumeCountdown);
   const isGameOver = gameOverAt > 0;
   const hasRecordableScore = Boolean(pendingScoreEntry);
+  const showFireAction = started && gameOverAt === 0;
 
   startBtn.hidden = false;
   pauseBtn.hidden = false;
@@ -2860,38 +2885,43 @@ function updateActionButtons() {
     restartBtn.disabled = gadgetHelpOpen || controlsBlocked;
   }
 
-  const visibleButtons = [startBtn, pauseBtn, restartBtn].filter((button) => !button.hidden).length;
-  if (controlsEl) {
-    controlsEl.dataset.hasAction = "true";
-    controlsEl.style.setProperty("--control-cols", String(Math.max(visibleButtons + 1, 1)));
-  }
-
   fireBtn.disabled = !canFire;
   touchFireBtn.disabled = !canFire;
   if (miniFireBtn) miniFireBtn.disabled = !canFire;
-  fireBtn.hidden = false;
-  touchFireBtn.hidden = false;
-  if (miniFireBtn) miniFireBtn.hidden = false;
+  fireBtn.hidden = !showFireAction;
+  touchFireBtn.hidden = !showFireAction;
+  if (miniFireBtn) miniFireBtn.hidden = !showFireAction;
+  fireBtn.dataset.canFire = canFire ? "true" : "false";
+  touchFireBtn.dataset.canFire = canFire ? "true" : "false";
+  if (miniFireBtn) miniFireBtn.dataset.canFire = canFire ? "true" : "false";
   fireBtn.textContent = isTouchDevice ? "◎ ירי" : "◎ ירי / F";
-  touchFireBtn.textContent = "ירי";
+  touchFireBtn.textContent = "◎ ירי";
   touchFireBtn.setAttribute("aria-label", "ירי לא זמין");
 
   if (canFire) {
-    fireBtn.textContent = `◎ ירי x${playerPowerState.blasterCharges}`;
-    touchFireBtn.textContent = `◎ ירי x${playerPowerState.blasterCharges}`;
-    touchFireBtn.setAttribute("aria-label", "ירי עם בלסטר");
+    fireBtn.textContent = isTouchDevice ? "◎ ירי" : "◎ ירי / F";
+    touchFireBtn.textContent = "◎ ירי";
+    fireBtn.setAttribute("aria-label", `ירי עם בלסטר, נותרו ${ammoCount} יריות`);
+    touchFireBtn.setAttribute("aria-label", `ירי עם בלסטר, נותרו ${ammoCount} יריות`);
     if (miniFireBtn) {
       miniFireBtn.textContent = "◎";
-      miniFireBtn.setAttribute("aria-label", "ירי עם בלסטר");
+      miniFireBtn.setAttribute("aria-label", `ירי עם בלסטר, נותרו ${ammoCount} יריות`);
     }
   } else {
     fireBtn.textContent = isTouchDevice ? "◎ ירי" : "◎ ירי / F";
     touchFireBtn.textContent = "◎ ירי";
+    fireBtn.setAttribute("aria-label", ammoCount > 0 ? "ירי עם בלסטר" : "אין תחמושת לירי");
     touchFireBtn.setAttribute("aria-label", "ירי לא זמין");
     if (miniFireBtn) {
       miniFireBtn.textContent = "◎";
-      miniFireBtn.setAttribute("aria-label", "ירי לא זמין");
+      miniFireBtn.setAttribute("aria-label", ammoCount > 0 ? "ירי עם בלסטר" : "אין תחמושת לירי");
     }
+  }
+
+  const visibleButtons = [startBtn, pauseBtn, restartBtn, fireBtn].filter((button) => !button.hidden).length;
+  if (controlsEl) {
+    controlsEl.dataset.hasAction = showFireAction ? "true" : "false";
+    controlsEl.style.setProperty("--control-cols", String(Math.max(visibleButtons, 1)));
   }
 
   if (miniPauseBtn) {
@@ -2919,7 +2949,12 @@ function toggleTouchSettings() {
 }
 
 function fireWeapon() {
-  if (!running || playerPowerState.blasterCharges <= 0 || gameOverAt > 0 || gadgetHelpOpen || resumeCountdown || hasBlockingOverlayOpen()) return;
+  if (!running || gameOverAt > 0 || gadgetHelpOpen || resumeCountdown || hasBlockingOverlayOpen()) return;
+  if (playerPowerState.blasterCharges <= 0) {
+    setTemporaryStatus("אין תחמושת לירי", 850);
+    updateActionButtons();
+    return;
+  }
 
   const head = snake[0];
   const trace = getShotTrace();
@@ -4022,7 +4057,10 @@ function updateMiniHud() {
 
 function getShotTrace() {
   const cells = [];
-  const shotDirection = direction || { x: 1, y: 0 };
+  const activeDirection = nextDirection || direction || { x: 1, y: 0 };
+  const shotDirection = activeDirection.x === 0 && activeDirection.y === 0
+    ? { x: 1, y: 0 }
+    : activeDirection;
   let cursor = { ...snake[0] };
 
   while (true) {
