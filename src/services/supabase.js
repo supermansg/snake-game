@@ -10,9 +10,11 @@ export function createSupabaseBrowserClient() {
 
   return createClient(url, anonKey, {
     auth: {
+      flowType: "pkce",
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: true
+      detectSessionInUrl: true,
+      storageKey: "snake-me-auth"
     }
   });
 }

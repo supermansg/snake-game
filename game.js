@@ -118,6 +118,7 @@ const guestCloseAuthBtn = document.getElementById("guestCloseAuthBtn");
 const googleAuthBtn = document.getElementById("googleAuthBtn");
 const magicLinkForm = document.getElementById("magicLinkForm");
 const magicLinkEmailInput = document.getElementById("magicLinkEmailInput");
+const magicLinkSubmitBtn = document.getElementById("magicLinkSubmitBtn");
 const authStatusMessageEl = document.getElementById("authStatusMessage");
 const authSignOutBtn = document.getElementById("authSignOutBtn");
 const openAuthBtn = document.getElementById("openAuthBtn");
@@ -575,12 +576,14 @@ let currentRunStats = createEmptyRunStats();
 let lastRunResults = null;
 let homeOpen = true;
 let authOpen = false;
+let authReturnToHome = false;
 let resumeCountdown = null;
 let authSnapshot = authService?.getState?.() || {
   status: "guest",
   detail: "משחק אורח זמין תמיד",
   user: null,
-  session: null
+  session: null,
+  error: null
 };
 
 bestEl.textContent = String(bestScore);
@@ -645,6 +648,9 @@ function updateAmmoHud() {
 }
 
 function updateAuthUI() {
+  const authConfigured = authService?.hasSupabase?.() ?? false;
+  const authStatus = authSnapshot.status || "guest";
+  const isLoading = authStatus === "loading";
   const isAuthed = authSnapshot.status === "authenticated" && authSnapshot.user;
   const email = authSnapshot.user?.email || "לא מחובר כרגע";
   const displayName =
@@ -652,6 +658,29 @@ function updateAuthUI() {
     authSnapshot.user?.user_metadata?.name ||
     authSnapshot.user?.email ||
     "משחק אורח";
+  const authTone =
+    authStatus === "authenticated"
+      ? "success"
+      : authStatus === "error"
+      ? "danger"
+      : authStatus === "magic-link-sent"
+      ? "accent"
+      : authStatus === "unavailable"
+      ? "warning"
+      : "neutral";
+  const authModeLabel =
+    authStatus === "authenticated"
+      ? "מחובר"
+      : authStatus === "loading"
+      ? "מתחבר"
+      : authStatus === "magic-link-sent"
+      ? "קישור נשלח"
+      : "אורח";
+  const authSummaryText = isAuthed
+    ? `מחובר בתור ${displayName}. אפשר להמשיך לשחק בלי לעצור את הזרימה.`
+    : authSnapshot.detail || "שחק כאורח מיד, או התחבר כדי להכין פרופיל עתידי.";
+  const canStartAuthFlow = authConfigured && !isLoading && !isAuthed;
+  const canSubmitMagicLink = canStartAuthFlow;
 
   if (homeAccountBadgeEl) {
     homeAccountBadgeEl.textContent = isAuthed ? "חשבון מחובר" : "משחק אורח";
@@ -667,19 +696,33 @@ function updateAuthUI() {
       : "שחק כאורח מיד או התחבר כדי להכין את הקרקע לשמירה, סנכרון והתקדמות עתידית.";
   }
 
-  if (accountModeBadgeEl) accountModeBadgeEl.textContent = isAuthed ? "מחובר" : "אורח";
+  if (accountModeBadgeEl) accountModeBadgeEl.textContent = authModeLabel;
   if (accountStatusTextEl) accountStatusTextEl.textContent = authSnapshot.detail || "משחק אורח זמין תמיד";
   if (accountEmailTextEl) accountEmailTextEl.textContent = email;
   if (authStatusMessageEl) {
-    authStatusMessageEl.textContent = isAuthed
-      ? `מחובר בתור ${displayName}. אפשר להמשיך לשחק בלי לעצור את הזרימה.`
-      : authSnapshot.detail || "שחק כאורח מיד, או התחבר כדי להכין פרופיל עתידי.";
+    authStatusMessageEl.textContent = authSummaryText;
+    authStatusMessageEl.dataset.tone = authTone;
   }
 
   if (menuSignOutBtn) menuSignOutBtn.hidden = !isAuthed;
   if (authSignOutBtn) authSignOutBtn.hidden = !isAuthed;
-  if (openAuthBtn) openAuthBtn.textContent = isAuthed ? "נהל התחברות" : "פתח מסך התחברות";
+  if (openAuthBtn) openAuthBtn.textContent = isAuthed ? "נהל חשבון" : "פתח מסך התחברות";
   if (homeAccountBtn) homeAccountBtn.textContent = isAuthed ? "חשבון מחובר" : "חשבון והתחברות";
+  if (googleAuthBtn) {
+    googleAuthBtn.disabled = !canStartAuthFlow;
+    googleAuthBtn.dataset.loading = isLoading ? "true" : "false";
+  }
+  if (magicLinkEmailInput) {
+    magicLinkEmailInput.disabled = !canSubmitMagicLink;
+  }
+  if (magicLinkSubmitBtn) {
+    magicLinkSubmitBtn.disabled = !canSubmitMagicLink;
+    magicLinkSubmitBtn.textContent = isLoading ? "שולח..." : "שלח קישור כניסה";
+  }
+  if (authSignOutBtn) authSignOutBtn.disabled = isLoading || !isAuthed;
+  if (guestCloseAuthBtn) {
+    guestCloseAuthBtn.textContent = isAuthed ? "חזור למשחק" : "המשך כאורח";
+  }
 }
 
 function setHomeOpen(isOpen) {
@@ -693,6 +736,9 @@ function setHomeOpen(isOpen) {
 }
 
 function setAuthOpen(isOpen) {
+  if (isOpen) {
+    authReturnToHome = homeOpen;
+  }
   authOpen = Boolean(isOpen);
   if (authPanel) authPanel.hidden = !authOpen;
   if (authOpen && homeOpen) {
@@ -703,7 +749,15 @@ function setAuthOpen(isOpen) {
   if (authOpen && runResultsPanel) runResultsPanel.hidden = true;
   updatePlayLayoutState();
   updateActionButtons();
-  if (!authOpen && started && gameOverAt === 0) focusGameSurface();
+  if (!authOpen) {
+    if (authReturnToHome && !started && gameOverAt === 0) {
+      authReturnToHome = false;
+      setHomeOpen(true);
+      return;
+    }
+    authReturnToHome = false;
+    if (started && gameOverAt === 0) focusGameSurface();
+  }
 }
 
 function focusGameSurface(options = {}) {
@@ -788,15 +842,6 @@ async function handleMagicLinkSubmit(event) {
   if (!authService || !magicLinkEmailInput) return;
 
   const email = magicLinkEmailInput.value.trim();
-  if (!email) {
-    authSnapshot = {
-      ...authSnapshot,
-      detail: "יש להזין מייל תקין כדי לשלוח קישור"
-    };
-    updateAuthUI();
-    return;
-  }
-
   await authService.signInWithMagicLink(email);
 }
 
@@ -4560,20 +4605,20 @@ if (authService?.subscribe) {
       }
       return;
     }
+    if (nextState.status === "error") {
+      pushToast("ההתחברות לא הושלמה", nextState.detail || "אפשר להמשיך כאורח ולנסות שוב", "warning");
+      return;
+    }
+    if (nextState.status === "magic-link-sent") {
+      pushToast("קישור נשלח", nextState.detail || "בדוק את המייל כדי להשלים את הכניסה", "accent");
+      return;
+    }
     if (previousStatus === "authenticated" && nextState.status === "guest") {
+      if (authOpen) setAuthOpen(false);
       pushToast("חזרת למצב אורח", "המשחק וההתקדמות המקומית נשארו זמינים", "accent");
       return;
     }
-    if (nextState.status === "guest" && typeof nextState.detail === "string" && nextState.detail.includes("קישור")) {
-      pushToast("קישור נשלח", nextState.detail, "accent");
-    }
   });
-}
-
-if (["127.0.0.1", "localhost"].includes(window.location.hostname)) {
-  window.__snakeMeQa = {
-    snapshot: getQaInputSnapshot
-  };
 }
 
 setTheme(activeTheme);
