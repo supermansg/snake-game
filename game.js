@@ -126,9 +126,25 @@ const menuSignOutBtn = document.getElementById("menuSignOutBtn");
 const accountModeBadgeEl = document.getElementById("accountModeBadge");
 const accountStatusTextEl = document.getElementById("accountStatusText");
 const accountEmailTextEl = document.getElementById("accountEmailText");
+const accountDashboardPanel = document.getElementById("accountDashboardPanel");
+const closeAccountDashboardBtn = document.getElementById("closeAccountDashboardBtn");
+const dashboardSignOutBtn = document.getElementById("dashboardSignOutBtn");
+const dashboardDisplayNameEl = document.getElementById("dashboardDisplayName");
+const dashboardEmailEl = document.getElementById("dashboardEmail");
+const dashboardSyncStatusEl = document.getElementById("dashboardSyncStatus");
+const dashboardLevelBadgeEl = document.getElementById("dashboardLevelBadge");
+const dashboardXpLabelEl = document.getElementById("dashboardXpLabel");
+const dashboardXpHintEl = document.getElementById("dashboardXpHint");
+const dashboardXpFillEl = document.getElementById("dashboardXpFill");
+const dashboardBestScoreEl = document.getElementById("dashboardBestScore");
+const dashboardBestStageEl = document.getElementById("dashboardBestStage");
+const dashboardTotalRunsEl = document.getElementById("dashboardTotalRuns");
+const dashboardRecentRunsEl = document.getElementById("dashboardRecentRuns");
+const dashboardSettingsSummaryEl = document.getElementById("dashboardSettingsSummary");
 const touchButtons = document.querySelectorAll("[data-dir]");
 const isTouchDevice = window.matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
 const authService = window.SnakeMeServices?.auth || null;
+const accountSyncService = window.SnakeMeServices?.accountSync || null;
 
 const GRID_SIZE = 21;
 const CELL = canvas.width / GRID_SIZE;
@@ -577,6 +593,8 @@ let lastRunResults = null;
 let homeOpen = true;
 let authOpen = false;
 let authReturnToHome = false;
+let accountDashboardOpen = false;
+let accountDashboardReturnToHome = false;
 let resumeCountdown = null;
 let authSnapshot = authService?.getState?.() || {
   status: "guest",
@@ -585,6 +603,17 @@ let authSnapshot = authService?.getState?.() || {
   session: null,
   error: null
 };
+let accountSyncSnapshot = accountSyncService?.getState?.() || {
+  status: "guest",
+  detail: "שומר נתונים מקומית במצב אורח",
+  profile: null,
+  settings: null,
+  progress: null,
+  recentRuns: [],
+  userId: "",
+  error: null
+};
+let pendingAccountSettingsHydration = null;
 
 bestEl.textContent = String(bestScore);
 
@@ -596,6 +625,7 @@ function hasBlockingOverlayOpen() {
   return Boolean(
     homeOpen ||
       authOpen ||
+      accountDashboardOpen ||
       (menuPanel && !menuPanel.hidden) ||
       (leaderboardPanel && !leaderboardPanel.hidden) ||
       (recordScorePanel && !recordScorePanel.hidden) ||
@@ -652,8 +682,10 @@ function updateAuthUI() {
   const authStatus = authSnapshot.status || "guest";
   const isLoading = authStatus === "loading";
   const isAuthed = authSnapshot.status === "authenticated" && authSnapshot.user;
+  const accountReady = accountSyncSnapshot.status === "ready";
   const email = authSnapshot.user?.email || "לא מחובר כרגע";
   const displayName =
+    accountSyncSnapshot.profile?.display_name ||
     authSnapshot.user?.user_metadata?.full_name ||
     authSnapshot.user?.user_metadata?.name ||
     authSnapshot.user?.email ||
@@ -677,7 +709,9 @@ function updateAuthUI() {
       ? "קישור נשלח"
       : "אורח";
   const authSummaryText = isAuthed
-    ? `מחובר בתור ${displayName}. אפשר להמשיך לשחק בלי לעצור את הזרימה.`
+    ? accountReady
+      ? `מחובר בתור ${displayName}. ההגדרות וההתקדמות נשמרות לחשבון שלך.`
+      : "מחובר לחשבון. מסנכרן נתונים ברקע..."
     : authSnapshot.detail || "שחק כאורח מיד, או התחבר כדי להכין פרופיל עתידי.";
   const canStartAuthFlow = authConfigured && !isLoading && !isAuthed;
   const canSubmitMagicLink = canStartAuthFlow;
@@ -697,7 +731,11 @@ function updateAuthUI() {
   }
 
   if (accountModeBadgeEl) accountModeBadgeEl.textContent = authModeLabel;
-  if (accountStatusTextEl) accountStatusTextEl.textContent = authSnapshot.detail || "משחק אורח זמין תמיד";
+  if (accountStatusTextEl) {
+    accountStatusTextEl.textContent = isAuthed
+      ? accountSyncSnapshot.detail || "החשבון מחובר"
+      : authSnapshot.detail || "משחק אורח זמין תמיד";
+  }
   if (accountEmailTextEl) accountEmailTextEl.textContent = email;
   if (authStatusMessageEl) {
     authStatusMessageEl.textContent = authSummaryText;
@@ -706,8 +744,8 @@ function updateAuthUI() {
 
   if (menuSignOutBtn) menuSignOutBtn.hidden = !isAuthed;
   if (authSignOutBtn) authSignOutBtn.hidden = !isAuthed;
-  if (openAuthBtn) openAuthBtn.textContent = isAuthed ? "נהל חשבון" : "פתח מסך התחברות";
-  if (homeAccountBtn) homeAccountBtn.textContent = isAuthed ? "חשבון מחובר" : "חשבון והתחברות";
+  if (openAuthBtn) openAuthBtn.textContent = isAuthed ? "פתח דאשבורד" : "פתח מסך התחברות";
+  if (homeAccountBtn) homeAccountBtn.textContent = isAuthed ? "דאשבורד אישי" : "חשבון והתחברות";
   if (googleAuthBtn) {
     googleAuthBtn.disabled = !canStartAuthFlow;
     googleAuthBtn.dataset.loading = isLoading ? "true" : "false";
@@ -723,6 +761,337 @@ function updateAuthUI() {
   if (guestCloseAuthBtn) {
     guestCloseAuthBtn.textContent = isAuthed ? "חזור למשחק" : "המשך כאורח";
   }
+}
+
+function canApplySyncedSettingsNow() {
+  return !started && gameOverAt === 0 && !running && !resumeCountdown;
+}
+
+function buildAccountSettingsPayload() {
+  return {
+    difficulty,
+    theme: activeTheme,
+    snake_skin: activeSkin,
+    control_layout: preferredControlLayout,
+    control_size: preferredControlSize,
+    control_side: preferredControlSide,
+    audio_muted: audioMuted,
+    gadget_tips_disabled: gadgetTipsDisabled,
+    reduced_motion: reducedMotionEnabled,
+    board_background_source:
+      typeof boardBackgroundSource === "string" &&
+      boardBackgroundSource.trim() &&
+      !boardBackgroundSource.startsWith("data:")
+        ? boardBackgroundSource.trim()
+        : null
+  };
+}
+
+function buildAccountProgressPayload() {
+  return {
+    xp: progressionProfile.xp,
+    level: progressionProfile.level,
+    best_score: bestScore,
+    best_level: progressionProfile.bestLevel,
+    total_runs: progressionProfile.totalRuns,
+    total_score: progressionProfile.totalScore,
+    total_fruit: progressionProfile.totalFruit,
+    total_enemy_kills: progressionProfile.totalEnemyKills,
+    total_obstacle_breaks: progressionProfile.totalObstacleBreaks,
+    total_pickups: progressionProfile.totalPickups,
+    total_portals: progressionProfile.totalPortals,
+    total_shots: progressionProfile.totalShots,
+    total_play_seconds: progressionProfile.totalPlaySeconds,
+    achievements: progressionProfile.achievements
+  };
+}
+
+function normalizeProgressValue(progressSnapshot, snakeKey, camelKey, fallback = 0) {
+  const sourceValue =
+    progressSnapshot?.[snakeKey] ??
+    progressSnapshot?.[camelKey] ??
+    fallback;
+  const numeric = Number(sourceValue);
+  if (!Number.isFinite(numeric)) return fallback;
+  return Math.max(0, Math.round(numeric));
+}
+
+function normalizeProgressSnapshot(progressSnapshot) {
+  let level = Math.max(1, normalizeProgressValue(progressSnapshot, "level", "level", 1));
+  let xp = normalizeProgressValue(progressSnapshot, "xp", "xp", 0);
+
+  while (xp >= getXpGoalForLevel(level)) {
+    xp -= getXpGoalForLevel(level);
+    level += 1;
+  }
+
+  const bestLevel = Math.max(
+    level,
+    normalizeProgressValue(progressSnapshot, "best_level", "bestLevel", 1)
+  );
+
+  return {
+    level,
+    xp,
+    bestScore: normalizeProgressValue(progressSnapshot, "best_score", "bestScore", 0),
+    bestLevel,
+    totalRuns: normalizeProgressValue(progressSnapshot, "total_runs", "totalRuns", 0),
+    totalScore: normalizeProgressValue(progressSnapshot, "total_score", "totalScore", 0),
+    totalFruit: normalizeProgressValue(progressSnapshot, "total_fruit", "totalFruit", 0),
+    totalEnemyKills: normalizeProgressValue(progressSnapshot, "total_enemy_kills", "totalEnemyKills", 0),
+    totalObstacleBreaks: normalizeProgressValue(progressSnapshot, "total_obstacle_breaks", "totalObstacleBreaks", 0),
+    totalPickups: normalizeProgressValue(progressSnapshot, "total_pickups", "totalPickups", 0),
+    totalPortals: normalizeProgressValue(progressSnapshot, "total_portals", "totalPortals", 0),
+    totalShots: normalizeProgressValue(progressSnapshot, "total_shots", "totalShots", 0),
+    totalPlaySeconds: normalizeProgressValue(progressSnapshot, "total_play_seconds", "totalPlaySeconds", 0),
+    achievements:
+      progressSnapshot?.achievements && typeof progressSnapshot.achievements === "object"
+        ? progressSnapshot.achievements
+        : {}
+  };
+}
+
+function buildRunHistoryPayload() {
+  return {
+    score,
+    level,
+    duration_ms: currentRunStats.durationMs,
+    xp_earned: lastRunResults?.xpEarned || 0,
+    difficulty: getDifficultyConfig().label
+  };
+}
+
+function queueAccountSettingsSync() {
+  if (!accountSyncService?.scheduleSettingsSync) return;
+  void accountSyncService.scheduleSettingsSync(buildAccountSettingsPayload());
+}
+
+function queueAccountProfileSync() {
+  if (!accountSyncService?.syncProfile) return;
+  void accountSyncService.syncProfile({
+    display_name: playerName
+  });
+}
+
+function queueAccountProgressSync() {
+  if (!accountSyncService?.syncProgress) return;
+  void accountSyncService.syncProgress(
+    buildAccountProgressPayload(),
+    buildRunHistoryPayload()
+  );
+}
+
+function applyProgressSnapshot(progressSnapshot) {
+  if (!progressSnapshot) return;
+
+  const normalized = normalizeProgressSnapshot(progressSnapshot);
+  progressionProfile = {
+    ...createDefaultProgressionProfile(),
+    ...normalized
+  };
+  bestScore = normalized.bestScore;
+  bestEl.textContent = String(bestScore);
+  renderMetaProgressionUI();
+  renderLeaderboards();
+}
+
+function applySettingsSnapshot(settingsSnapshot) {
+  if (!settingsSnapshot) return;
+
+  setDifficulty(settingsSnapshot.difficulty, {
+    persistLocal: false,
+    syncCloud: false,
+    reinitialize: false
+  });
+  setTheme(settingsSnapshot.theme, {
+    persistLocal: false,
+    syncCloud: false
+  });
+  setSnakeSkin(settingsSnapshot.snake_skin, {
+    persistLocal: false,
+    syncCloud: false
+  });
+  setAudioMuted(Boolean(settingsSnapshot.audio_muted), {
+    persistLocal: false,
+    syncCloud: false
+  });
+  setGadgetTipsDisabled(Boolean(settingsSnapshot.gadget_tips_disabled), {
+    persistLocal: false,
+    syncCloud: false
+  });
+  setReducedMotionEnabled(Boolean(settingsSnapshot.reduced_motion), {
+    persistLocal: false,
+    syncCloud: false
+  });
+  setControlLayout(settingsSnapshot.control_layout, {
+    persistLocal: false,
+    syncCloud: false
+  });
+  setControlSize(settingsSnapshot.control_size, {
+    persistLocal: false,
+    syncCloud: false
+  });
+  setControlSide(settingsSnapshot.control_side, {
+    persistLocal: false,
+    syncCloud: false
+  });
+  setCustomBoardBackground(settingsSnapshot.board_background_source || "", {
+    persistLocal: false,
+    syncCloud: false
+  });
+  updateDifficultyButtons();
+  updateCustomizationUI();
+}
+
+function applyAccountBundleToRuntime(syncState) {
+  if (syncState.profile?.display_name) {
+    setPlayerName(syncState.profile.display_name, {
+      persistLocal: false,
+      syncCloud: false
+    });
+  }
+
+  if (syncState.progress) {
+    applyProgressSnapshot(syncState.progress);
+  }
+
+  if (syncState.settings) {
+    if (canApplySyncedSettingsNow()) {
+      applySettingsSnapshot(syncState.settings);
+      pendingAccountSettingsHydration = null;
+    } else {
+      pendingAccountSettingsHydration = syncState.settings;
+    }
+  }
+
+  renderAccountDashboard();
+}
+
+function applyPendingAccountSettingsIfPossible() {
+  if (!pendingAccountSettingsHydration || !canApplySyncedSettingsNow()) return;
+  applySettingsSnapshot(pendingAccountSettingsHydration);
+  pendingAccountSettingsHydration = null;
+}
+
+function restoreGuestLocalData() {
+  difficulty = normalizeKey(localStorage.getItem(STORAGE_KEYS.difficulty), DIFFICULTY_PRESETS, "medium");
+  activeTheme = normalizeKey(localStorage.getItem(STORAGE_KEYS.theme), BACKGROUND_THEMES, "neon");
+  activeSkin = normalizeKey(localStorage.getItem(STORAGE_KEYS.snakeSkin), SNAKE_SKINS, "classic");
+  preferredControlLayout = normalizeKey(
+    localStorage.getItem(STORAGE_KEYS.controlLayout),
+    CONTROL_LAYOUT_PRESETS,
+    "classic"
+  );
+  preferredControlSize = normalizeKey(
+    localStorage.getItem(STORAGE_KEYS.controlSize),
+    CONTROL_SIZE_PRESETS,
+    "medium"
+  );
+  preferredControlSide = normalizeKey(
+    localStorage.getItem(STORAGE_KEYS.controlSide),
+    CONTROL_SIDE_PRESETS,
+    "center"
+  );
+  playerName = localStorage.getItem(STORAGE_KEYS.playerName) || "שחקן";
+  boardBackgroundSource = localStorage.getItem(STORAGE_KEYS.boardBackground) || "";
+  audioMuted = localStorage.getItem(STORAGE_KEYS.audioMuted) === "1";
+  gadgetTipsDisabled = localStorage.getItem(STORAGE_KEYS.gadgetTipsDisabled) === "1";
+  const storedReducedMotion = localStorage.getItem(STORAGE_KEYS.reducedMotion);
+  reducedMotionEnabled = storedReducedMotion === "1"
+    ? true
+    : storedReducedMotion === "0"
+    ? false
+    : window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  progressionProfile = loadProgressionProfile();
+  bestScore = Number(localStorage.getItem(STORAGE_KEYS.bestScore) || 0);
+  bestEl.textContent = String(bestScore);
+  loadBoardBackground(boardBackgroundSource);
+  applyControlLayout();
+  updateDifficultyButtons();
+  updateCustomizationUI();
+  renderMetaProgressionUI();
+  renderLeaderboards();
+}
+
+function formatRunDate(dateValue) {
+  if (!dateValue) return "";
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("he-IL", {
+    day: "2-digit",
+    month: "2-digit"
+  });
+}
+
+function renderAccountDashboard() {
+  if (!dashboardDisplayNameEl) return;
+
+  const isAuthed = authSnapshot.status === "authenticated" && authSnapshot.user;
+  const displayName =
+    accountSyncSnapshot.profile?.display_name ||
+    authSnapshot.user?.user_metadata?.full_name ||
+    authSnapshot.user?.user_metadata?.name ||
+    authSnapshot.user?.email ||
+    "חשבון Snake Me";
+  const email = authSnapshot.user?.email || "לא מחובר כרגע";
+  const progress = normalizeProgressSnapshot(accountSyncSnapshot.progress || buildAccountProgressPayload());
+  const settings = accountSyncSnapshot.settings || buildAccountSettingsPayload();
+  const xpGoal = getXpGoalForLevel(progress.level || 1);
+  const xpValue = Math.max(0, Number(progress.xp || 0));
+  const percent = Math.max(0, Math.min(100, (xpValue / xpGoal) * 100));
+
+  dashboardDisplayNameEl.textContent = displayName;
+  dashboardEmailEl.textContent = email;
+  dashboardSyncStatusEl.textContent = isAuthed
+    ? accountSyncSnapshot.detail || "החשבון מסונכרן"
+    : "התחבר כדי לסנכרן את ההתקדמות וההגדרות";
+  dashboardSyncStatusEl.dataset.tone = accountSyncSnapshot.status === "error" ? "danger" : "neutral";
+  dashboardLevelBadgeEl.textContent = `רמה ${Math.max(1, Number(progress.level || 1))}`;
+  dashboardXpLabelEl.setAttribute("dir", "ltr");
+  dashboardXpLabelEl.textContent = `${xpValue} / ${xpGoal} XP`;
+  dashboardXpHintEl.textContent = `עוד ${Math.max(0, xpGoal - xpValue)} XP לרמה הבאה`;
+  dashboardXpFillEl.style.width = `${percent}%`;
+  dashboardBestScoreEl.textContent = String(Math.max(0, Number(progress.bestScore || 0)));
+  dashboardBestStageEl.textContent = String(Math.max(1, Number(progress.bestLevel || 1)));
+  dashboardTotalRunsEl.textContent = String(Math.max(0, Number(progress.totalRuns || 0)));
+
+  if (dashboardRecentRunsEl) {
+    const recentRuns = Array.isArray(accountSyncSnapshot.recentRuns) ? accountSyncSnapshot.recentRuns : [];
+    dashboardRecentRunsEl.innerHTML = recentRuns.length > 0
+      ? recentRuns.map((run) => `
+        <li>
+          <strong>${escapeHtml(`${run.score} נק' • שלב ${run.level}`)}</strong>
+          <span>${escapeHtml(`${run.difficulty} • ${formatDuration(run.duration_ms || 0)} • ${formatRunDate(run.created_at)}`)}</span>
+        </li>
+      `).join("")
+      : "<li><strong>עדיין אין ריצות מסונכרנות</strong><span>הן יופיעו כאן אחרי סיום ריצות בחשבון המחובר</span></li>";
+  }
+
+  if (dashboardSettingsSummaryEl) {
+    const summaryItems = [
+      `קושי: ${DIFFICULTY_PRESETS[settings.difficulty]?.label || settings.difficulty || "בינוני"}`,
+      `ערכת לוח: ${BACKGROUND_THEMES[settings.theme]?.label || settings.theme || "ניאון גריד"}`,
+      `סקין: ${SNAKE_SKINS[settings.snake_skin]?.label || settings.snake_skin || "ירוק קלאסי"}`,
+      `בקרי מגע: ${CONTROL_LAYOUT_PRESETS[settings.control_layout]?.layout === "wide" ? "רחבה" : settings.control_layout === "compact" ? "קומפקטית" : "קלאסית"}`,
+      `רקע לוח: ${settings.board_background_source ? "מותאם מקישור" : "ברירת מחדל"}`
+    ];
+    dashboardSettingsSummaryEl.innerHTML = summaryItems
+      .map((item) => `<li>${escapeHtml(item)}</li>`)
+      .join("");
+  }
+
+  if (dashboardSignOutBtn) {
+    dashboardSignOutBtn.hidden = !isAuthed;
+  }
+}
+
+function openAccountEntrySurface() {
+  const isAuthed = authSnapshot.status === "authenticated" && authSnapshot.user;
+  if (isAuthed) {
+    setAccountDashboardOpen(true);
+    return;
+  }
+  setAuthOpen(true);
 }
 
 function setHomeOpen(isOpen) {
@@ -747,6 +1116,10 @@ function setAuthOpen(isOpen) {
   if (authOpen && menuPanel) menuPanel.hidden = true;
   if (authOpen && leaderboardPanel) leaderboardPanel.hidden = true;
   if (authOpen && runResultsPanel) runResultsPanel.hidden = true;
+  if (authOpen && accountDashboardPanel) {
+    accountDashboardPanel.hidden = true;
+    accountDashboardOpen = false;
+  }
   updatePlayLayoutState();
   updateActionButtons();
   if (!authOpen) {
@@ -760,8 +1133,41 @@ function setAuthOpen(isOpen) {
   }
 }
 
+function setAccountDashboardOpen(isOpen) {
+  if (isOpen) {
+    accountDashboardReturnToHome = homeOpen;
+  }
+  accountDashboardOpen = Boolean(isOpen);
+  if (accountDashboardPanel) accountDashboardPanel.hidden = !accountDashboardOpen;
+  if (accountDashboardOpen && homeOpen) {
+    setHomeOpen(false);
+  }
+  if (accountDashboardOpen) {
+    authOpen = false;
+  }
+  if (accountDashboardOpen && menuPanel) menuPanel.hidden = true;
+  if (accountDashboardOpen && leaderboardPanel) leaderboardPanel.hidden = true;
+  if (accountDashboardOpen && runResultsPanel) runResultsPanel.hidden = true;
+  if (accountDashboardOpen && authPanel) authPanel.hidden = true;
+  renderAccountDashboard();
+  updatePlayLayoutState();
+  updateActionButtons();
+  if (!accountDashboardOpen && started && gameOverAt === 0) {
+    focusGameSurface();
+    return;
+  }
+  if (!accountDashboardOpen && accountDashboardReturnToHome && !started && gameOverAt === 0) {
+    accountDashboardReturnToHome = false;
+    setHomeOpen(true);
+    return;
+  }
+  if (!accountDashboardOpen) {
+    accountDashboardReturnToHome = false;
+  }
+}
+
 function focusGameSurface(options = {}) {
-  if (!canvas || homeOpen || authOpen) return;
+  if (!canvas || homeOpen || authOpen || accountDashboardOpen) return;
 
   const focusCanvas = () => {
     if (document.activeElement instanceof HTMLElement && document.activeElement !== canvas) {
@@ -920,6 +1326,7 @@ function initGame() {
   stopLoop();
   startRenderLoop();
   draw(performance.now());
+  applyPendingAccountSettingsIfPossible();
 }
 
 function startGame() {
@@ -2292,6 +2699,13 @@ function onKeyDown(event) {
     return;
   }
 
+  if (accountDashboardPanel && !accountDashboardPanel.hidden) {
+    if (event.key === "Escape") {
+      setAccountDashboardOpen(false);
+    }
+    return;
+  }
+
   if (menuPanel && !menuPanel.hidden) {
     if (event.key === "Escape") {
       setMenuOpen(false);
@@ -2366,6 +2780,9 @@ function onKeyDown(event) {
     }
     if (menuPanel && !menuPanel.hidden) {
       setMenuOpen(false);
+    }
+    if (accountDashboardPanel && !accountDashboardPanel.hidden) {
+      setAccountDashboardOpen(false);
     }
     if (leaderboardPanel && !leaderboardPanel.hidden) {
       setLeaderboardOpen(false);
@@ -2525,15 +2942,27 @@ function clearStatusTimer() {
   statusTimeout = null;
 }
 
-function setDifficulty(nextDifficulty) {
+function setDifficulty(nextDifficulty, options = {}) {
+  const {
+    persistLocal = true,
+    syncCloud = true,
+    reinitialize = true
+  } = options;
   const normalized = normalizeKey(nextDifficulty, DIFFICULTY_PRESETS, difficulty);
   if (normalized === difficulty) return;
 
   difficulty = normalized;
-  localStorage.setItem(STORAGE_KEYS.difficulty, difficulty);
+  if (persistLocal) {
+    localStorage.setItem(STORAGE_KEYS.difficulty, difficulty);
+  }
   updateDifficultyButtons();
 
-  initGame();
+  if (reinitialize) {
+    initGame();
+  }
+  if (syncCloud) {
+    queueAccountSettingsSync();
+  }
   setTemporaryStatus(`רמת הקושי הוגדרה ל־${DIFFICULTY_PRESETS[difficulty].label}`, 1500);
 }
 
@@ -2546,74 +2975,156 @@ function updateDifficultyButtons() {
   updateModeLabel();
 }
 
-function setTheme(nextTheme) {
+function setTheme(nextTheme, options = {}) {
+  const {
+    persistLocal = true,
+    syncCloud = true
+  } = options;
   const normalized = normalizeKey(nextTheme, BACKGROUND_THEMES, activeTheme);
   activeTheme = isThemeUnlocked(normalized) ? normalized : getFirstUnlockedTheme();
-  localStorage.setItem(STORAGE_KEYS.theme, activeTheme);
+  if (persistLocal) {
+    localStorage.setItem(STORAGE_KEYS.theme, activeTheme);
+  }
   applyThemeTokensToDocument();
   updateCustomizationUI();
+  if (syncCloud) {
+    queueAccountSettingsSync();
+  }
 }
 
-function setSnakeSkin(nextSkin) {
+function setSnakeSkin(nextSkin, options = {}) {
+  const {
+    persistLocal = true,
+    syncCloud = true
+  } = options;
   const normalized = normalizeKey(nextSkin, SNAKE_SKINS, activeSkin);
   activeSkin = isSkinUnlocked(normalized) ? normalized : getFirstUnlockedSkin();
-  localStorage.setItem(STORAGE_KEYS.snakeSkin, activeSkin);
+  if (persistLocal) {
+    localStorage.setItem(STORAGE_KEYS.snakeSkin, activeSkin);
+  }
   applyThemeTokensToDocument();
   updateCustomizationUI();
+  if (syncCloud) {
+    queueAccountSettingsSync();
+  }
 }
 
-function setPlayerName(nextName) {
+function setPlayerName(nextName, options = {}) {
+  const {
+    persistLocal = true,
+    syncCloud = true
+  } = options;
   playerName = sanitizePlayerName(nextName);
-  localStorage.setItem(STORAGE_KEYS.playerName, playerName);
+  if (persistLocal) {
+    localStorage.setItem(STORAGE_KEYS.playerName, playerName);
+  }
   renderLeaderboards();
   updateCustomizationUI();
+  renderAccountDashboard();
+  if (syncCloud) {
+    queueAccountProfileSync();
+  }
 }
 
-function setAudioMuted(isMuted) {
+function setAudioMuted(isMuted, options = {}) {
+  const {
+    persistLocal = true,
+    syncCloud = true
+  } = options;
   audioMuted = Boolean(isMuted);
-  localStorage.setItem(STORAGE_KEYS.audioMuted, audioMuted ? "1" : "0");
+  if (persistLocal) {
+    localStorage.setItem(STORAGE_KEYS.audioMuted, audioMuted ? "1" : "0");
+  }
   if (audioContext && audioMuted) {
     audioContext.suspend().catch(() => {});
   } else if (audioContext && !audioMuted) {
     audioContext.resume().catch(() => {});
   }
   updateCustomizationUI();
+  if (syncCloud) {
+    queueAccountSettingsSync();
+  }
 }
 
-function setGadgetTipsDisabled(isDisabled) {
+function setGadgetTipsDisabled(isDisabled, options = {}) {
+  const {
+    persistLocal = true,
+    syncCloud = true
+  } = options;
   gadgetTipsDisabled = Boolean(isDisabled);
-  localStorage.setItem(STORAGE_KEYS.gadgetTipsDisabled, gadgetTipsDisabled ? "1" : "0");
+  if (persistLocal) {
+    localStorage.setItem(STORAGE_KEYS.gadgetTipsDisabled, gadgetTipsDisabled ? "1" : "0");
+  }
   updateCustomizationUI();
+  if (syncCloud) {
+    queueAccountSettingsSync();
+  }
 }
 
-function setReducedMotionEnabled(isEnabled) {
+function setReducedMotionEnabled(isEnabled, options = {}) {
+  const {
+    persistLocal = true,
+    syncCloud = true
+  } = options;
   reducedMotionEnabled = Boolean(isEnabled);
-  localStorage.setItem(STORAGE_KEYS.reducedMotion, reducedMotionEnabled ? "1" : "0");
+  if (persistLocal) {
+    localStorage.setItem(STORAGE_KEYS.reducedMotion, reducedMotionEnabled ? "1" : "0");
+  }
   updateCustomizationUI();
+  if (syncCloud) {
+    queueAccountSettingsSync();
+  }
 }
 
-function setControlLayout(nextLayout) {
+function setControlLayout(nextLayout, options = {}) {
+  const {
+    persistLocal = true,
+    syncCloud = true
+  } = options;
   preferredControlLayout = normalizeKey(nextLayout, CONTROL_LAYOUT_PRESETS, preferredControlLayout);
-  localStorage.setItem(STORAGE_KEYS.controlLayout, preferredControlLayout);
+  if (persistLocal) {
+    localStorage.setItem(STORAGE_KEYS.controlLayout, preferredControlLayout);
+  }
   applyControlLayout();
   updateTouchControlSettingsUI();
   requestAnimationFrame(syncViewportLayout);
+  if (syncCloud) {
+    queueAccountSettingsSync();
+  }
 }
 
-function setControlSize(nextSize) {
+function setControlSize(nextSize, options = {}) {
+  const {
+    persistLocal = true,
+    syncCloud = true
+  } = options;
   preferredControlSize = normalizeKey(nextSize, CONTROL_SIZE_PRESETS, preferredControlSize);
-  localStorage.setItem(STORAGE_KEYS.controlSize, preferredControlSize);
+  if (persistLocal) {
+    localStorage.setItem(STORAGE_KEYS.controlSize, preferredControlSize);
+  }
   applyControlLayout();
   updateTouchControlSettingsUI();
   requestAnimationFrame(syncViewportLayout);
+  if (syncCloud) {
+    queueAccountSettingsSync();
+  }
 }
 
-function setControlSide(nextSide) {
+function setControlSide(nextSide, options = {}) {
+  const {
+    persistLocal = true,
+    syncCloud = true
+  } = options;
   preferredControlSide = normalizeKey(nextSide, CONTROL_SIDE_PRESETS, preferredControlSide);
-  localStorage.setItem(STORAGE_KEYS.controlSide, preferredControlSide);
+  if (persistLocal) {
+    localStorage.setItem(STORAGE_KEYS.controlSide, preferredControlSide);
+  }
   applyControlLayout();
   updateTouchControlSettingsUI();
   requestAnimationFrame(syncViewportLayout);
+  if (syncCloud) {
+    queueAccountSettingsSync();
+  }
 }
 
 function applyControlLayout() {
@@ -2662,9 +3173,10 @@ function updatePlayLayoutState() {
     !recordScorePanel?.hidden ||
     !runResultsPanel?.hidden ||
     !authPanel?.hidden ||
+    !accountDashboardPanel?.hidden ||
     gadgetHelpOpen ||
     homeOpen;
-  const isPlayFocused = !homeOpen && (started || gameOverAt > 0 || authOpen);
+  const isPlayFocused = !homeOpen && (started || gameOverAt > 0 || authOpen || accountDashboardOpen);
   const isBoardOnly = running && !overlayOpen;
   appWrapEl.classList.toggle("is-play-focused", isPlayFocused);
   appWrapEl.classList.toggle("is-board-only", isBoardOnly);
@@ -2726,6 +3238,7 @@ function updateCustomizationUI() {
     }
   }
   updateAuthUI();
+  renderAccountDashboard();
 }
 
 function loadBoardBackground(source) {
@@ -2753,19 +3266,28 @@ function loadBoardBackground(source) {
   image.src = resolvedSource;
 }
 
-function setCustomBoardBackground(source) {
+function setCustomBoardBackground(source, options = {}) {
+  const {
+    persistLocal = true,
+    syncCloud = true
+  } = options;
   boardBackgroundSource = source;
   boardBackgroundSessionOnly = false;
-  if (!source) {
-    localStorage.removeItem(STORAGE_KEYS.boardBackground);
-  } else {
-    try {
-      localStorage.setItem(STORAGE_KEYS.boardBackground, source);
-    } catch {
-      boardBackgroundSessionOnly = true;
+  if (persistLocal) {
+    if (!source) {
+      localStorage.removeItem(STORAGE_KEYS.boardBackground);
+    } else {
+      try {
+        localStorage.setItem(STORAGE_KEYS.boardBackground, source);
+      } catch {
+        boardBackgroundSessionOnly = true;
+      }
     }
   }
   loadBoardBackground(boardBackgroundSource);
+  if (syncCloud) {
+    queueAccountSettingsSync();
+  }
 }
 
 function shouldShowGadgetHelp(type) {
@@ -3357,6 +3879,7 @@ function renderProgressionCard() {
   const percent = Math.max(0, Math.min(100, (progressionProfile.xp / goal) * 100));
 
   playerLevelBadgeEl.textContent = `רמה ${progressionProfile.level}`;
+  playerXpLabelEl.setAttribute("dir", "ltr");
   playerXpLabelEl.textContent = `${progressionProfile.xp} / ${goal} XP`;
   playerXpHintEl.textContent = `עוד ${Math.max(0, goal - progressionProfile.xp)} XP לרמה הבאה`;
   playerXpFillEl.style.width = `${percent}%`;
@@ -3469,6 +3992,7 @@ function renderMetaProgressionUI() {
   renderDailyChallenges();
   renderAchievements();
   populateCustomizationSelects();
+  renderAccountDashboard();
 }
 
 function applyChallengeProgress(type, value, mode = "add") {
@@ -3653,6 +4177,7 @@ function finalizeRunProgress(reason) {
 
   renderMetaProgressionUI();
   renderRunResults();
+  queueAccountProgressSync();
 }
 
 function setRunResultsOpen(isOpen) {
@@ -3661,6 +4186,10 @@ function setRunResultsOpen(isOpen) {
   if (isOpen && leaderboardPanel) leaderboardPanel.hidden = true;
   if (isOpen && recordScorePanel) recordScorePanel.hidden = true;
   if (isOpen && gadgetHelpPanel) gadgetHelpPanel.hidden = true;
+  if (isOpen && accountDashboardPanel) {
+    accountDashboardPanel.hidden = true;
+    accountDashboardOpen = false;
+  }
   runResultsPanel.hidden = !isOpen;
   if (isOpen) renderRunResults();
   updatePlayLayoutState();
@@ -3918,6 +4447,10 @@ function setRecordScoreOpen(isOpen) {
   if (isOpen && leaderboardPanel) leaderboardPanel.hidden = true;
   if (isOpen && gadgetHelpPanel) gadgetHelpPanel.hidden = true;
   if (isOpen && runResultsPanel) runResultsPanel.hidden = true;
+  if (isOpen && accountDashboardPanel) {
+    accountDashboardPanel.hidden = true;
+    accountDashboardOpen = false;
+  }
 
   recordScorePanel.hidden = !isOpen;
   if (isOpen) {
@@ -3979,6 +4512,10 @@ function setLeaderboardOpen(isOpen) {
   if (isOpen && menuPanel) {
     menuPanel.hidden = true;
   }
+  if (isOpen && accountDashboardPanel) {
+    accountDashboardPanel.hidden = true;
+    accountDashboardOpen = false;
+  }
   if (isOpen && authPanel) {
     authPanel.hidden = true;
     authOpen = false;
@@ -4003,6 +4540,10 @@ function setMenuOpen(isOpen) {
   if (isOpen) setHomeOpen(false);
   if (isOpen && leaderboardPanel) {
     leaderboardPanel.hidden = true;
+  }
+  if (isOpen && accountDashboardPanel) {
+    accountDashboardPanel.hidden = true;
+    accountDashboardOpen = false;
   }
   if (isOpen && authPanel) {
     authPanel.hidden = true;
@@ -4294,7 +4835,7 @@ if (homeProgressBtn) {
 }
 
 if (homeAccountBtn) {
-  homeAccountBtn.addEventListener("click", () => setAuthOpen(true));
+  homeAccountBtn.addEventListener("click", openAccountEntrySurface);
 }
 
 difficultyButtons.forEach((button) => {
@@ -4338,11 +4879,21 @@ if (closeMenuBtn) {
 }
 
 if (openAuthBtn) {
-  openAuthBtn.addEventListener("click", () => setAuthOpen(true));
+  openAuthBtn.addEventListener("click", openAccountEntrySurface);
 }
 
 if (menuSignOutBtn) {
   menuSignOutBtn.addEventListener("click", () => {
+    void handleSignOut();
+  });
+}
+
+if (closeAccountDashboardBtn) {
+  closeAccountDashboardBtn.addEventListener("click", () => setAccountDashboardOpen(false));
+}
+
+if (dashboardSignOutBtn) {
+  dashboardSignOutBtn.addEventListener("click", () => {
     void handleSignOut();
   });
 }
@@ -4573,6 +5124,15 @@ if (authPanel) {
   });
 }
 
+if (accountDashboardPanel) {
+  accountDashboardPanel.addEventListener("click", (event) => {
+    const target = event.target;
+    if (target instanceof Element && target.hasAttribute("data-close-overlay")) {
+      setAccountDashboardOpen(false);
+    }
+  });
+}
+
 touchButtons.forEach((button) => {
   button.addEventListener("pointerdown", (event) => {
     event.preventDefault();
@@ -4617,6 +5177,43 @@ if (authService?.subscribe) {
       if (authOpen) setAuthOpen(false);
       pushToast("חזרת למצב אורח", "המשחק וההתקדמות המקומית נשארו זמינים", "accent");
       return;
+    }
+  });
+}
+
+if (accountSyncService?.setRuntimeSeedProvider) {
+  accountSyncService.setRuntimeSeedProvider(() => ({
+    display_name: playerName,
+    settings: buildAccountSettingsPayload()
+  }));
+}
+
+if (accountSyncService?.subscribe) {
+  accountSyncService.subscribe((nextState) => {
+    const previousState = accountSyncSnapshot;
+    accountSyncSnapshot = nextState;
+
+    updateAuthUI();
+    renderAccountDashboard();
+
+    if (nextState.status === "ready") {
+      const shouldHydrate =
+        previousState.status !== "ready" ||
+        previousState.userId !== nextState.userId ||
+        previousState.lastHydratedAt !== nextState.lastHydratedAt;
+
+      if (shouldHydrate) {
+        applyAccountBundleToRuntime(nextState);
+      }
+      return;
+    }
+
+    if (previousState.status === "ready" && nextState.status === "guest") {
+      if (accountDashboardOpen) {
+        setAccountDashboardOpen(false);
+      }
+      pendingAccountSettingsHydration = null;
+      restoreGuestLocalData();
     }
   });
 }

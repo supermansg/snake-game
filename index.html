@@ -7,11 +7,12 @@
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
+  <a class="skip-link" href="#mainContent">דלג לתוכן המשחק</a>
   <section id="homeScreen" class="home-screen" aria-label="מסך הבית">
     <div class="home-screen__backdrop"></div>
     <div class="home-screen__content">
       <div class="home-hero">
-        <img class="home-hero__logo" src="/assets/ui/logo-snake-me.svg" alt="Snake Me">
+        <img class="home-hero__logo" src="/assets/ui/logo-snake-me.svg" alt="Snake Me" width="360" height="116">
         <p class="home-hero__kicker">ארקייד מהיר בעברית, עם התקדמות, גאדג'טים ומובייל חזק</p>
         <h2 class="home-hero__title">ברוכים הבאים ל-Snake Me</h2>
         <p class="home-hero__copy">ריצה חדה, שליטה מדויקת, פרופיל מתפתח, והכול בלי לאבד את הקצב של המשחק.</p>
@@ -42,7 +43,7 @@
 
     <div id="toastStack" class="toast-stack" aria-live="polite" aria-atomic="false"></div>
 
-    <main class="wrap">
+    <main id="mainContent" class="wrap" tabindex="-1">
     <header class="topbar">
       <div class="brand-row">
         <h1>Snake Me</h1>
@@ -182,7 +183,7 @@
   </main>
 
   <section id="menuPanel" class="overlay-panel" hidden aria-label="תפריט המשחק">
-    <div class="overlay-backdrop" data-close-overlay="menu"></div>
+    <button class="overlay-backdrop" type="button" data-close-overlay="menu" aria-label="סגור תפריט"></button>
     <div class="overlay-card menu-card">
       <div class="overlay-header">
         <div>
@@ -201,7 +202,7 @@
 
           <label class="name-field" for="profileNameInput">
             <span>שם פרטי / כינוי</span>
-            <input id="profileNameInput" type="text" maxlength="14" placeholder="שחקן">
+            <input id="profileNameInput" name="profileName" type="text" maxlength="14" autocomplete="nickname" spellcheck="false" placeholder="שחקן">
           </label>
         </section>
 
@@ -399,7 +400,7 @@
           <div class="menu-form-grid">
             <label class="name-field" for="backgroundUrlInput">
               <span>קישור לתמונה</span>
-              <input id="backgroundUrlInput" type="url" placeholder="https://example.com/board-bg.jpg">
+              <input id="backgroundUrlInput" name="backgroundUrl" type="url" autocomplete="url" spellcheck="false" placeholder="https://example.com/board-bg.jpg">
             </label>
 
             <div class="background-actions">
@@ -410,7 +411,7 @@
           <div class="menu-form-grid menu-form-grid-compact">
             <label class="name-field file-field" for="backgroundFileInput">
               <span>העלה מהמכשיר</span>
-              <input id="backgroundFileInput" type="file" accept="image/*">
+              <input id="backgroundFileInput" name="backgroundFile" type="file" accept="image/*">
             </label>
 
             <div class="background-actions">
@@ -431,7 +432,7 @@
   </section>
 
   <section id="gadgetHelpPanel" class="overlay-panel" hidden aria-label="הסבר על גאדג'ט">
-    <div class="overlay-backdrop" data-close-overlay="gadget-help"></div>
+    <button class="overlay-backdrop" type="button" data-close-overlay="gadget-help" aria-label="סגור חלון הסבר"></button>
     <div class="overlay-card tutorial-card">
       <div class="overlay-header">
         <div>
@@ -458,7 +459,7 @@
   </section>
 
   <section id="leaderboardPanel" class="overlay-panel" hidden aria-label="טבלאות שיאים">
-    <div class="overlay-backdrop" data-close-overlay="leaderboard"></div>
+    <button class="overlay-backdrop" type="button" data-close-overlay="leaderboard" aria-label="סגור שיאים"></button>
     <div class="overlay-card">
       <div class="overlay-header">
         <div>
@@ -471,7 +472,7 @@
       <div class="leaderboard-controls">
         <label class="name-field" for="playerNameInput">
           <span>שם שחקן</span>
-          <input id="playerNameInput" type="text" maxlength="14" placeholder="שחקן">
+          <input id="playerNameInput" name="leaderboardPlayerName" type="text" maxlength="14" autocomplete="nickname" spellcheck="false" placeholder="שחקן">
         </label>
         <p id="communityStatus" class="community-status">לוח קהילתי: צד השרת עדיין לא מחובר</p>
       </div>
@@ -496,7 +497,7 @@
     </div>
   </section>
   <section id="recordScorePanel" class="overlay-panel" hidden aria-label="תיעוד שיא">
-    <div class="overlay-backdrop" data-close-overlay="record-score"></div>
+    <button class="overlay-backdrop" type="button" data-close-overlay="record-score" aria-label="סגור תיעוד שיא"></button>
     <div class="overlay-card record-card">
       <div class="overlay-header">
         <div>
@@ -510,7 +511,7 @@
 
       <label class="name-field" for="recordPlayerNameInput">
         <span>איזה שם יופיע</span>
-        <input id="recordPlayerNameInput" type="text" maxlength="14" placeholder="שחקן">
+        <input id="recordPlayerNameInput" name="recordPlayerName" type="text" maxlength="14" autocomplete="nickname" spellcheck="false" placeholder="שחקן">
       </label>
 
       <div class="record-destination-group" role="radiogroup" aria-label="לאן לשמור את השיא">
@@ -538,7 +539,7 @@
     </div>
   </section>
   <section id="runResultsPanel" class="overlay-panel" hidden aria-label="סיכום ריצה">
-    <div class="overlay-backdrop" data-close-overlay="run-results"></div>
+    <button class="overlay-backdrop" type="button" data-close-overlay="run-results" aria-label="סגור סיכום ריצה"></button>
     <div class="overlay-card results-card">
       <div class="overlay-header">
         <div>
@@ -599,7 +600,7 @@
     </div>
   </section>
   <section id="authPanel" class="overlay-panel" hidden aria-label="התחברות לחשבון">
-    <div class="overlay-backdrop" data-close-overlay="auth"></div>
+    <button class="overlay-backdrop" type="button" data-close-overlay="auth" aria-label="סגור התחברות"></button>
     <div class="overlay-card auth-card">
       <div class="overlay-header">
         <div>
@@ -613,7 +614,7 @@
 
       <div class="auth-actions">
         <button id="googleAuthBtn" class="auth-provider-btn" type="button">
-          <img src="/assets/ui/auth-google.svg" alt="" aria-hidden="true">
+          <img src="/assets/ui/auth-google.svg" alt="" aria-hidden="true" width="24" height="24">
           <span>התחבר עם Google</span>
         </button>
       </div>
@@ -621,7 +622,7 @@
       <form id="magicLinkForm" class="auth-form">
         <label class="name-field" for="magicLinkEmailInput">
           <span>קישור קסם למייל</span>
-          <input id="magicLinkEmailInput" type="email" inputmode="email" autocomplete="email" placeholder="player@example.com">
+          <input id="magicLinkEmailInput" name="email" type="email" inputmode="email" autocomplete="email" spellcheck="false" placeholder="player@example.com">
         </label>
         <button id="magicLinkSubmitBtn" type="submit">שלח קישור כניסה</button>
       </form>
@@ -630,6 +631,80 @@
         <button id="guestCloseAuthBtn" class="utility-btn" type="button">המשך כאורח</button>
         <button id="authSignOutBtn" class="utility-btn close-btn" type="button" hidden>התנתק</button>
       </div>
+    </div>
+  </section>
+  <section id="accountDashboardPanel" class="overlay-panel" hidden aria-label="דאשבורד החשבון">
+    <button class="overlay-backdrop" type="button" data-close-overlay="account-dashboard" aria-label="סגור דאשבורד"></button>
+    <div class="overlay-card dashboard-card">
+      <div class="overlay-header">
+        <div>
+          <p class="overlay-kicker">החשבון שלך</p>
+          <h2>דאשבורד אישי</h2>
+        </div>
+        <button id="closeAccountDashboardBtn" class="utility-btn close-btn" type="button" aria-label="סגור דאשבורד">סגור</button>
+      </div>
+
+      <section class="menu-panel-block dashboard-identity" aria-label="סיכום חשבון">
+        <div class="leaderboard-title-row">
+          <div>
+            <h3 id="dashboardDisplayName">Snake Me</h3>
+            <p id="dashboardEmail" class="menu-help-text">לא מחובר כרגע</p>
+          </div>
+          <span class="mini-pill">סינכרון</span>
+        </div>
+        <p id="dashboardSyncStatus" class="record-summary">החשבון משמש לשמירת ההגדרות וההתקדמות.</p>
+        <div class="overlay-actions home-actions home-actions--stack dashboard-actions">
+          <button id="dashboardSignOutBtn" class="utility-btn close-btn" type="button" hidden>התנתק</button>
+        </div>
+      </section>
+
+      <div class="dashboard-grid">
+        <section class="menu-panel-block" aria-label="התקדמות מסונכרנת">
+          <div class="leaderboard-title-row">
+            <h3>התקדמות</h3>
+            <span id="dashboardLevelBadge" class="mini-pill">רמה 1</span>
+          </div>
+          <div class="progress-card">
+            <div class="progress-copy">
+              <strong id="dashboardXpLabel">0 / 100 XP</strong>
+              <small id="dashboardXpHint">עוד 100 XP לרמה הבאה</small>
+            </div>
+            <div class="progress-track" aria-hidden="true">
+              <div id="dashboardXpFill" class="progress-fill"></div>
+            </div>
+          </div>
+          <div class="meta-stats-grid">
+            <div class="meta-stat">
+              <small>שיא ניקוד</small>
+              <strong id="dashboardBestScore">0</strong>
+            </div>
+            <div class="meta-stat">
+              <small>שיא שלב</small>
+              <strong id="dashboardBestStage">1</strong>
+            </div>
+            <div class="meta-stat">
+              <small>סך ריצות</small>
+              <strong id="dashboardTotalRuns">0</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="menu-panel-block" aria-label="ריצות אחרונות">
+          <div class="leaderboard-title-row">
+            <h3>ריצות אחרונות</h3>
+            <span class="mini-pill">5 אחרונות</span>
+          </div>
+          <ul id="dashboardRecentRuns" class="dashboard-list"></ul>
+        </section>
+      </div>
+
+      <section class="menu-panel-block" aria-label="סיכום הגדרות שמורות">
+        <div class="leaderboard-title-row">
+          <h3>הגדרות שמורות</h3>
+          <span class="mini-pill">מסונכרן</span>
+        </div>
+        <ul id="dashboardSettingsSummary" class="dashboard-list dashboard-list--compact"></ul>
+      </section>
     </div>
   </section>
   <script type="module" src="/src/main.js"></script>

@@ -2,3 +2,8 @@ node_modules/
 dist/
 .env
 .env.local
+.vercel/
+.vite-local*.log
+.vite-smoke*.log
+qa/
+Usersdudi1DownloadsCHALLENGEqastart-arrow.png
